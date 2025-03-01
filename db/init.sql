@@ -68,14 +68,14 @@ INSERT INTO waste_types (name) VALUES ('含油包装物');
 INSERT INTO waste_types (name) VALUES ('其他');
 
 -- 插入测试用户
--- 超级管理员 (账号: admin, 密码: admin123)
-INSERT INTO users (username, phone, password, role_id, created_at) VALUES ('admin', '13800000000', 'admin123', 3, datetime('now'));
+-- 超级管理员 (账号: 13800000001, 密码: 1)
+INSERT INTO users (username, phone, password, role_id, created_at) VALUES ('超级管理员', '13800000001', '1', 3, datetime('now'));
 
 -- 为每个单位添加一个员工和一个管理员
 -- 牛庄员工
-INSERT INTO users (username, phone, password, role_id, unit_id, created_at) VALUES ('牛庄员工', '13500000001', NULL, 1, 1, datetime('now'));
+INSERT INTO users (username, phone, password, role_id, unit_id, created_at) VALUES ('牛庄员工', '13800000003', NULL, 1, 1, datetime('now'));
 -- 牛庄管理员
-INSERT INTO users (username, phone, password, role_id, unit_id, created_at) VALUES ('牛庄管理员', '13600000001', 'niuzhuang123', 2, 1, datetime('now'));
+INSERT INTO users (username, phone, password, role_id, unit_id, created_at) VALUES ('牛庄管理员', '13800000002', '2', 2, 1, datetime('now'));
 
 -- 信远员工
 INSERT INTO users (username, phone, password, role_id, unit_id, created_at) VALUES ('信远员工', '13500000002', NULL, 1, 2, datetime('now'));

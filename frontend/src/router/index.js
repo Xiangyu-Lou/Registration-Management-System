@@ -83,6 +83,12 @@ router.beforeEach((to, from, next) => {
     return;
   }
   
+  // 超级管理员访问首页时，重定向到管理页面
+  if (to.path === '/' && auth.state.isLoggedIn && auth.state.user.role_id === 3) {
+    next({ name: 'AdminRecords' });
+    return;
+  }
+  
   // 检查用户是否尝试访问不属于自己单位的页面
   if (to.name === 'WasteForm' && auth.state.isLoggedIn && 
       auth.state.user.role_id !== 3 && // 不是超级管理员

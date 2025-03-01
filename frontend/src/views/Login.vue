@@ -77,18 +77,25 @@ export default {
       userType: 1 // 默认为员工
     });
     
-    const rules = {
-      phone: [
-        { required: true, message: '请输入手机号', trigger: 'blur' },
-        { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号格式', trigger: 'blur' }
-      ],
-      password: [
-        { required: true, message: '请输入密码', trigger: 'blur' }
-      ]
-    };
-    
     // 员工登录不需要密码，管理员需要
     const showPassword = computed(() => form.userType !== 1);
+    
+    // 根据用户类型动态设置验证规则
+    const rules = computed(() => {
+      const phoneRules = [
+        { required: true, message: '请输入手机号', trigger: 'blur' },
+        { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号格式', trigger: 'blur' }
+      ];
+      
+      const passwordRules = showPassword.value ? [
+        { required: true, message: '请输入密码', trigger: 'blur' }
+      ] : [];
+      
+      return {
+        phone: phoneRules,
+        password: passwordRules
+      };
+    });
     
     // 切换用户类型时重置表单
     const handleUserTypeChange = () => {
@@ -102,25 +109,21 @@ export default {
     
     // 提交表单
     const submitForm = () => {
-      if (!showPassword.value) {
-        // 员工登录不需要验证密码
-        loginForm.value.validateField('phone', async (error) => {
-          if (!error) {
-            await doLogin();
-          }
-        });
-      } else {
-        // 管理员需要验证所有字段
-        loginForm.value.validate(async (valid) => {
-          if (valid) {
-            await doLogin();
-          }
-        });
-      }
+      if (!loginForm.value) return;
+      
+      // 简化的表单验证逻辑
+      loginForm.value.validate(async (valid) => {
+        if (valid) {
+          await doLogin();
+        } else {
+          console.log('表单验证失败');
+        }
+      });
     };
     
     // 执行登录
     const doLogin = async () => {
+      console.log('开始登录，账号:', form.phone, '密码:', form.password);
       try {
         const result = await auth.login(form.phone, form.password);
         
@@ -132,14 +135,16 @@ export default {
           // 根据用户角色跳转到不同页面
           if (user.role_id === 3) {
             // 超级管理员
-            router.push('/');
+            router.push('/admin-records');
           } else {
             // 其他用户直接进入对应单位的填报页面
             router.push(`/unit/${user.unit_id}`);
           }
+        } else {
+          console.error('登录失败:', result.error);
         }
       } catch (error) {
-        console.error('Login error:', error);
+        console.error('登录错误:', error);
       }
     };
     
@@ -148,7 +153,7 @@ export default {
       if (auth.state.isLoggedIn) {
         const user = auth.state.user;
         if (user.role_id === 3) {
-          router.push('/');
+          router.push('/admin-records');
         } else {
           router.push(`/unit/${user.unit_id}`);
         }
