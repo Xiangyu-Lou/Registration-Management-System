@@ -43,7 +43,7 @@ const upload = multer({ storage: storage });
 
 // 数据库连接配置
 const dbConfig = {
-  host: 'localhost',
+  host: '47.104.215.111',
   user: 'Xiangyu',
   password: '990924',
   database: 'waste_management',
