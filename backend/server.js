@@ -378,6 +378,48 @@ app.get('/api/waste-records', (req, res) => {
   });
 });
 
+// 删除废物记录
+app.delete('/api/waste-records/:id', (req, res) => {
+  const { id } = req.params;
+  
+  // 验证记录是否存在
+  db.get('SELECT * FROM waste_records WHERE id = ?', [id], (err, record) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    
+    if (!record) {
+      return res.status(404).json({ error: '记录不存在' });
+    }
+    
+    // 如果记录有照片，先删除照片文件
+    if (record.photo_path) {
+      const photoPath = path.join(__dirname, '..', record.photo_path);
+      if (fs.existsSync(photoPath)) {
+        try {
+          fs.unlinkSync(photoPath);
+          console.log(`已删除照片: ${photoPath}`);
+        } catch (error) {
+          console.error(`删除照片失败: ${photoPath}`, error);
+          // 继续删除记录，即使照片删除失败
+        }
+      }
+    }
+    
+    // 删除记录
+    db.run('DELETE FROM waste_records WHERE id = ?', [id], function(err) {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+      
+      res.json({
+        message: '废物记录删除成功',
+        id: parseInt(id)
+      });
+    });
+  });
+});
+
 // 启动服务器
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);

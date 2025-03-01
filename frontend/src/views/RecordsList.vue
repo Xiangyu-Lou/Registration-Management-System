@@ -60,7 +60,7 @@
                 <span v-else>无照片</span>
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="120">
+            <el-table-column label="操作" width="180">
               <template #default="scope">
                 <el-button 
                   type="primary" 
@@ -70,6 +70,15 @@
                   v-if="canEdit(scope.row)"
                 >
                   编辑
+                </el-button>
+                <el-button 
+                  type="danger" 
+                  size="small" 
+                  @click="confirmDelete(scope.row)"
+                  text
+                  v-if="canEdit(scope.row)"
+                >
+                  删除
                 </el-button>
               </template>
             </el-table-column>
@@ -91,7 +100,7 @@
 <script>
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { ElMessage } from 'element-plus';
+import { ElMessage, ElMessageBox } from 'element-plus';
 import axios from 'axios';
 import { ArrowLeft, Home, Refresh, PictureFailed, Plus } from '@element-plus/icons-vue';
 import auth from '../store/auth';
@@ -217,6 +226,32 @@ export default {
              (record.creator_id === null || record.creator_id === auth.state.user.id);
     };
 
+    // 确认删除记录
+    const confirmDelete = (record) => {
+      ElMessageBox.confirm(
+        '此操作将永久删除该记录，是否继续？',
+        '警告',
+        {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning',
+        }
+      )
+        .then(async () => {
+          try {
+            await axios.delete(`http://localhost:3000/api/waste-records/${record.id}`);
+            ElMessage.success('删除成功');
+            await fetchRecords();
+          } catch (error) {
+            console.error('删除记录失败:', error);
+            ElMessage.error('删除记录失败');
+          }
+        })
+        .catch(() => {
+          ElMessage.info('已取消删除');
+        });
+    };
+
     return {
       records,
       loading,
@@ -227,7 +262,8 @@ export default {
       goHome,
       addNewRecord,
       editRecord,
-      canEdit
+      canEdit,
+      confirmDelete
     };
   }
 };

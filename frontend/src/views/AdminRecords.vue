@@ -51,7 +51,7 @@
                 <span v-else>无照片</span>
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="120">
+            <el-table-column label="操作" width="180">
               <template #default="scope">
                 <el-button 
                   type="primary" 
@@ -60,6 +60,14 @@
                   text
                 >
                   编辑
+                </el-button>
+                <el-button 
+                  type="danger" 
+                  size="small" 
+                  @click="confirmDelete(scope.row)"
+                  text
+                >
+                  删除
                 </el-button>
               </template>
             </el-table-column>
@@ -81,7 +89,7 @@
 <script>
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { ElMessage } from 'element-plus';
+import { ElMessage, ElMessageBox } from 'element-plus';
 import axios from 'axios';
 import { Plus, Refresh, PictureFailed } from '@element-plus/icons-vue';
 import auth from '../store/auth';
@@ -155,12 +163,39 @@ export default {
       router.push(`/record/${recordId}`);
     };
 
+    // 确认删除记录
+    const confirmDelete = (record) => {
+      ElMessageBox.confirm(
+        '此操作将永久删除该记录，是否继续？',
+        '警告',
+        {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning',
+        }
+      )
+        .then(async () => {
+          try {
+            await axios.delete(`http://localhost:3000/api/waste-records/${record.id}`);
+            ElMessage.success('删除成功');
+            await fetchRecords();
+          } catch (error) {
+            console.error('删除记录失败:', error);
+            ElMessage.error('删除记录失败');
+          }
+        })
+        .catch(() => {
+          ElMessage.info('已取消删除');
+        });
+    };
+
     return {
       records,
       loading,
       refreshRecords,
       addNewRecord,
-      editRecord
+      editRecord,
+      confirmDelete
     };
   }
 };
