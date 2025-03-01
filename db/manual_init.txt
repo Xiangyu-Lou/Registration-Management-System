@@ -1,0 +1,19 @@
+手动初始化数据库的步骤:
+
+1. 打开命令提示符，切换到数据库目录:
+   cd C:\Users\10150\Desktop\hazardous-waste-management\db
+
+2. 如果已经存在旧数据库，删除它:
+   del waste_management.db
+
+3. 运行以下命令初始化数据库:
+   sqlite3 waste_management.db < init.sql
+
+4. 验证数据库是否创建成功:
+   sqlite3 waste_management.db "SELECT * FROM units;"
+   
+   正常情况下应该显示10个单位的列表。
+
+5. 返回后端目录启动服务器:
+   cd ..\backend
+   npm start
