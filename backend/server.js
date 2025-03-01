@@ -56,6 +56,16 @@ const dbConfig = {
 // 创建数据库连接池
 const pool = mysql.createPool(dbConfig);
 
+// 日期格式化函数 - 将ISO格式转为MySQL格式
+function formatDateForMySQL(dateString) {
+  if (!dateString) return null;
+  // 处理ISO格式的日期时间字符串
+  if (dateString.includes('T')) {
+    return dateString.slice(0, 19).replace('T', ' ');
+  }
+  return dateString;
+}
+
 // 测试数据库连接
 async function testDatabaseConnection() {
   let connection;
@@ -402,11 +412,14 @@ app.post('/api/waste-records', upload.single('photo'), async (req, res) => {
     // 格式化日期为MySQL兼容的格式
     const createdAt = new Date().toISOString().slice(0, 19).replace('T', ' ');
     
+    // 格式化收集开始时间
+    const formattedCollectionStartTime = formatDateForMySQL(collectionStartTime);
+    
     const [result] = await pool.query(
       `INSERT INTO waste_records 
        (unit_id, waste_type_id, location, collection_start_time, photo_path, quantity, created_at, creator_id) 
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [unitId, wasteTypeId, location, collectionStartTime, photoPath, quantity, createdAt, creatorId || null]
+      [unitId, wasteTypeId, location, formattedCollectionStartTime, photoPath, quantity, createdAt, creatorId || null]
     );
     
     res.status(201).json({
@@ -466,6 +479,9 @@ app.put('/api/waste-records/:id', upload.single('photo'), async (req, res) => {
       photoPath = `/uploads/${req.file.filename}`;
     }
     
+    // 格式化收集开始时间
+    const formattedCollectionStartTime = formatDateForMySQL(collectionStartTime);
+    
     await pool.query(
       `UPDATE waste_records SET 
        unit_id = ?, 
@@ -475,7 +491,7 @@ app.put('/api/waste-records/:id', upload.single('photo'), async (req, res) => {
        photo_path = ?, 
        quantity = ? 
        WHERE id = ?`,
-      [unitId, wasteTypeId, location, collectionStartTime, photoPath, quantity, id]
+      [unitId, wasteTypeId, location, formattedCollectionStartTime, photoPath, quantity, id]
     );
     
     res.json({
