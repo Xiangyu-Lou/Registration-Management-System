@@ -23,7 +23,10 @@
           <div class="card-actions">
           <el-button type="primary" @click="addNewRecord">
               <el-icon><plus /></el-icon> 新增填报
-              </el-button>
+          </el-button>
+          <el-button type="success" @click="goToUserManagement" v-if="isAdmin || isUnitAdmin">
+              <el-icon><user /></el-icon> 人员管理
+          </el-button>
           <el-button @click="refreshRecords">
             <el-icon><refresh /></el-icon> 刷新
           </el-button>
@@ -102,7 +105,7 @@ import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import axios from 'axios';
-import { ArrowLeft, Home, Refresh, PictureFailed, Plus } from '@element-plus/icons-vue';
+import { ArrowLeft, Home, Refresh, PictureFailed, Plus, User } from '@element-plus/icons-vue';
 import auth from '../store/auth';
 
 export default {
@@ -112,7 +115,8 @@ export default {
     Home,
     Refresh,
     PictureFailed,
-    Plus
+    Plus,
+    User
   },
   props: {
     unitId: {
@@ -129,6 +133,11 @@ export default {
     // 检查用户是否为超级管理员
     const isAdmin = computed(() => {
       return auth.state.isLoggedIn && auth.state.user.role_id === 3;
+    });
+    
+    // 检查用户是否为单位管理员
+    const isUnitAdmin = computed(() => {
+      return auth.state.isLoggedIn && auth.state.user.role_id === 2;
     });
 
     onMounted(async () => {
@@ -199,6 +208,11 @@ export default {
       }
     };
 
+    // 前往人员管理页面
+    const goToUserManagement = () => {
+      router.push('/user-management');
+    };
+
     // 添加新的废物记录
     const addNewRecord = () => {
       router.push('/record/new');
@@ -257,9 +271,11 @@ export default {
       loading,
       unitName,
       isAdmin,
+      isUnitAdmin,
       refreshRecords,
       goBack,
       goHome,
+      goToUserManagement,
       addNewRecord,
       editRecord,
       canEdit,

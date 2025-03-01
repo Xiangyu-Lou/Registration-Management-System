@@ -157,7 +157,183 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// 根据用户ID获取用户信息
+// 获取所有用户（用于管理员）
+app.get('/api/users', async (req, res) => {
+  try {
+    // 获取用户的角色和单位信息
+    const [rows] = await pool.query(
+      `SELECT u.id, u.username, u.phone, u.role_id, r.name as role_name, u.unit_id, un.name as unit_name 
+       FROM users u 
+       JOIN user_roles r ON u.role_id = r.id 
+       LEFT JOIN units un ON u.unit_id = un.id 
+       ORDER BY u.role_id, u.username`
+    );
+    
+    res.json(rows);
+  } catch (error) {
+    console.error('获取用户列表错误:', error);
+    res.status(500).json({ error: '服务器错误' });
+  }
+});
+
+// 获取指定单位的用户（用于单位管理员）
+app.get('/api/units/:unitId/users', async (req, res) => {
+  const { unitId } = req.params;
+  
+  try {
+    const [rows] = await pool.query(
+      `SELECT u.id, u.username, u.phone, u.role_id, r.name as role_name, u.unit_id, un.name as unit_name 
+       FROM users u 
+       JOIN user_roles r ON u.role_id = r.id 
+       LEFT JOIN units un ON u.unit_id = un.id 
+       WHERE u.unit_id = ? AND u.role_id = 1 
+       ORDER BY u.username`, 
+      [unitId]
+    );
+    
+    res.json(rows);
+  } catch (error) {
+    console.error('获取单位用户列表错误:', error);
+    res.status(500).json({ error: '服务器错误' });
+  }
+});
+
+// 添加新用户
+app.post('/api/users', async (req, res) => {
+  const { username, phone, password, roleId, unitId } = req.body;
+  
+  // 验证必填字段
+  if (!username || !phone || !roleId) {
+    return res.status(400).json({ error: '用户名、手机号和角色是必填项' });
+  }
+  
+  // 必要的参数验证
+  if ((roleId == 1 || roleId == 2) && !unitId) {
+    return res.status(400).json({ error: '员工和单位管理员必须指定单位' });
+  }
+  
+  // 对于管理员，需要验证密码
+  if ((roleId == 2 || roleId == 3) && !password) {
+    return res.status(400).json({ error: '管理员账号必须设置密码' });
+  }
+  
+  try {
+    // 验证手机号是否已存在
+    const [existingUsers] = await pool.query('SELECT id FROM users WHERE phone = ?', [phone]);
+    if (existingUsers.length > 0) {
+      return res.status(400).json({ error: '手机号已被注册' });
+    }
+    
+    // 创建新用户
+    const [result] = await pool.query(
+      'INSERT INTO users (username, phone, password, role_id, unit_id) VALUES (?, ?, ?, ?, ?)',
+      [username, phone, password || null, roleId, unitId || null]
+    );
+    
+    res.status(201).json({
+      id: result.insertId,
+      message: '用户创建成功'
+    });
+  } catch (error) {
+    console.error('创建用户错误:', error);
+    res.status(500).json({ error: '服务器错误' });
+  }
+});
+
+// 更新用户信息
+app.put('/api/users/:id', async (req, res) => {
+  const { id } = req.params;
+  const { username, phone, password, roleId, unitId } = req.body;
+  
+  // 验证必填字段
+  if (!username || !phone || !roleId) {
+    return res.status(400).json({ error: '用户名、手机号和角色是必填项' });
+  }
+  
+  // 必要的参数验证
+  if ((roleId == 1 || roleId == 2) && !unitId) {
+    return res.status(400).json({ error: '员工和单位管理员必须指定单位' });
+  }
+  
+  try {
+    // 验证用户是否存在
+    const [existingUsers] = await pool.query('SELECT * FROM users WHERE id = ?', [id]);
+    if (existingUsers.length === 0) {
+      return res.status(404).json({ error: '用户不存在' });
+    }
+    
+    const existingUser = existingUsers[0];
+    
+    // 验证手机号是否被其他用户使用
+    if (phone !== existingUser.phone) {
+      const [phoneUsers] = await pool.query('SELECT id FROM users WHERE phone = ? AND id != ?', [phone, id]);
+      if (phoneUsers.length > 0) {
+        return res.status(400).json({ error: '手机号已被其他用户使用' });
+      }
+    }
+    
+    // 如果是更改角色且新角色是管理员但没有密码
+    if ((roleId == 2 || roleId == 3) && existingUser.role_id == 1 && !password && !existingUser.password) {
+      return res.status(400).json({ error: '从普通员工提升为管理员需要设置密码' });
+    }
+    
+    // 准备更新数据
+    let sql;
+    let params;
+    
+    // 如果提供了新密码，则更新密码
+    if (password) {
+      sql = 'UPDATE users SET username = ?, phone = ?, password = ?, role_id = ?, unit_id = ? WHERE id = ?';
+      params = [username, phone, password, roleId, unitId || null, id];
+    } else {
+      sql = 'UPDATE users SET username = ?, phone = ?, role_id = ?, unit_id = ? WHERE id = ?';
+      params = [username, phone, roleId, unitId || null, id];
+    }
+    
+    // 更新用户
+    await pool.query(sql, params);
+    
+    res.json({
+      id: parseInt(id),
+      message: '用户信息更新成功'
+    });
+  } catch (error) {
+    console.error('更新用户错误:', error);
+    res.status(500).json({ error: '服务器错误' });
+  }
+});
+
+// 删除用户
+app.delete('/api/users/:id', async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    // 验证用户是否存在
+    const [existingUsers] = await pool.query('SELECT * FROM users WHERE id = ?', [id]);
+    if (existingUsers.length === 0) {
+      return res.status(404).json({ error: '用户不存在' });
+    }
+    
+    // 检查该用户是否创建了废物记录
+    const [records] = await pool.query('SELECT COUNT(*) as count FROM waste_records WHERE creator_id = ?', [id]);
+    if (records[0].count > 0) {
+      return res.status(400).json({ error: '不能删除该用户，因为存在关联的废物记录' });
+    }
+    
+    // 删除用户
+    await pool.query('DELETE FROM users WHERE id = ?', [id]);
+    
+    res.json({
+      message: '用户删除成功',
+      id: parseInt(id)
+    });
+  } catch (error) {
+    console.error('删除用户错误:', error);
+    res.status(500).json({ error: '服务器错误' });
+  }
+});
+
+// 获取用户详情
 app.get('/api/users/:id', async (req, res) => {
   const { id } = req.params;
   

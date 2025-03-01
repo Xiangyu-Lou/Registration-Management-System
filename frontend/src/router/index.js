@@ -4,6 +4,7 @@ import WasteForm from '../views/WasteForm.vue'
 import RecordsList from '../views/RecordsList.vue'
 import Login from '../views/Login.vue'
 import EditRecord from '../views/EditRecord.vue'
+import UserManagement from '../views/UserManagement.vue'
 import AdminRecords from '../views/AdminRecords.vue'
 import auth from '../store/auth'
 
@@ -13,6 +14,12 @@ const routes = [
     name: 'Login',
     component: Login,
     meta: { requiresAuth: false }
+  },
+  {
+    path: '/user-management',
+    name: 'UserManagement',
+    component: UserManagement,
+    meta: { requiresAuth: true, requiresManager: true }
   },
   {
     path: '/',
@@ -59,6 +66,7 @@ router.beforeEach((to, from, next) => {
   // 检查页面是否需要授权
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
   const requiresSuperAdmin = to.matched.some(record => record.meta.requiresSuperAdmin);
+  const requiresManager = to.matched.some(record => record.meta.requiresManager);
   
   // 如果路由需要登录但用户未登录，重定向到登录页面
   if (requiresAuth && !auth.state.isLoggedIn) {
@@ -69,6 +77,13 @@ router.beforeEach((to, from, next) => {
   // 如果路由需要超级管理员权限但用户不是超级管理员
   if (requiresSuperAdmin && auth.state.isLoggedIn && auth.state.user.role_id !== 3) {
     // 如果用户已登录但不是超级管理员，重定向到其单位页面
+    next({ name: 'WasteForm', params: { id: auth.state.user.unit_id } });
+    return;
+  }
+  
+  // 如果路由需要管理员权限但用户不是管理员
+  if (requiresManager && auth.state.isLoggedIn && auth.state.user.role_id === 1) {
+    // 普通员工不能访问管理员页面
     next({ name: 'WasteForm', params: { id: auth.state.user.unit_id } });
     return;
   }
