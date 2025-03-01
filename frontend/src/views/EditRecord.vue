@@ -48,15 +48,30 @@
           <el-input v-model="form.location" placeholder="请输入废物产生地点" />
         </el-form-item>
 
-        <el-form-item label="收集开始时间" prop="collectionStartTime">
+        <el-form-item label="收集日期" prop="collectionDate">
           <el-date-picker
-            v-model="form.collectionStartTime"
-            type="datetime"
-            placeholder="选择收集开始时间"
-            format="YYYY-MM-DD HH:mm:ss"
-            value-format="YYYY-MM-DD HH:mm:ss"
+            v-model="form.collectionDate"
+            type="date"
+            placeholder="选择日期"
+            format="YYYY-MM-DD"
+            value-format="YYYY-MM-DD"
             style="width: 100%"
           />
+        </el-form-item>
+
+        <el-form-item label="收集时间" prop="collectionTime">
+          <el-time-picker
+            v-model="form.collectionTime"
+            format="HH:mm"
+            placeholder="选择时间"
+            value-format="HH:mm"
+            style="width: 100%"
+          >
+            <template #prefix>
+              <el-icon><clock /></el-icon>
+            </template>
+          </el-time-picker>
+          <div class="time-tip">只需选择小时和分钟</div>
         </el-form-item>
 
         <el-form-item label="收集数量(kg)" prop="quantity">
@@ -69,19 +84,21 @@
           />
         </el-form-item>
 
-        <el-form-item label="现场照片" prop="photo">
+        <el-form-item label="现场照片" prop="photos">
           <el-upload
             class="waste-photo-uploader"
             action="#"
             :auto-upload="false"
             :on-change="handlePhotoChange"
-            :limit="1"
-            list-type="picture-card"
+            :on-remove="handlePhotoRemove"
             :file-list="photoList"
+            :limit="10"
+            multiple
+            list-type="picture-card"
           >
             <el-icon><plus /></el-icon>
           </el-upload>
-          <div class="photo-tip">请上传废物现场照片</div>
+          <div class="photo-tip">请上传废物现场照片（最多10张）</div>
         </el-form-item>
 
         <el-form-item>
@@ -102,14 +119,15 @@ import { ref, reactive, onMounted, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import axios from 'axios';
-import { ArrowLeft, Plus } from '@element-plus/icons-vue';
+import { ArrowLeft, Plus, Clock } from '@element-plus/icons-vue';
 import auth from '../store/auth';
 
 export default {
   name: 'EditRecordView',
   components: {
     ArrowLeft,
-    Plus
+    Plus,
+    Clock
   },
   setup() {
     const router = useRouter();
@@ -120,7 +138,7 @@ export default {
     const unitName = ref('');
     const wasteTypes = ref([]);
     const units = ref([]);
-    const photoFile = ref(null);
+    const photoFiles = ref([]);
     const photoList = ref([]);
 
     // 确定是新增还是编辑
@@ -135,7 +153,8 @@ export default {
       unitId: '',
       wasteTypeId: '',
       location: '',
-      collectionStartTime: '',
+      collectionDate: new Date().toISOString().slice(0, 10), // 默认为当天
+      collectionTime: '08:00',
       quantity: 1,
       recordId: null,
       creatorId: auth.state.user?.id || null
@@ -151,8 +170,11 @@ export default {
       location: [
         { required: true, message: '请输入废物产生地点', trigger: 'blur' }
       ],
-      collectionStartTime: [
-        { required: true, message: '请选择收集开始时间', trigger: 'change' }
+      collectionDate: [
+        { required: true, message: '请选择收集日期', trigger: 'change' }
+      ],
+      collectionTime: [
+        { required: true, message: '请选择收集时间', trigger: 'change' }
       ],
       quantity: [
         { required: true, message: '请输入收集数量', trigger: 'change' }
@@ -234,7 +256,14 @@ export default {
         form.unitId = record.unit_id;
         form.wasteTypeId = record.waste_type_id;
         form.location = record.location;
-        form.collectionStartTime = record.collection_start_time;
+        
+        // 拆分收集时间为日期和时间
+        if (record.collection_start_time) {
+          const dateTime = new Date(record.collection_start_time);
+          form.collectionDate = dateTime.toISOString().slice(0, 10);
+          form.collectionTime = dateTime.toISOString().slice(11, 16);
+        }
+        
         form.quantity = record.quantity;
         form.recordId = record.id;
         
@@ -243,12 +272,24 @@ export default {
         
         // 设置图片预览
         if (record.photo_path) {
-          photoList.value = [
-            {
-              name: '现场照片',
-              url: `http://localhost:3000${record.photo_path}`
+          try {
+            // 尝试解析JSON格式的照片路径数组
+            const photoPaths = JSON.parse(record.photo_path);
+            if (Array.isArray(photoPaths)) {
+              photoList.value = photoPaths.map((path, index) => ({
+                name: `现场照片${index + 1}`,
+                url: `http://localhost:3000${path}`
+              }));
             }
-          ];
+          } catch (error) {
+            // 如果解析失败，可能是旧版本的单张照片格式
+            photoList.value = [
+              {
+                name: '现场照片',
+                url: `http://localhost:3000${record.photo_path}`
+              }
+            ];
+          }
         }
       } catch (error) {
         console.error('获取记录详情失败:', error);
@@ -257,8 +298,13 @@ export default {
     };
 
     // 处理照片变更
-    const handlePhotoChange = (file) => {
-      photoFile.value = file.raw;
+    const handlePhotoChange = (file, fileList) => {
+      photoFiles.value = fileList.map(f => f.raw).filter(f => f);
+    };
+
+    // 处理照片移除
+    const handlePhotoRemove = (file, fileList) => {
+      photoFiles.value = fileList.map(f => f.raw).filter(f => f);
     };
 
     // 提交表单
@@ -272,12 +318,20 @@ export default {
             formData.append('unitId', form.unitId);
             formData.append('wasteTypeId', form.wasteTypeId);
             formData.append('location', form.location);
-            formData.append('collectionStartTime', form.collectionStartTime);
+            
+            // 组合日期和时间，精确到分钟
+            const combinedDateTime = `${form.collectionDate} ${form.collectionTime}:00`;
+            formData.append('collectionStartTime', combinedDateTime);
             formData.append('quantity', form.quantity);
             formData.append('creatorId', form.creatorId);
             
-            if (photoFile.value) {
-              formData.append('photo', photoFile.value);
+            // 添加多张照片
+            if (photoFiles.value && photoFiles.value.length > 0) {
+              photoFiles.value.forEach(file => {
+                if (file) {
+                  formData.append('photos', file);
+                }
+              });
             }
             
             if (isNew.value) {
@@ -337,6 +391,7 @@ export default {
       isNew,
       isSuperAdmin,
       handlePhotoChange,
+      handlePhotoRemove,
       submitForm,
       goBack
     };
@@ -400,7 +455,7 @@ export default {
   width: 100%;
 }
 
-.photo-tip {
+.photo-tip, .time-tip {
   font-size: 12px;
   color: #999;
   margin-top: 5px;

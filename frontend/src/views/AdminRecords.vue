@@ -38,19 +38,44 @@
             <el-table-column prop="created_at" label="记录时间" width="160" />
             <el-table-column label="现场照片" width="100">
               <template #default="scope">
-                <el-image 
-                  v-if="scope.row.photo_path"
-                  :src="`http://localhost:3000${scope.row.photo_path}`"
-                  :preview-src-list="[`http://localhost:3000${scope.row.photo_path}`]"
-                  fit="cover"
-                  class="record-image"
-                >
-                  <template #error>
-                    <div class="image-error">
-                      <el-icon><picture-failed /></el-icon>
+                <div v-if="scope.row.photo_path">
+                  <template v-if="isJsonPhotoPath(scope.row.photo_path)">
+                    <!-- 多张照片显示 -->
+                    <el-image 
+                      v-for="(path, index) in parsePhotoPath(scope.row.photo_path)" 
+                      :key="index"
+                      :src="`http://localhost:3000${path}`"
+                      :preview-src-list="parsePhotoPath(scope.row.photo_path).map(p => `http://localhost:3000${p}`)"
+                      fit="cover"
+                      class="record-image"
+                      :style="{ margin: index > 0 ? '2px 0 0 0' : '0' }"
+                    >
+                      <template #error>
+                        <div class="image-error">
+                          <el-icon><picture-failed /></el-icon>
+                        </div>
+                      </template>
+                    </el-image>
+                    <div v-if="parsePhotoPath(scope.row.photo_path).length > 1" class="photo-count">
+                      {{ parsePhotoPath(scope.row.photo_path).length }}张
                     </div>
                   </template>
-                </el-image>
+                  <template v-else>
+                    <!-- 单张照片显示 (兼容旧版本) -->
+                    <el-image 
+                      :src="`http://localhost:3000${scope.row.photo_path}`"
+                      :preview-src-list="[`http://localhost:3000${scope.row.photo_path}`]"
+                      fit="cover"
+                      class="record-image"
+                    >
+                      <template #error>
+                        <div class="image-error">
+                          <el-icon><picture-failed /></el-icon>
+                        </div>
+                      </template>
+                    </el-image>
+                  </template>
+                </div>
                 <span v-else>无照片</span>
               </template>
             </el-table-column>
@@ -96,6 +121,25 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import axios from 'axios';
 import { Plus, Refresh, PictureFailed, User } from '@element-plus/icons-vue';
 import auth from '../store/auth';
+
+// 判断是否为JSON格式的照片路径
+const isJsonPhotoPath = (path) => {
+  try {
+    const parsed = JSON.parse(path);
+    return Array.isArray(parsed);
+  } catch (error) {
+    return false;
+  }
+};
+
+// 解析JSON格式的照片路径
+const parsePhotoPath = (path) => {
+  try {
+    return JSON.parse(path);
+  } catch (error) {
+    return [path];
+  }
+};
 
 export default {
   name: 'AdminRecordsView',
@@ -200,6 +244,8 @@ export default {
     return {
       records,
       loading,
+      isJsonPhotoPath,
+      parsePhotoPath,
       refreshRecords,
       addNewRecord,
       goToUserManagement,
@@ -262,6 +308,14 @@ export default {
   height: 50px;
   border-radius: 4px;
   cursor: pointer;
+  display: block;
+}
+
+.photo-count {
+  font-size: 12px;
+  color: #409EFF;
+  text-align: center;
+  margin-top: 2px;
 }
 
 .image-error {
