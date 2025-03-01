@@ -3,6 +3,7 @@ const cors = require('cors');
 const path = require('path');
 const multer = require('multer');
 const fs = require('fs');
+const mysql = require('mysql2/promise');
 
 // 创建Express应用
 const app = express();
@@ -40,38 +41,51 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
-// 数据库连接
-const dbPath = path.join(__dirname, '../db/waste_management.db');
-let db = null;
+// 数据库连接配置
+const dbConfig = {
+  host: 'localhost',
+  user: 'Xiangyu',
+  password: '990924',
+  database: 'waste_management',
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
+  multipleStatements: true // 允许执行多条SQL语句
+};
 
-// 验证数据库文件是否存在
-if (!fs.existsSync(dbPath)) {
-  console.error(`错误: 数据库文件不存在: ${dbPath}`);
-  console.log('请先运行 npm run init-db 完成数据库初始化');
-  process.exit(1);
+// 创建数据库连接池
+const pool = mysql.createPool(dbConfig);
+
+// 测试数据库连接
+async function testDatabaseConnection() {
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    console.log('成功连接到 MySQL 数据库');
+    
+    // 验证数据库表和数据
+    try {
+      const [rows] = await connection.query("SELECT count(*) as count FROM units");
+      console.log(`数据库内有 ${rows[0].count || 0} 个单位记录`);
+      if (rows[0].count === 0) {
+        console.log('警告: 数据库中没有单位数据, 请运行初始化脚本');
+      }
+    } catch (err) {
+      console.error('查询单位表失败, 表可能不存在:', err.message);
+      console.log('请运行数据库初始化脚本: npm run init-db');
+    }
+  } catch (error) {
+    console.error('数据库连接失败:', error.message);
+    console.log('请确保 MySQL 服务运行且配置正确');
+    // 不立即退出，允许重新初始化数据库
+    console.log('将继续启动服务器，请运行初始化脚本然后重试');
+  } finally {
+    if (connection) connection.release();
+  }
 }
 
-// 使用原生模块打开数据库文件
-const sqlite3 = require('sqlite3').verbose();
-db = new sqlite3.Database(dbPath, (err) => {
-  if (err) {
-    console.error('数据库连接失败:', err.message);
-    process.exit(1);
-  }
-  console.log('成功连接到 SQLite 数据库');
-  
-  // 验证数据库表和数据
-  db.get("SELECT count(*) as count FROM units", (err, row) => {
-    if (err) {
-      console.error('验证数据库失败:', err.message);
-    } else {
-      console.log(`数据库内有 ${row?.count || 0} 个单位记录`);
-      if ((row?.count || 0) === 0) {
-        console.log('警告: 数据库中没有单位数据, 请重新运行初始化');
-      }
-    }
-  });
-});
+// 启动时测试数据库连接
+testDatabaseConnection();
 
 // API路由
 
@@ -81,28 +95,30 @@ app.get('/api/test', (req, res) => {
 });
 
 // 用户登录
-app.post('/api/login', (req, res) => {
+app.post('/api/login', async (req, res) => {
   const { phone, password } = req.body;
   
   if (!phone) {
     return res.status(400).json({ error: '手机号是必填项' });
   }
 
-  // 查询用户
-  db.get(`SELECT u.*, r.name as role_name, un.name as unit_name 
-          FROM users u 
-          JOIN user_roles r ON u.role_id = r.id 
-          LEFT JOIN units un ON u.unit_id = un.id 
-          WHERE u.phone = ?`, 
-          [phone], (err, user) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
+  try {
+    // 查询用户
+    const [rows] = await pool.query(
+      `SELECT u.*, r.name as role_name, un.name as unit_name 
+       FROM users u 
+       JOIN user_roles r ON u.role_id = r.id 
+       LEFT JOIN units un ON u.unit_id = un.id 
+       WHERE u.phone = ?`, 
+      [phone]
+    );
 
     // 用户不存在
-    if (!user) {
+    if (rows.length === 0) {
       return res.status(401).json({ error: '用户不存在' });
     }
+
+    const user = rows[0];
 
     // 员工登录（仅需手机号）
     if (user.role_id === 1) {
@@ -135,27 +151,31 @@ app.post('/api/login', (req, res) => {
       unit_id: user.unit_id,
       unit_name: user.unit_name
     });
-  });
+  } catch (error) {
+    console.error('登录错误:', error);
+    res.status(500).json({ error: '服务器错误' });
+  }
 });
 
 // 根据用户ID获取用户信息
-app.get('/api/users/:id', (req, res) => {
+app.get('/api/users/:id', async (req, res) => {
   const { id } = req.params;
   
-  db.get(`SELECT u.id, u.username, u.phone, u.role_id, u.unit_id, r.name as role_name, un.name as unit_name 
-          FROM users u 
-          JOIN user_roles r ON u.role_id = r.id 
-          LEFT JOIN units un ON u.unit_id = un.id 
-          WHERE u.id = ?`, 
-          [id], (err, user) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
+  try {
+    const [rows] = await pool.query(
+      `SELECT u.id, u.username, u.phone, u.role_id, u.unit_id, r.name as role_name, un.name as unit_name 
+       FROM users u 
+       JOIN user_roles r ON u.role_id = r.id 
+       LEFT JOIN units un ON u.unit_id = un.id 
+       WHERE u.id = ?`, 
+      [id]
+    );
 
-    if (!user) {
+    if (rows.length === 0) {
       return res.status(404).json({ error: '用户不存在' });
     }
 
+    const user = rows[0];
     res.json({
       id: user.id,
       username: user.username,
@@ -165,93 +185,104 @@ app.get('/api/users/:id', (req, res) => {
       unit_id: user.unit_id,
       unit_name: user.unit_name
     });
-  });
+  } catch (error) {
+    console.error('获取用户信息错误:', error);
+    res.status(500).json({ error: '服务器错误' });
+  }
 });
 
 // 获取所有单位
-app.get('/api/units', (req, res) => {
-  db.all('SELECT * FROM units ORDER BY name', (err, rows) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
+app.get('/api/units', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT * FROM units ORDER BY name');
     res.json(rows);
-  });
+  } catch (error) {
+    console.error('获取单位列表错误:', error);
+    res.status(500).json({ error: '服务器错误' });
+  }
 });
 
 // 获取所有废物类型
-app.get('/api/waste-types', (req, res) => {
-  db.all('SELECT * FROM waste_types ORDER BY name', (err, rows) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
+app.get('/api/waste-types', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT * FROM waste_types ORDER BY name');
     res.json(rows);
-  });
+  } catch (error) {
+    console.error('获取废物类型错误:', error);
+    res.status(500).json({ error: '服务器错误' });
+  }
 });
 
 // 添加废物记录
-app.post('/api/waste-records', upload.single('photo'), (req, res) => {
+app.post('/api/waste-records', upload.single('photo'), async (req, res) => {
   const { unitId, wasteTypeId, location, collectionStartTime, quantity, creatorId } = req.body;
   
   if (!unitId || !wasteTypeId || !location || !collectionStartTime || !quantity) {
     return res.status(400).json({ error: '所有字段都是必填的' });
   }
   
-  const photoPath = req.file ? `/uploads/${req.file.filename}` : null;
-  const createdAt = new Date().toISOString();
-  
-  const sql = `INSERT INTO waste_records 
-              (unit_id, waste_type_id, location, collection_start_time, photo_path, quantity, created_at, creator_id) 
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
-  
-  db.run(sql, [unitId, wasteTypeId, location, collectionStartTime, photoPath, quantity, createdAt, creatorId || null], function(err) {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
+  try {
+    const photoPath = req.file ? `/uploads/${req.file.filename}` : null;
+    // 格式化日期为MySQL兼容的格式
+    const createdAt = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    
+    const [result] = await pool.query(
+      `INSERT INTO waste_records 
+       (unit_id, waste_type_id, location, collection_start_time, photo_path, quantity, created_at, creator_id) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [unitId, wasteTypeId, location, collectionStartTime, photoPath, quantity, createdAt, creatorId || null]
+    );
     
     res.status(201).json({
-      id: this.lastID,
+      id: result.insertId,
       message: '废物记录添加成功'
     });
-  });
+  } catch (error) {
+    console.error('添加废物记录错误:', error);
+    res.status(500).json({ error: '服务器错误' });
+  }
 });
 
 // 获取特定单位的废物记录
-app.get('/api/waste-records/:unitId', (req, res) => {
+app.get('/api/waste-records/:unitId', async (req, res) => {
   const { unitId } = req.params;
   
-  const sql = `SELECT wr.*, u.name as unit_name, wt.name as waste_type_name 
-               FROM waste_records wr
-               JOIN units u ON wr.unit_id = u.id
-               JOIN waste_types wt ON wr.waste_type_id = wt.id
-               WHERE wr.unit_id = ?
-               ORDER BY wr.created_at DESC`;
-  
-  db.all(sql, [unitId], (err, rows) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
+  try {
+    const [rows] = await pool.query(
+      `SELECT wr.*, u.name as unit_name, wt.name as waste_type_name 
+       FROM waste_records wr
+       JOIN units u ON wr.unit_id = u.id
+       JOIN waste_types wt ON wr.waste_type_id = wt.id
+       WHERE wr.unit_id = ?
+       ORDER BY wr.created_at DESC`,
+      [unitId]
+    );
+    
     res.json(rows);
-  });
+  } catch (error) {
+    console.error('获取单位废物记录错误:', error);
+    res.status(500).json({ error: '服务器错误' });
+  }
 });
 
 // 修改废物记录
-app.put('/api/waste-records/:id', upload.single('photo'), (req, res) => {
+app.put('/api/waste-records/:id', upload.single('photo'), async (req, res) => {
   const { id } = req.params;
-  const { unitId, wasteTypeId, location, collectionStartTime, quantity, userId } = req.body;
+  const { unitId, wasteTypeId, location, collectionStartTime, quantity } = req.body;
   
   if (!unitId || !wasteTypeId || !location || !collectionStartTime || !quantity) {
     return res.status(400).json({ error: '所有字段都是必填的' });
   }
   
-  // 验证记录存在性
-  db.get('SELECT * FROM waste_records WHERE id = ?', [id], (err, record) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
+  try {
+    // 验证记录存在性
+    const [rows] = await pool.query('SELECT * FROM waste_records WHERE id = ?', [id]);
     
-    if (!record) {
+    if (rows.length === 0) {
       return res.status(404).json({ error: '记录不存在' });
     }
+    
+    const record = rows[0];
     
     // 准备更新数据
     let photoPath = record.photo_path;
@@ -259,68 +290,66 @@ app.put('/api/waste-records/:id', upload.single('photo'), (req, res) => {
       photoPath = `/uploads/${req.file.filename}`;
     }
     
-    const sql = `UPDATE waste_records SET 
-                unit_id = ?, 
-                waste_type_id = ?, 
-                location = ?, 
-                collection_start_time = ?, 
-                photo_path = ?, 
-                quantity = ? 
-                WHERE id = ?`;
-    
-    db.run(sql, 
-      [unitId, wasteTypeId, location, collectionStartTime, photoPath, quantity, id], 
-      function(err) {
-        if (err) {
-          return res.status(500).json({ error: err.message });
-        }
-        
-        res.json({
-          id: parseInt(id),
-          message: '废物记录更新成功'
-        });
-      }
+    await pool.query(
+      `UPDATE waste_records SET 
+       unit_id = ?, 
+       waste_type_id = ?, 
+       location = ?, 
+       collection_start_time = ?, 
+       photo_path = ?, 
+       quantity = ? 
+       WHERE id = ?`,
+      [unitId, wasteTypeId, location, collectionStartTime, photoPath, quantity, id]
     );
-  });
+    
+    res.json({
+      id: parseInt(id),
+      message: '废物记录更新成功'
+    });
+  } catch (error) {
+    console.error('更新废物记录错误:', error);
+    res.status(500).json({ error: '服务器错误' });
+  }
 });
 
 // 获取特定废物记录详情
-app.get('/api/waste-records/detail/:id', (req, res) => {
+app.get('/api/waste-records/detail/:id', async (req, res) => {
   const { id } = req.params;
   
-  const sql = `SELECT wr.*, u.name as unit_name, wt.name as waste_type_name 
-               FROM waste_records wr
-               JOIN units u ON wr.unit_id = u.id
-               JOIN waste_types wt ON wr.waste_type_id = wt.id
-               WHERE wr.id = ?`;
-  
-  db.get(sql, [id], (err, record) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
+  try {
+    const [rows] = await pool.query(
+      `SELECT wr.*, u.name as unit_name, wt.name as waste_type_name 
+       FROM waste_records wr
+       JOIN units u ON wr.unit_id = u.id
+       JOIN waste_types wt ON wr.waste_type_id = wt.id
+       WHERE wr.id = ?`,
+      [id]
+    );
     
-    if (!record) {
+    if (rows.length === 0) {
       return res.status(404).json({ error: '记录不存在' });
     }
     
-    res.json(record);
-  });
+    res.json(rows[0]);
+  } catch (error) {
+    console.error('获取废物记录详情错误:', error);
+    res.status(500).json({ error: '服务器错误' });
+  }
 });
 
 // 获取用户创建的废物记录
-app.get('/api/waste-records/user/:userId', (req, res) => {
+app.get('/api/waste-records/user/:userId', async (req, res) => {
   const { userId } = req.params;
   
-  // 获取用户信息以确定其权限
-  db.get('SELECT * FROM users WHERE id = ?', [userId], (err, user) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
+  try {
+    // 获取用户信息以确定其权限
+    const [users] = await pool.query('SELECT * FROM users WHERE id = ?', [userId]);
     
-    if (!user) {
+    if (users.length === 0) {
       return res.status(404).json({ error: '用户不存在' });
     }
     
+    const user = users[0];
     let sql;
     let params;
     
@@ -353,44 +382,45 @@ app.get('/api/waste-records/user/:userId', (req, res) => {
       params = [user.unit_id, userId];
     }
     
-    db.all(sql, params, (err, rows) => {
-      if (err) {
-        return res.status(500).json({ error: err.message });
-      }
-      res.json(rows);
-    });
-  });
+    const [rows] = await pool.query(sql, params);
+    res.json(rows);
+  } catch (error) {
+    console.error('获取用户废物记录错误:', error);
+    res.status(500).json({ error: '服务器错误' });
+  }
 });
 
 // 获取所有废物记录（用于管理员查看）
-app.get('/api/waste-records', (req, res) => {
-  const sql = `SELECT wr.*, u.name as unit_name, wt.name as waste_type_name 
-               FROM waste_records wr
-               JOIN units u ON wr.unit_id = u.id
-               JOIN waste_types wt ON wr.waste_type_id = wt.id
-               ORDER BY wr.created_at DESC`;
-  
-  db.all(sql, [], (err, rows) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
+app.get('/api/waste-records', async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT wr.*, u.name as unit_name, wt.name as waste_type_name 
+       FROM waste_records wr
+       JOIN units u ON wr.unit_id = u.id
+       JOIN waste_types wt ON wr.waste_type_id = wt.id
+       ORDER BY wr.created_at DESC`
+    );
+    
     res.json(rows);
-  });
+  } catch (error) {
+    console.error('获取所有废物记录错误:', error);
+    res.status(500).json({ error: '服务器错误' });
+  }
 });
 
 // 删除废物记录
-app.delete('/api/waste-records/:id', (req, res) => {
+app.delete('/api/waste-records/:id', async (req, res) => {
   const { id } = req.params;
   
-  // 验证记录是否存在
-  db.get('SELECT * FROM waste_records WHERE id = ?', [id], (err, record) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
+  try {
+    // 验证记录是否存在
+    const [rows] = await pool.query('SELECT * FROM waste_records WHERE id = ?', [id]);
     
-    if (!record) {
+    if (rows.length === 0) {
       return res.status(404).json({ error: '记录不存在' });
     }
+    
+    const record = rows[0];
     
     // 如果记录有照片，先删除照片文件
     if (record.photo_path) {
@@ -407,17 +437,16 @@ app.delete('/api/waste-records/:id', (req, res) => {
     }
     
     // 删除记录
-    db.run('DELETE FROM waste_records WHERE id = ?', [id], function(err) {
-      if (err) {
-        return res.status(500).json({ error: err.message });
-      }
-      
-      res.json({
-        message: '废物记录删除成功',
-        id: parseInt(id)
-      });
+    await pool.query('DELETE FROM waste_records WHERE id = ?', [id]);
+    
+    res.json({
+      message: '废物记录删除成功',
+      id: parseInt(id)
     });
-  });
+  } catch (error) {
+    console.error('删除废物记录错误:', error);
+    res.status(500).json({ error: '服务器错误' });
+  }
 });
 
 // 启动服务器
@@ -425,8 +454,13 @@ app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
 
-// 处理应用关闭时关闭数据库连接
-process.on('SIGINT', () => {
-  db.close();
+// 处理应用关闭
+process.on('SIGINT', async () => {
+  try {
+    await pool.end();
+    console.log('数据库连接池已关闭');
+  } catch (error) {
+    console.error('关闭数据库连接池错误:', error);
+  }
   process.exit(0);
 });

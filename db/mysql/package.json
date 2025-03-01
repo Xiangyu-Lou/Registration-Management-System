@@ -1,0 +1,9 @@
+{
+  "name": "hazardous-waste-management-db-init",
+  "version": "1.0.0",
+  "description": "Database initialization for hazardous waste management system",
+  "main": "init_db.js",
+  "dependencies": {
+    "mysql2": "^3.6.1"
+  }
+}
