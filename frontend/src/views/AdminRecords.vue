@@ -17,14 +17,124 @@
         </el-button>
       </div>
       
+      <!-- 筛选面板 -->
+      <el-card class="filter-card">
+        <div class="filter-header">
+          <h3>筛选条件</h3>
+          <el-button type="primary" link @click="showFilterPanel = !showFilterPanel">
+            {{ showFilterPanel ? '收起' : '展开' }} 
+            <el-icon v-if="!showFilterPanel"><arrow-down /></el-icon>
+            <el-icon v-else><arrow-up /></el-icon>
+          </el-button>
+        </div>
+        
+        <div v-show="showFilterPanel" class="filter-form-container">
+          <el-form :model="filterForm" label-width="100px" class="filter-form">
+            <el-row :gutter="20">
+              <!-- 所属单位（超级管理员特有） -->
+              <el-col :span="12">
+                <el-form-item label="所属单位">
+                  <el-select v-model="filterForm.unitId" placeholder="选择单位" style="width: 100%" clearable>
+                    <el-option 
+                      v-for="unit in units" 
+                      :key="unit.id" 
+                      :label="unit.name" 
+                      :value="unit.id" 
+                    />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+              
+              <!-- 收集时间范围 -->
+              <el-col :span="12">
+                <el-form-item label="收集时间">
+                  <el-date-picker
+                    v-model="filterForm.dateRange"
+                    type="daterange"
+                    range-separator="至"
+                    start-placeholder="开始日期"
+                    end-placeholder="结束日期"
+                    format="YYYY-MM-DD"
+                    value-format="YYYY-MM-DD"
+                    style="width: 100%"
+                  />
+                </el-form-item>
+              </el-col>
+            </el-row>
+            
+            <el-row :gutter="20">
+              <!-- 废物类型 -->
+              <el-col :span="8">
+                <el-form-item label="废物类型">
+                  <el-select v-model="filterForm.wasteTypeId" placeholder="选择废物类型" style="width: 100%" clearable>
+                    <el-option 
+                      v-for="type in wasteTypes" 
+                      :key="type.id" 
+                      :label="type.name" 
+                      :value="type.id" 
+                    />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+              
+              <!-- 数量范围 -->
+              <el-col :span="8">
+                <el-form-item label="数量范围(吨)">
+                  <div class="quantity-range">
+                    <el-input-number 
+                      v-model="filterForm.minQuantity" 
+                      :min="0"
+                      :precision="3"
+                      :step="0.001"
+                      placeholder="最小值"
+                      style="width: 47%"
+                    />
+                    <span class="range-separator">至</span>
+                    <el-input-number 
+                      v-model="filterForm.maxQuantity" 
+                      :min="filterForm.minQuantity || 0"
+                      :precision="3"
+                      :step="0.001"
+                      placeholder="最大值"
+                      style="width: 47%"
+                    />
+                  </div>
+                </el-form-item>
+              </el-col>
+              
+              <!-- 产生地点 -->
+              <el-col :span="8">
+                <el-form-item label="产生地点">
+                  <el-input 
+                    v-model="filterForm.location" 
+                    placeholder="输入地点关键词搜索" 
+                    clearable
+                  />
+                </el-form-item>
+              </el-col>
+            </el-row>
+            
+            <div class="filter-actions">
+              <el-button type="primary" @click="applyFilter">筛选</el-button>
+              <el-button @click="resetFilter">重置</el-button>
+            </div>
+          </el-form>
+        </div>
+      </el-card>
+      
       <div class="records-wrapper">
         <el-card class="records-card">
           <div class="card-header">
             <h3>所有废物记录</h3>
+            <div class="card-actions">
+              <el-button type="warning" @click="exportRecords">
+                <el-icon><download /></el-icon> 导出记录
+              </el-button>
+            </div>
           </div>
           
           <el-table 
-            :data="records" 
+            :data="filteredRecords" 
             style="width: 100%" 
             border 
             v-loading="loading"
@@ -115,12 +225,13 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import axios from 'axios';
-import { Plus, Refresh, PictureFailed, User } from '@element-plus/icons-vue';
+import { Plus, Refresh, PictureFailed, User, ArrowDown, ArrowUp, Download } from '@element-plus/icons-vue';
 import auth from '../store/auth';
+import { exportToExcel } from '../utils/exportUtils';
 
 // 判断是否为JSON格式的照片路径
 const isJsonPhotoPath = (path) => {
@@ -147,12 +258,86 @@ export default {
     Plus,
     Refresh,
     PictureFailed,
-    User
+    User,
+    ArrowDown,
+    ArrowUp,
+    Download
   },
   setup() {
     const router = useRouter();
     const records = ref([]);
     const loading = ref(false);
+    const units = ref([]);
+    const wasteTypes = ref([]);
+    const showFilterPanel = ref(false);
+    
+    // 筛选表单
+    const filterForm = reactive({
+      unitId: null,
+      dateRange: null,
+      wasteTypeId: null,
+      minQuantity: null,
+      maxQuantity: null,
+      location: ''
+    });
+    
+    // 过滤后的记录
+    const filteredRecords = computed(() => {
+      return records.value.filter(record => {
+        // 检查所属单位
+        if (filterForm.unitId && record.unit_id !== filterForm.unitId) {
+          return false;
+        }
+        
+        // 检查废物类型
+        if (filterForm.wasteTypeId && record.waste_type_id !== filterForm.wasteTypeId) {
+          return false;
+        }
+        
+        // 检查数量范围
+        if (filterForm.minQuantity !== null && parseFloat(record.quantity) < filterForm.minQuantity) {
+          return false;
+        }
+        if (filterForm.maxQuantity !== null && parseFloat(record.quantity) > filterForm.maxQuantity) {
+          return false;
+        }
+        
+        // 检查地点关键词
+        if (filterForm.location && !record.location.toLowerCase().includes(filterForm.location.toLowerCase())) {
+          return false;
+        }
+        
+        // 检查日期范围
+        if (filterForm.dateRange && filterForm.dateRange.length === 2) {
+          const startDate = new Date(filterForm.dateRange[0]);
+          // 将结束日期设置为当天的23:59:59，以包含整天
+          const endDate = new Date(filterForm.dateRange[1]);
+          endDate.setHours(23, 59, 59, 999);
+          
+          // 解析记录中的收集开始时间
+          if (record.collection_start_time) {
+            // 处理已格式化的日期时间字符串
+            const recordDate = parseFormattedDateTime(record.collection_start_time);
+            if (recordDate < startDate || recordDate > endDate) {
+              return false;
+            }
+          } else {
+            // 如果记录没有收集时间，并且筛选设置了日期范围，则排除该记录
+            return false;
+          }
+        }
+        
+        return true;
+      });
+    });
+    
+    // 解析已格式化的日期时间字符串
+    const parseFormattedDateTime = (formattedDateTime) => {
+      // 假设格式是 "2025-03-01 14:30:00"
+      // 移除所有非数字和连字符、冒号的字符
+      const cleanedStr = formattedDateTime.replace(/[^0-9\-: ]/g, '');
+      return new Date(cleanedStr);
+    };
 
     onMounted(async () => {
       // 验证用户是否为超级管理员
@@ -162,8 +347,34 @@ export default {
         return;
       }
       
-      await fetchRecords();
+      await Promise.all([
+        fetchUnits(),
+        fetchWasteTypes(),
+        fetchRecords()
+      ]);
     });
+    
+    // 获取单位列表
+    const fetchUnits = async () => {
+      try {
+        const response = await axios.get('http://localhost:3000/api/units');
+        units.value = response.data;
+      } catch (error) {
+        console.error('获取单位列表失败:', error);
+        ElMessage.error('获取单位列表失败');
+      }
+    };
+    
+    // 获取废物类型列表
+    const fetchWasteTypes = async () => {
+      try {
+        const response = await axios.get('http://localhost:3000/api/waste-types');
+        wasteTypes.value = response.data;
+      } catch (error) {
+        console.error('获取废物类型列表失败:', error);
+        ElMessage.error('获取废物类型列表失败');
+      }
+    };
 
     const fetchRecords = async () => {
       loading.value = true;
@@ -215,6 +426,63 @@ export default {
       router.push(`/record/${recordId}`);
     };
 
+    // 应用筛选
+    const applyFilter = () => {
+      // 筛选已在 computed 属性中处理
+      ElMessage.success('筛选已应用');
+    };
+    
+    // 重置筛选
+    const resetFilter = () => {
+      filterForm.unitId = null;
+      filterForm.dateRange = null;
+      filterForm.wasteTypeId = null;
+      filterForm.minQuantity = null;
+      filterForm.maxQuantity = null;
+      filterForm.location = '';
+      ElMessage.info('筛选条件已重置');
+    };
+    
+    // 导出筛选后的记录为Excel
+    const exportRecords = () => {
+      if (filteredRecords.value.length === 0) {
+        ElMessage.warning('没有可导出的记录');
+        return;
+      }
+      
+      // 定义导出列
+      const exportHeaders = [
+        { title: '单位', field: 'unit_name', width: 15 },
+        { title: '废物类型', field: 'waste_type_name', width: 15 },
+        { title: '产生地点', field: 'location', width: 20 },
+        { title: '收集开始时间', field: 'collection_start_time', width: 20, type: 'datetime' },
+        { title: '数量(吨)', field: 'quantity', width: 12, type: 'number' },
+        { title: '记录时间', field: 'created_at', width: 20, type: 'datetime' }
+      ];
+      
+      // 构建文件名
+      let fileName = '全部废物记录';
+      
+      // 添加筛选条件到文件名
+      if (filterForm.unitId) {
+        const unit = units.value.find(u => u.id === filterForm.unitId);
+        if (unit) {
+          fileName = `${unit.name}_废物记录`;
+        }
+      }
+      
+      if (filterForm.wasteTypeId) {
+        const wasteType = wasteTypes.value.find(t => t.id === filterForm.wasteTypeId);
+        if (wasteType) {
+          fileName += `_${wasteType.name}`;
+        }
+      }
+      
+      // 导出数据
+      exportToExcel(filteredRecords.value, fileName, exportHeaders);
+      ElMessage.success('导出成功');
+    };
+    
     // 确认删除记录
     const confirmDelete = (record) => {
       ElMessageBox.confirm(
@@ -243,14 +511,24 @@ export default {
 
     return {
       records,
+      filteredRecords,
       loading,
+      units,
+      wasteTypes,
       isJsonPhotoPath,
       parsePhotoPath,
       refreshRecords,
       addNewRecord,
       goToUserManagement,
       editRecord,
-      confirmDelete
+      confirmDelete,
+      // 筛选相关
+      showFilterPanel,
+      filterForm,
+      applyFilter,
+      resetFilter,
+      // 导出相关
+      exportRecords
     };
   }
 };
@@ -286,6 +564,43 @@ export default {
   gap: 10px;
 }
 
+.filter-card {
+  margin-bottom: 20px;
+}
+
+.filter-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.filter-header h3 {
+  margin: 0;
+  color: #333;
+}
+
+.filter-form-container {
+  transition: all 0.3s ease;
+}
+
+.quantity-range {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.range-separator {
+  margin: 0 5px;
+}
+
+.filter-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+  gap: 10px;
+}
+
 .records-wrapper {
   margin-top: 20px;
 }
@@ -295,6 +610,9 @@ export default {
 }
 
 .card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 20px;
 }
 
