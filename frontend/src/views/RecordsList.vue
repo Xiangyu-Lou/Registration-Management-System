@@ -702,3 +702,47 @@ export default {
   color: #666;
 }
 </style>
+
+<style>
+/* 修复Element Plus图片预览组件的z-index问题 */
+.el-image-viewer__wrapper {
+  z-index: 2147483647 !important; /* 使用最大可能的z-index值 */
+  position: fixed !important;
+}
+
+/* 确保图片预览的遮罩层也在最上层 */
+.el-image-viewer__mask {
+  z-index: 2147483646 !important;
+  position: fixed !important;
+}
+
+/* 确保图片预览的操作按钮在最上层 */
+.el-image-viewer__btn {
+  z-index: 2147483647 !important;
+  position: fixed !important;
+}
+
+/* 确保图片预览的关闭按钮在最上层 */
+.el-image-viewer__close {
+  z-index: 2147483647 !important;
+  position: fixed !important;
+}
+
+/* 确保图片预览的图片在最上层 */
+.el-image-viewer__img {
+  z-index: 2147483646 !important;
+  position: relative !important;
+}
+
+/* 确保图片预览的操作栏在最上层 */
+.el-image-viewer__actions {
+  z-index: 2147483647 !important;
+  position: fixed !important;
+}
+
+/* 确保图片预览的缩放按钮在最上层 */
+.el-image-viewer__actions__inner {
+  z-index: 2147483647 !important;
+  position: relative !important;
+}
+</style>

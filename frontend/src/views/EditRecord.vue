@@ -95,10 +95,19 @@
             :limit="10"
             multiple
             list-type="picture-card"
+            :on-preview="handlePictureCardPreview"
           >
             <el-icon><plus /></el-icon>
           </el-upload>
           <div class="photo-tip">请上传废物现场照片（最多10张）</div>
+          
+          <!-- 添加独立的图片预览组件 -->
+          <el-image-viewer
+            v-if="showViewer"
+            :url-list="previewImages"
+            :initial-index="previewIndex"
+            @close="closeViewer"
+          />
         </el-form-item>
 
         <el-form-item>
@@ -117,7 +126,7 @@
 <script>
 import { ref, reactive, onMounted, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { ElMessage } from 'element-plus';
+import { ElMessage, ElImageViewer } from 'element-plus';
 import httpService from '../config/httpService';
 import apiConfig from '../config/api';
 import { ArrowLeft, Plus, Clock } from '@element-plus/icons-vue';
@@ -128,7 +137,8 @@ export default {
   components: {
     ArrowLeft,
     Plus,
-    Clock
+    Clock,
+    ElImageViewer
   },
   setup() {
     const router = useRouter();
@@ -141,6 +151,9 @@ export default {
     const units = ref([]);
     const photoFiles = ref([]);
     const photoList = ref([]);
+    const previewImages = ref([]);
+    const showViewer = ref(false);
+    const previewIndex = ref(0);
 
     // 确定是新增还是编辑
     const isNew = computed(() => !route.params.id || route.params.id === 'new');
@@ -281,6 +294,8 @@ export default {
                 name: `现场照片${index + 1}`,
                 url: `${apiConfig.baseURL}${path}`
               }));
+              // 更新预览图片列表
+              previewImages.value = photoList.value.map(item => item.url);
             }
           } catch (error) {
             // 如果解析失败，可能是旧版本的单张照片格式
@@ -290,6 +305,8 @@ export default {
                 url: `${apiConfig.baseURL}${record.photo_path}`
               }
             ];
+            // 更新预览图片列表
+            previewImages.value = [`${apiConfig.baseURL}${record.photo_path}`];
           }
         }
       } catch (error) {
@@ -301,11 +318,49 @@ export default {
     // 处理照片变更
     const handlePhotoChange = (file, fileList) => {
       photoFiles.value = fileList.map(f => f.raw).filter(f => f);
+      // 更新预览图片列表
+      updatePreviewImages(fileList);
     };
 
     // 处理照片移除
     const handlePhotoRemove = (file, fileList) => {
       photoFiles.value = fileList.map(f => f.raw).filter(f => f);
+      // 更新预览图片列表
+      updatePreviewImages(fileList);
+    };
+
+    // 更新预览图片列表
+    const updatePreviewImages = (fileList) => {
+      previewImages.value = fileList.map(file => {
+        if (file.url) {
+          return file.url;
+        } else if (file.raw) {
+          return URL.createObjectURL(file.raw);
+        }
+        return '';
+      }).filter(url => url);
+    };
+
+    // 处理图片预览
+    const handlePictureCardPreview = (file) => {
+      // 找到当前图片在预览列表中的索引
+      const index = previewImages.value.findIndex(url => {
+        return url === file.url || (file.raw && url === URL.createObjectURL(file.raw));
+      });
+      
+      if (index !== -1) {
+        previewIndex.value = index;
+      } else {
+        previewIndex.value = 0;
+      }
+      
+      // 显示图片预览器
+      showViewer.value = true;
+    };
+    
+    // 关闭图片预览
+    const closeViewer = () => {
+      showViewer.value = false;
     };
 
     // 提交表单
@@ -383,10 +438,15 @@ export default {
       wasteTypes,
       units,
       photoList,
+      previewImages,
+      showViewer,
+      previewIndex,
       isNew,
       isSuperAdmin,
       handlePhotoChange,
       handlePhotoRemove,
+      handlePictureCardPreview,
+      closeViewer,
       submitForm,
       goBack
     };
@@ -461,5 +521,49 @@ export default {
   padding: 15px;
   text-align: center;
   color: #666;
+}
+</style>
+
+<style>
+/* 修复Element Plus图片预览组件的z-index问题 */
+.el-image-viewer__wrapper {
+  z-index: 2147483647 !important; /* 使用最大可能的z-index值 */
+  position: fixed !important;
+}
+
+/* 确保图片预览的遮罩层也在最上层 */
+.el-image-viewer__mask {
+  z-index: 2147483646 !important;
+  position: fixed !important;
+}
+
+/* 确保图片预览的操作按钮在最上层 */
+.el-image-viewer__btn {
+  z-index: 2147483647 !important;
+  position: fixed !important;
+}
+
+/* 确保图片预览的关闭按钮在最上层 */
+.el-image-viewer__close {
+  z-index: 2147483647 !important;
+  position: fixed !important;
+}
+
+/* 确保图片预览的图片在最上层 */
+.el-image-viewer__img {
+  z-index: 2147483646 !important;
+  position: relative !important;
+}
+
+/* 确保图片预览的操作栏在最上层 */
+.el-image-viewer__actions {
+  z-index: 2147483647 !important;
+  position: fixed !important;
+}
+
+/* 确保图片预览的缩放按钮在最上层 */
+.el-image-viewer__actions__inner {
+  z-index: 2147483647 !important;
+  position: relative !important;
 }
 </style>
