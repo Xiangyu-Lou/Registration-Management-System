@@ -108,7 +108,8 @@
 import { ref, reactive, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
-import axios from 'axios';
+import httpService from '../config/httpService';
+import apiConfig from '../config/api';
 import { ArrowLeft, Document, Plus, Clock } from '@element-plus/icons-vue';
 import auth from '../store/auth';
 
@@ -175,7 +176,7 @@ export default {
 
     const fetchUnitName = async () => {
       try {
-        const response = await axios.get(`http://localhost:3000/api/units`);
+        const response = await httpService.get(apiConfig.endpoints.units);
         const unit = response.data.find(u => u.id === parseInt(props.id));
         if (unit) {
           unitName.value = unit.name;
@@ -188,7 +189,7 @@ export default {
 
     const fetchWasteTypes = async () => {
       try {
-        const response = await axios.get('http://localhost:3000/api/waste-types');
+        const response = await httpService.get(apiConfig.endpoints.wasteTypes);
         wasteTypes.value = response.data;
       } catch (error) {
         console.error('Error fetching waste types:', error);
@@ -229,11 +230,7 @@ export default {
               });
             }
 
-            await axios.post('http://localhost:3000/api/waste-records', formData, {
-              headers: {
-                'Content-Type': 'multipart/form-data'
-              }
-            });
+            await httpService.postForm(apiConfig.endpoints.wasteRecords, formData);
 
             ElMessage.success('废物记录提交成功');
             resetForm();

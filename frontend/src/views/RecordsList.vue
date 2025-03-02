@@ -53,8 +53,8 @@
                     <el-image 
                       v-for="(path, index) in parsePhotoPath(scope.row.photo_path)" 
                       :key="index"
-                      :src="`http://localhost:3000${path}`"
-                      :preview-src-list="parsePhotoPath(scope.row.photo_path).map(p => `http://localhost:3000${p}`)"
+                      :src="`${apiConfig.baseURL}${path}`"
+                      :preview-src-list="parsePhotoPath(scope.row.photo_path).map(p => `${apiConfig.baseURL}${p}`)"
                       fit="cover"
                       class="record-image"
                       :style="{ margin: index > 0 ? '2px 0 0 0' : '0' }"
@@ -72,8 +72,8 @@
                   <template v-else>
                     <!-- 单张照片显示 (兼容旧版本) -->
                     <el-image 
-                      :src="`http://localhost:3000${scope.row.photo_path}`"
-                      :preview-src-list="[`http://localhost:3000${scope.row.photo_path}`]"
+                      :src="`${apiConfig.baseURL}${scope.row.photo_path}`"
+                      :preview-src-list="[`${apiConfig.baseURL}${scope.row.photo_path}`]"
                       fit="cover"
                       class="record-image"
                     >
@@ -129,7 +129,8 @@
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import axios from 'axios';
+import httpService from '../config/httpService';
+import apiConfig from '../config/api';
 import { ArrowLeft, Home, Refresh, PictureFailed, Plus, User } from '@element-plus/icons-vue';
 import auth from '../store/auth';
 
@@ -191,7 +192,7 @@ export default {
 
     const fetchUnitName = async () => {
       try {
-        const response = await axios.get(`http://localhost:3000/api/units`);
+        const response = await httpService.get(apiConfig.endpoints.units);
         const unit = response.data.find(u => u.id === parseInt(props.unitId));
         if (unit) {
           unitName.value = unit.name;
@@ -206,7 +207,7 @@ export default {
       loading.value = true;
       try {
         // 使用用户ID获取相应权限的记录
-        const response = await axios.get(`http://localhost:3000/api/waste-records/user/${auth.state.user.id}`);
+        const response = await httpService.get(`${apiConfig.endpoints.wasteRecords}/user/${auth.state.user.id}`);
         records.value = response.data;
         
         // 格式化日期
@@ -297,7 +298,7 @@ export default {
       )
         .then(async () => {
           try {
-            await axios.delete(`http://localhost:3000/api/waste-records/${record.id}`);
+            await httpService.delete(`${apiConfig.endpoints.wasteRecords}/${record.id}`);
             ElMessage.success('删除成功');
             await fetchRecords();
           } catch (error) {

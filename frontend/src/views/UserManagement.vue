@@ -125,7 +125,8 @@
 import { ref, reactive, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
-import axios from 'axios';
+import httpService from '../config/httpService';
+import apiConfig from '../config/api';
 import { ArrowLeft, Plus } from '@element-plus/icons-vue';
 import auth from '../store/auth';
 
@@ -201,10 +202,10 @@ export default {
         let response;
         if (isSuperAdmin.value) {
           // 超级管理员获取所有用户
-          response = await axios.get('http://localhost:3000/api/users');
+          response = await httpService.get(apiConfig.endpoints.users);
         } else {
           // 单位管理员只获取本单位员工
-          response = await axios.get(`http://localhost:3000/api/units/${currentUnitId.value}/users`);
+          response = await httpService.get(`${apiConfig.endpoints.units}/${currentUnitId.value}/users`);
         }
         users.value = response.data;
       } catch (error) {
@@ -218,7 +219,7 @@ export default {
     // 获取单位列表
     const fetchUnits = async () => {
       try {
-        const response = await axios.get('http://localhost:3000/api/units');
+        const response = await httpService.get(apiConfig.endpoints.units);
         units.value = response.data;
       } catch (error) {
         console.error('Error fetching units:', error);
@@ -253,7 +254,7 @@ export default {
     // 处理删除
     const handleDelete = async (row) => {
       try {
-        await axios.delete(`http://localhost:3000/api/users/${row.id}`);
+        await httpService.delete(`${apiConfig.endpoints.users}/${row.id}`);
         ElMessage.success('用户删除成功');
         fetchUsers();
       } catch (error) {
@@ -299,11 +300,11 @@ export default {
             
             if (isEdit.value) {
               // 更新用户
-              await axios.put(`http://localhost:3000/api/users/${form.id}`, userData);
+              await httpService.put(`${apiConfig.endpoints.users}/${form.id}`, userData);
               ElMessage.success('用户更新成功');
             } else {
               // 添加用户
-              await axios.post('http://localhost:3000/api/users', userData);
+              await httpService.post(apiConfig.endpoints.users, userData);
               ElMessage.success('用户添加成功');
             }
             

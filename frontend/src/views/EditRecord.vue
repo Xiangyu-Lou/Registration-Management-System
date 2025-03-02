@@ -118,7 +118,8 @@
 import { ref, reactive, onMounted, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { ElMessage } from 'element-plus';
-import axios from 'axios';
+import httpService from '../config/httpService';
+import apiConfig from '../config/api';
 import { ArrowLeft, Plus, Clock } from '@element-plus/icons-vue';
 import auth from '../store/auth';
 
@@ -214,7 +215,7 @@ export default {
     // 获取单位列表
     const fetchUnits = async () => {
       try {
-        const response = await axios.get('http://localhost:3000/api/units');
+        const response = await httpService.get(apiConfig.endpoints.units);
         units.value = response.data;
       } catch (error) {
         console.error('获取单位列表失败:', error);
@@ -225,7 +226,7 @@ export default {
     // 获取单位名称
     const fetchUnitName = async (unitId) => {
       try {
-        const response = await axios.get(`http://localhost:3000/api/units`);
+        const response = await httpService.get(apiConfig.endpoints.units);
         const unit = response.data.find(u => u.id === parseInt(unitId));
         if (unit) {
           unitName.value = unit.name;
@@ -238,7 +239,7 @@ export default {
     // 获取废物类型
     const fetchWasteTypes = async () => {
       try {
-        const response = await axios.get('http://localhost:3000/api/waste-types');
+        const response = await httpService.get(apiConfig.endpoints.wasteTypes);
         wasteTypes.value = response.data;
       } catch (error) {
         console.error('获取废物类型失败:', error);
@@ -249,7 +250,7 @@ export default {
     // 获取记录详情
     const fetchRecordDetails = async (recordId) => {
       try {
-        const response = await axios.get(`http://localhost:3000/api/waste-records/detail/${recordId}`);
+        const response = await httpService.get(`${apiConfig.endpoints.wasteRecords}/detail/${recordId}`);
         const record = response.data;
         
         // 更新表单数据
@@ -278,7 +279,7 @@ export default {
             if (Array.isArray(photoPaths)) {
               photoList.value = photoPaths.map((path, index) => ({
                 name: `现场照片${index + 1}`,
-                url: `http://localhost:3000${path}`
+                url: `${apiConfig.baseURL}${path}`
               }));
             }
           } catch (error) {
@@ -286,7 +287,7 @@ export default {
             photoList.value = [
               {
                 name: '现场照片',
-                url: `http://localhost:3000${record.photo_path}`
+                url: `${apiConfig.baseURL}${record.photo_path}`
               }
             ];
           }
@@ -336,19 +337,11 @@ export default {
             
             if (isNew.value) {
               // 新增记录
-              await axios.post('http://localhost:3000/api/waste-records', formData, {
-                headers: {
-                  'Content-Type': 'multipart/form-data'
-                }
-              });
+              await httpService.postForm(apiConfig.endpoints.wasteRecords, formData);
               ElMessage.success('废物记录添加成功');
             } else {
               // 更新记录
-              await axios.put(`http://localhost:3000/api/waste-records/${form.recordId}`, formData, {
-                headers: {
-                  'Content-Type': 'multipart/form-data'
-                }
-              });
+              await httpService.postForm(`${apiConfig.endpoints.wasteRecords}/${form.recordId}`, formData);
               ElMessage.success('废物记录更新成功');
             }
             

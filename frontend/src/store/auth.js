@@ -1,5 +1,6 @@
 import { reactive } from 'vue';
-import axios from 'axios';
+import httpService from '../config/httpService';
+import apiConfig from '../config/api';
 
 // 初始化状态
 const defaultState = {
@@ -50,7 +51,7 @@ const login = async (phone, password) => {
     }
     
     console.log('发送登录请求，数据:', postData);
-    const response = await axios.post('http://localhost:3000/api/login', postData);
+    const response = await httpService.post(apiConfig.endpoints.login, postData);
     console.log('登录请求成功响应:', response.data);
 
     const user = response.data;
