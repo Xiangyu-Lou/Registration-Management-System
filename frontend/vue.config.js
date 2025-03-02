@@ -2,11 +2,12 @@ const { defineConfig } = require('@vue/cli-service')
 
 module.exports = defineConfig({
   transpileDependencies: true,
-  // 将打包后的资源指向相对路径
-  publicPath: './',
+  // 使用绝对路径，确保路由正常工作
+  publicPath: '/',
   // 开发服务器配置
   devServer: {
     port: 8080,
+    historyApiFallback: true,
     proxy: {
       '/api': {
         target: 'http://localhost:3000',

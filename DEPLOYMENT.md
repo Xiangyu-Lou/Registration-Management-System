@@ -4,7 +4,7 @@
 
 ## 前提条件
 
-- 一台运行 Linux (如 Ubuntu/CentOS) 的云服务器
+- 一台运行 Linux 服务器
 - 已安装 Node.js (推荐v14+) 和 npm
 - 已安装 MySQL 数据库
 - 已安装 Nginx 或其他 Web 服务器
@@ -69,7 +69,7 @@ cd /var/www/hazardous-waste-management-system/frontend
 npm install
 
 # 初始化数据库
-cd /var/www/hazardous-waste-management-system/backend
+cd /var/www/Hazardous-waste-management-system/backend
 npm run init-db
 ```
 
@@ -87,7 +87,7 @@ npm run build
 创建一个Nginx配置文件：
 
 ```bash
-sudo nano /etc/nginx/sites-available/hazardous-waste
+sudo vim /etc/nginx/sites-available/hazardous-waste
 ```
 
 添加以下内容：

@@ -22,6 +22,9 @@ app.use(express.urlencoded({ extended: true }));
 // 静态文件服务
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
+// 添加前端静态文件服务和路由处理
+app.use(express.static(path.join(__dirname, '../frontend/dist')));
+
 // 创建上传目录（如果不存在）
 const uploadsDir = path.join(__dirname, '../uploads');
 if (!fs.existsSync(uploadsDir)) {
@@ -722,6 +725,16 @@ app.delete('/api/waste-records/:id', async (req, res) => {
   } catch (error) {
     console.error('删除废物记录错误:', error);
     res.status(500).json({ error: '服务器错误' });
+  }
+});
+
+// 处理所有前端路由请求，返回index.html
+app.get('*', (req, res) => {
+  // 排除API请求
+  if (!req.path.startsWith('/api') && !req.path.startsWith('/uploads')) {
+    res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
+  } else {
+    res.status(404).send('Not found');
   }
 });
 

@@ -48,7 +48,7 @@ hazardous-waste-management-system/
 初始化数据库后，系统包含以下测试账号：
 
 1. 超级管理员
-   - 手机号: 13800000001
+   - 手机号: 18615469135
    - 密码: 1
 
 2. 牛庄管理员
@@ -64,6 +64,9 @@ hazardous-waste-management-system/
 ### 1. 克隆项目并安装依赖
 
 ```bash
+# 克隆项目
+git clone https://github.com/Xiangyu-Lou/Hazardous-waste-management-system.git
+
 # 安装后端依赖
 cd backend
 npm install
@@ -79,13 +82,14 @@ npm install
 - 用户名：Xiangyu
 - 密码：990924
 
+```sql
+CREATE USER 'Xiangyu'@'localhost' IDENTIFIED BY '990924';
+GRANT ALL PRIVILEGES ON *.* TO 'Xiangyu'@'localhost';
+FLUSH PRIVILEGES;
+EXIT;
+```
+
 ### 3. 初始化数据库
-
-有两种方式可以初始化数据库：
-
-#### 方式一：使用完整初始化脚本（推荐）
-
-如果您的MySQL用户有创建数据库的权限：
 
 ```bash
 cd backend
@@ -96,23 +100,6 @@ npm run init-db
 - 创建`waste_management`数据库
 - 创建所有必要的表
 - 插入基础数据和测试账号
-
-#### 方式二：手动创建数据库后初始化
-
-如果您的用户没有创建数据库权限，可以先手动创建数据库：
-
-```sql
-CREATE DATABASE waste_management CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-GRANT ALL PRIVILEGES ON waste_management.* TO 'Xiangyu'@'localhost';
-FLUSH PRIVILEGES;
-```
-
-然后运行简化版初始化脚本：
-
-```bash
-cd backend
-npm run init-db-simple
-```
 
 ### 4. 启动后端服务
 
@@ -131,25 +118,3 @@ npm run serve
 ### 6. 访问应用
 
 在浏览器中打开 [http://localhost:8080](http://localhost:8080)
-
-## 部署说明
-
-### 前端构建
-
-```bash
-cd frontend
-npm run build
-```
-
-构建完成后，将 `frontend/dist` 目录下的文件部署到 Web 服务器。
-
-### 后端部署
-
-确保 Node.js 环境已安装，然后启动后端服务：
-
-```bash
-cd backend
-npm start
-```
-
-可以使用 PM2 等工具将服务作为后台进程运行。

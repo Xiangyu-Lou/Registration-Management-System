@@ -273,7 +273,7 @@ export default {
     const loading = ref(false);
     const unitName = ref('');
     const wasteTypes = ref([]);
-    const showFilterPanel = ref(false);
+    const showFilterPanel = ref(true);
     
     // 筛选表单
     const filterForm = reactive({
