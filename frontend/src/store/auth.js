@@ -31,14 +31,27 @@ const init = () => {
 
 // 登录方法
 const login = async (phone, password) => {
+  // 设置加载状态
   state.loading = true;
   state.error = null;
+  
+  console.log('auth.login 开始执行，手机号:', phone);
 
   try {
-    const response = await axios.post('http://localhost:3000/api/login', {
-      phone,
-      password: password || undefined // 员工登录不需要密码
-    });
+    // 员工登录不发送密码字段，管理员必须发送密码
+    const postData = { phone };
+    
+    // 只有在密码存在且非空时才添加到请求中
+    if (password !== null && password !== undefined && password !== '') {
+      postData.password = password;
+      console.log('auth.login 发送密码参数');
+    } else {
+      console.log('auth.login 不发送密码参数');
+    }
+    
+    console.log('发送登录请求，数据:', postData);
+    const response = await axios.post('http://localhost:3000/api/login', postData);
+    console.log('登录请求成功响应:', response.data);
 
     const user = response.data;
     state.user = user;

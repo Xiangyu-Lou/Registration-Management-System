@@ -106,13 +106,16 @@ app.get('/api/test', (req, res) => {
 
 // 用户登录
 app.post('/api/login', async (req, res) => {
+  console.log('登录请求数据:', req.body);
   const { phone, password } = req.body;
   
   if (!phone) {
+    console.log('登录失败: 缺少手机号');
     return res.status(400).json({ error: '手机号是必填项' });
   }
 
   try {
+    console.log('开始查询用户:', phone);
     // 查询用户
     const [rows] = await pool.query(
       `SELECT u.*, r.name as role_name, un.name as unit_name 
@@ -125,13 +128,17 @@ app.post('/api/login', async (req, res) => {
 
     // 用户不存在
     if (rows.length === 0) {
+      console.log('登录失败: 用户不存在', phone);
       return res.status(401).json({ error: '用户不存在' });
     }
 
     const user = rows[0];
+    console.log('查询到用户信息:', { id: user.id, role_id: user.role_id, username: user.username });
 
     // 员工登录（仅需手机号）
     if (user.role_id === 1) {
+      console.log('员工登录成功:', user.username);
+      // 员工登录成功，不需要密码
       return res.json({
         id: user.id,
         username: user.username,
@@ -145,10 +152,12 @@ app.post('/api/login', async (req, res) => {
 
     // 管理员登录（需要密码）
     if (!password) {
-      return res.status(400).json({ error: '密码是必填项' });
+      console.log('管理员登录失败: 缺少密码');
+      return res.status(400).json({ error: '管理员登录需要输入密码' });
     }
 
     if (user.password !== password) {
+      console.log('管理员登录失败: 密码错误');
       return res.status(401).json({ error: '密码错误' });
     }
 

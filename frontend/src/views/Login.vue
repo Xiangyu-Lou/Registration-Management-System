@@ -108,24 +108,67 @@ export default {
     };
     
     // 提交表单
-    const submitForm = () => {
-      if (!loginForm.value) return;
+    const submitForm = async () => {
+      console.log('提交表单被触发');
+      if (!loginForm.value) {
+        console.log('表单引用不存在');
+        return;
+      }
       
-      // 简化的表单验证逻辑
-      loginForm.value.validate(async (valid) => {
-        if (valid) {
-          await doLogin();
-        } else {
-          console.log('表单验证失败');
+      // 防止重复提交
+      if (auth.state.loading) {
+        console.log('登录正在进行中，跳过');
+        return;
+      }
+      
+      // 员工登录不需要密码
+      if (form.userType === 1) {
+        console.log('员工登录模式');
+        // 手机号简单验证
+        if (!form.phone) {
+          ElMessage.warning('请输入手机号');
+          return;
         }
-      });
+
+        if (!/^1[3-9]\d{9}$/.test(form.phone)) {
+          ElMessage.warning('请输入正确的手机号格式');
+          return;
+        }
+        
+        console.log('员工登录开始执行...');
+        await doLogin(); // 直接执行登录
+      } else {
+        console.log('管理员登录模式');
+        // 管理员需要验证整个表单
+        loginForm.value.validate(async (valid) => {
+          if (valid) {
+            console.log('管理员表单验证通过');
+            await doLogin();
+          } else {
+            console.log('表单验证失败');
+            ElMessage.warning('请填写必要的登录信息');
+          }
+        });
+      }
     };
     
     // 执行登录
     const doLogin = async () => {
-      console.log('开始登录，账号:', form.phone, '密码:', form.password);
+      console.log('开始登录，账号:', form.phone, '用户类型:', form.userType);
       try {
-        const result = await auth.login(form.phone, form.password);
+        // 添加调试信息
+        console.log('开始处理登录操作...');
+        
+        // 员工登录不传密码参数
+        let result;
+        if (form.userType === 1) {
+          console.log('员工登录，不发送密码');
+          result = await auth.login(form.phone, null);
+        } else {
+          console.log('管理员登录，发送密码');
+          result = await auth.login(form.phone, form.password);
+        }
+        console.log('登录响应:', result);
         
         if (result.success) {
           const user = result.user;
@@ -141,9 +184,13 @@ export default {
             router.push(`/unit/${user.unit_id}`);
           }
         } else {
+          // 显示登录失败错误
+          ElMessage.error(result.error || '登录失败');
           console.error('登录失败:', result.error);
         }
       } catch (error) {
+        // 捕获并显示非预期错误
+        ElMessage.error('登录失败，请检查网络连接');
         console.error('登录错误:', error);
       }
     };
