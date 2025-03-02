@@ -413,8 +413,8 @@ app.get('/api/waste-types', async (req, res) => {
 app.post('/api/waste-records', upload.array('photos', 10), async (req, res) => {
   const { unitId, wasteTypeId, location, collectionStartTime, quantity, creatorId } = req.body;
   
-  if (!unitId || !wasteTypeId || !location || !collectionStartTime || !quantity) {
-    return res.status(400).json({ error: '所有字段都是必填的' });
+  if (!unitId || !wasteTypeId || !location || !quantity) {
+    return res.status(400).json({ error: '废物类型、产生地点和收集数量是必填的' });
   }
   
   try {
@@ -429,9 +429,12 @@ app.post('/api/waste-records', upload.array('photos', 10), async (req, res) => {
     const createdAt = new Date().toISOString().slice(0, 19).replace('T', ' ');
     
     // 格式化收集开始时间（只保留到分钟）
-    let formattedCollectionStartTime = formatDateForMySQL(collectionStartTime);
-    if (formattedCollectionStartTime && formattedCollectionStartTime.length > 16) {
-      formattedCollectionStartTime = formattedCollectionStartTime.substring(0, 16) + ':00';
+    let formattedCollectionStartTime = null;
+    if (collectionStartTime) {
+      formattedCollectionStartTime = formatDateForMySQL(collectionStartTime);
+      if (formattedCollectionStartTime && formattedCollectionStartTime.length > 16) {
+        formattedCollectionStartTime = formattedCollectionStartTime.substring(0, 16) + ':00';
+      }
     }
     
     const [result] = await pool.query(
@@ -478,8 +481,8 @@ app.put('/api/waste-records/:id', upload.array('photos', 10), async (req, res) =
   const { id } = req.params;
   const { unitId, wasteTypeId, location, collectionStartTime, quantity } = req.body;
   
-  if (!unitId || !wasteTypeId || !location || !collectionStartTime || !quantity) {
-    return res.status(400).json({ error: '所有字段都是必填的' });
+  if (!unitId || !wasteTypeId || !location || !quantity) {
+    return res.status(400).json({ error: '废物类型、产生地点和收集数量是必填的' });
   }
   
   try {
@@ -535,9 +538,12 @@ app.put('/api/waste-records/:id', upload.array('photos', 10), async (req, res) =
     }
     
     // 格式化收集开始时间（只保留到分钟）
-    let formattedCollectionStartTime = formatDateForMySQL(collectionStartTime);
-    if (formattedCollectionStartTime && formattedCollectionStartTime.length > 16) {
-      formattedCollectionStartTime = formattedCollectionStartTime.substring(0, 16) + ':00';
+    let formattedCollectionStartTime = null;
+    if (collectionStartTime) {
+      formattedCollectionStartTime = formatDateForMySQL(collectionStartTime);
+      if (formattedCollectionStartTime && formattedCollectionStartTime.length > 16) {
+        formattedCollectionStartTime = formattedCollectionStartTime.substring(0, 16) + ':00';
+      }
     }
     
     await pool.query(

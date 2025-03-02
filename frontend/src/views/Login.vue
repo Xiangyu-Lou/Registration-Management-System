@@ -179,8 +179,11 @@ export default {
           if (user.role_id === 3) {
             // 超级管理员
             router.push('/admin-records');
+          } else if (user.role_id === 2) {
+            // 单位管理员直接进入记录页面
+            router.push(`/records/${user.unit_id}`);
           } else {
-            // 其他用户直接进入对应单位的填报页面
+            // 普通员工进入填报页面
             router.push(`/unit/${user.unit_id}`);
           }
         } else {
@@ -201,6 +204,8 @@ export default {
         const user = auth.state.user;
         if (user.role_id === 3) {
           router.push('/admin-records');
+        } else if (user.role_id === 2) {
+          router.push(`/records/${user.unit_id}`);
         } else {
           router.push(`/unit/${user.unit_id}`);
         }

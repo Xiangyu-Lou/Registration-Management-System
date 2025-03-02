@@ -38,7 +38,7 @@
           <el-input v-model="form.location" placeholder="请输入废物产生地点" />
         </el-form-item>
 
-        <el-form-item label="收集日期" prop="collectionDate">
+        <el-form-item label="收集日期">
           <el-date-picker
             v-model="form.collectionDate"
             type="date"
@@ -49,7 +49,7 @@
           />
         </el-form-item>
 
-        <el-form-item label="收集时间" prop="collectionTime">
+        <el-form-item label="收集时间">
           <el-time-picker
             v-model="form.collectionTime"
             format="HH:mm"
@@ -61,15 +61,15 @@
               <el-icon><clock /></el-icon>
             </template>
           </el-time-picker>
-          <div class="time-tip">只需选择小时和分钟</div>
+          <!-- <div class="time-tip">只需选择小时和分钟</div> -->
         </el-form-item>
 
-        <el-form-item label="收集数量(kg)" prop="quantity">
+        <el-form-item label="收集数量(吨)" prop="quantity">
           <el-input-number 
             v-model="form.quantity" 
-            :min="0.01" 
-            :precision="2" 
-            :step="0.1" 
+            :min="0" 
+            :precision="3" 
+            :step="0.001" 
             style="width: 100%"
           />
         </el-form-item>
@@ -147,7 +147,7 @@ export default {
       location: '',
       collectionDate: new Date().toISOString().slice(0, 10), // 默认为当天
       collectionTime: '08:00',
-      quantity: 1.0,
+      quantity: 0,
       photos: []
     });
 
@@ -159,10 +159,10 @@ export default {
         { required: true, message: '请输入废物产生地点', trigger: 'blur' }
       ],
       collectionDate: [
-        { required: true, message: '请选择收集日期', trigger: 'change' }
+        { required: false }
       ],
       collectionTime: [
-        { required: true, message: '请选择收集时间', trigger: 'change' }
+        { required: false }
       ],
       quantity: [
         { required: true, message: '请输入收集数量', trigger: 'change' }
@@ -218,9 +218,11 @@ export default {
             formData.append('wasteTypeId', form.wasteTypeId);
             formData.append('location', form.location);
             
-            // 组合日期和时间，精确到分钟
-            const combinedDateTime = `${form.collectionDate} ${form.collectionTime}:00`;
-            formData.append('collectionStartTime', combinedDateTime);
+            // 组合日期和时间，如果有的话
+            if (form.collectionDate && form.collectionTime) {
+              const combinedDateTime = `${form.collectionDate} ${form.collectionTime}:00`;
+              formData.append('collectionStartTime', combinedDateTime);
+            }
             formData.append('quantity', form.quantity);
             
             // 添加多张照片
@@ -252,7 +254,7 @@ export default {
       }
       photoFiles.value = [];
       fileList.value = [];
-      form.quantity = 1.0;
+      form.quantity = 0;
       form.collectionDate = new Date().toISOString().slice(0, 10); // 重置为今天
       form.collectionTime = '08:00'; // 重置为默认时间
     };

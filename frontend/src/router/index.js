@@ -92,16 +92,26 @@ router.beforeEach((to, from, next) => {
   if (to.name === 'Login' && auth.state.isLoggedIn) {
     if (auth.state.user.role_id === 3) {
       next({ name: 'AdminRecords' }); // 超级管理员到管理页面
+    } else if (auth.state.user.role_id === 2) {
+      next({ name: 'RecordsList', params: { unitId: auth.state.user.unit_id } }); // 单位管理员直接进入记录页面
     } else {
-      next({ name: 'WasteForm', params: { id: auth.state.user.unit_id } }); // 其他用户到单位页面
+      next({ name: 'WasteForm', params: { id: auth.state.user.unit_id } }); // 普通员工到填报页面
     }
     return;
   }
   
   // 超级管理员访问首页时，重定向到管理页面
-  if (to.path === '/' && auth.state.isLoggedIn && auth.state.user.role_id === 3) {
-    next({ name: 'AdminRecords' });
-    return;
+  if (to.path === '/' && auth.state.isLoggedIn) {
+    if (auth.state.user.role_id === 3) {
+      next({ name: 'AdminRecords' });
+      return;
+    } else if (auth.state.user.role_id === 2) {
+      next({ name: 'RecordsList', params: { unitId: auth.state.user.unit_id } });
+      return;
+    } else {
+      next({ name: 'WasteForm', params: { id: auth.state.user.unit_id } });
+      return;
+    }
   }
   
   // 检查用户是否尝试访问不属于自己单位的页面
