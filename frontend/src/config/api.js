@@ -1,12 +1,9 @@
 // API 配置文件
 
-// 判断当前环境
-const isProduction = process.env.NODE_ENV === 'production';
-
 // 设置 API 基础 URL
-// 开发环境使用 localhost
-// 生产环境使用相对路径，这样会请求当前域名下的 API
-const API_BASE_URL = isProduction ? '' : 'http://localhost:3000';
+// 使用相对路径，这样会请求当前域名下的 API
+// 当通过Nginx代理访问时，这样可以确保请求正确路由
+const API_BASE_URL = '';
 
 export default {
   baseURL: API_BASE_URL,

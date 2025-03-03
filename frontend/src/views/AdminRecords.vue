@@ -257,9 +257,10 @@ import axios from 'axios';
 import { Plus, Refresh, PictureFailed, User, ArrowDown, ArrowUp, Download } from '@element-plus/icons-vue';
 import auth from '../store/auth';
 import { exportToExcel } from '../utils/exportUtils';
+import api from '../config/api';
 
 // API基础URL
-const apiBaseURL = 'http://localhost:3000';
+const apiBaseURL = api.baseURL;
 
 // 解析JSON格式的照片路径
 const parsePhotoPath = (path) => {
@@ -382,7 +383,7 @@ export default {
     // 获取单位列表
     const fetchUnits = async () => {
       try {
-        const response = await axios.get('http://localhost:3000/api/units');
+        const response = await axios.get(api.getUrl(api.endpoints.units));
         units.value = response.data;
       } catch (error) {
         console.error('获取单位列表失败:', error);
@@ -393,7 +394,7 @@ export default {
     // 获取废物类型列表
     const fetchWasteTypes = async () => {
       try {
-        const response = await axios.get('http://localhost:3000/api/waste-types');
+        const response = await axios.get(api.getUrl(api.endpoints.wasteTypes));
         wasteTypes.value = response.data;
       } catch (error) {
         console.error('获取废物类型列表失败:', error);
@@ -405,7 +406,7 @@ export default {
       loading.value = true;
       try {
         // 使用超级管理员ID获取所有记录
-        const response = await axios.get(`http://localhost:3000/api/waste-records/user/${auth.state.user.id}`);
+        const response = await axios.get(`${api.getUrl(api.endpoints.wasteRecords)}/user/${auth.state.user.id}`);
         records.value = response.data;
         
         // 格式化日期
@@ -521,7 +522,7 @@ export default {
       )
         .then(async () => {
           try {
-            await axios.delete(`http://localhost:3000/api/waste-records/${record.id}`);
+            await axios.delete(`${api.getUrl(api.endpoints.wasteRecords)}/${record.id}`);
             ElMessage.success('删除成功');
             await fetchRecords();
           } catch (error) {

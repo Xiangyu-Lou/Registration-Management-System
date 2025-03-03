@@ -8,6 +8,10 @@ module.exports = defineConfig({
   devServer: {
     port: 8080,
     historyApiFallback: true,
+    // 配置WebSocket使用相对路径
+    client: {
+      webSocketURL: 'auto://0.0.0.0:0/ws'
+    },
     proxy: {
       '/api': {
         target: 'http://localhost:3000',

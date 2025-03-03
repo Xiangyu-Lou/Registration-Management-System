@@ -25,12 +25,15 @@
 
 <script>
 import axios from 'axios';
+import { ElMessage } from 'element-plus';
+import api from '../config/api';
 
 export default {
   name: 'UnitSelection',
   data() {
     return {
-      units: []
+      units: [],
+      loading: false
     };
   },
   created() {
@@ -38,14 +41,17 @@ export default {
   },
   methods: {
     async fetchUnits() {
+      this.loading = true;
       try {
         console.log('正在获取单位列表...');
-        const response = await axios.get('http://localhost:3000/api/units');
+        const response = await axios.get(api.getUrl(api.endpoints.units));
         console.log('获取单位列表成功:', response.data);
         this.units = response.data;
       } catch (error) {
         console.error('获取单位列表失败:', error);
-        this.$message.error(`获取单位列表失败: ${error.message || '未知错误'}`);
+        ElMessage.error('获取单位列表失败');
+      } finally {
+        this.loading = false;
       }
     },
     selectUnit(unit) {

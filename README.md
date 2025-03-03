@@ -65,7 +65,7 @@ hazardous-waste-management-system/
    - 手机号: 13800000003
    - 密码: (无需密码)
 
-## 安装和运行步骤
+## 快速开始
 
 ### 1. 克隆项目并安装依赖
 
@@ -131,6 +131,10 @@ npm run serve
 ### 6. 访问应用
 
 在浏览器中打开 [http://localhost:8080](http://localhost:8080)
+
+## 部署指南
+
+详细的部署说明，包括开发环境和生产环境的配置，请参阅 [部署指南](DEPLOYMENT.md)。
 
 ## 数据库结构
 

@@ -143,7 +143,8 @@ export default {
             await doLogin();
           } else {
             console.log('表单验证失败');
-            ElMessage.warning('请填写必要的登录信息');
+            // 移除这行，让表单验证自动显示错误信息，避免重复
+            // ElMessage.warning('请填写必要的登录信息');
           }
         });
       }
