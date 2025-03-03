@@ -4,6 +4,7 @@ const path = require('path');
 const multer = require('multer');
 const fs = require('fs');
 const mysql = require('mysql2/promise');
+const bcrypt = require('bcrypt');
 
 // 创建Express应用
 const app = express();
@@ -80,6 +81,17 @@ const dbConfig = {
   connectionLimit: 10,
   queueLimit: 0,
   multipleStatements: true // 允许执行多条SQL语句
+};
+
+// 密码加密函数
+const hashPassword = async (password) => {
+  const saltRounds = 10;
+  return await bcrypt.hash(password, saltRounds);
+};
+
+// 密码验证函数
+const comparePassword = async (password, hash) => {
+  return await bcrypt.compare(password, hash);
 };
 
 // 创建数据库连接池
@@ -185,7 +197,9 @@ app.post('/api/login', async (req, res) => {
       return res.status(400).json({ error: '管理员登录需要输入密码' });
     }
 
-    if (user.password !== password) {
+    // 使用bcrypt比较密码
+    const passwordMatch = await comparePassword(password, user.password);
+    if (!passwordMatch) {
       console.log('管理员登录失败: 密码错误');
       return res.status(401).json({ error: '密码错误' });
     }
@@ -272,10 +286,16 @@ app.post('/api/users', async (req, res) => {
       return res.status(400).json({ error: '手机号已被注册' });
     }
     
+    // 对密码进行加密（如果有密码）
+    let hashedPassword = null;
+    if (password) {
+      hashedPassword = await hashPassword(password);
+    }
+    
     // 创建新用户
     const [result] = await pool.query(
       'INSERT INTO users (username, phone, password, role_id, unit_id) VALUES (?, ?, ?, ?, ?)',
-      [username, phone, password || null, roleId, unitId || null]
+      [username, phone, hashedPassword, roleId, unitId || null]
     );
     
     res.status(201).json({
@@ -331,8 +351,10 @@ app.put('/api/users/:id', async (req, res) => {
     
     // 如果提供了新密码，则更新密码
     if (password) {
+      // 对新密码进行加密
+      const hashedPassword = await hashPassword(password);
       sql = 'UPDATE users SET username = ?, phone = ?, password = ?, role_id = ?, unit_id = ? WHERE id = ?';
-      params = [username, phone, password, roleId, unitId || null, id];
+      params = [username, phone, hashedPassword, roleId, unitId || null, id];
     } else {
       sql = 'UPDATE users SET username = ?, phone = ?, role_id = ?, unit_id = ? WHERE id = ?';
       params = [username, phone, roleId, unitId || null, id];

@@ -1,6 +1,13 @@
 const mysql = require('mysql2/promise');
 const path = require('path');
 const fs = require('fs');
+const bcrypt = require('bcrypt');
+
+// 密码加密函数
+const hashPassword = async (password) => {
+  const saltRounds = 10;
+  return await bcrypt.hash(password, saltRounds);
+};
 
 // MySQL连接配置
 const dbConfig = {
@@ -154,13 +161,17 @@ async function initializeDatabase() {
       await connection.execute(`DELETE FROM users WHERE phone IN (?, ?, ?)`, 
         ['13800000001', '13800000002', '13800000003']);
       
+      // 加密密码
+      const adminPassword = await hashPassword('1');
+      const managerPassword = await hashPassword('2');
+      
       // 插入测试用户
       await connection.execute(`
         INSERT INTO users (username, phone, password, role_id, unit_id) VALUES 
-        ('超级管理员', '13800000001', '1', 3, NULL),
-        ('牛庄管理员', '13800000002', '2', 2, ?),
+        ('超级管理员', '13800000001', ?, 3, NULL),
+        ('牛庄管理员', '13800000002', ?, 2, ?),
         ('牛庄员工', '13800000003', NULL, 1, ?)
-      `, [niuzhuangId, niuzhuangId]);
+      `, [adminPassword, managerPassword, niuzhuangId, niuzhuangId]);
       console.log('已插入用户测试数据');
     } else {
       console.log('用户测试数据已存在，跳过插入');

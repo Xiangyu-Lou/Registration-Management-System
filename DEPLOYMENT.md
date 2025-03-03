@@ -1,462 +1,314 @@
 # 危险废物管理系统部署指南
 
-本文档提供了危险废物管理系统的部署步骤，包括开发环境和生产环境的配置。
+本文档提供了在服务器上部署危险废物管理系统的详细步骤。
 
-## 目录
-- [本地开发环境部署](#本地开发环境部署)
-- [生产环境部署](#生产环境部署)
-- [使用Nginx进行代理](#使用nginx进行代理)
-- [常见问题排查](#常见问题排查)
-- [系统维护](#系统维护)
-- [安全建议](#安全建议)
+## 系统要求
 
-## 本地开发环境部署
+- Node.js 14.x 或更高版本
+- MySQL 8.x 或更高版本
+- Nginx (用于反向代理)
 
-### 前提条件
-- Node.js (推荐v14+) 和 npm
-- MySQL 数据库
-- Git (可选，用于克隆项目)
+## 1. 准备工作
 
-### 安装步骤
-
-1. **克隆或下载项目**
-   ```bash
-   git clone https://github.com/Xiangyu-Lou/Hazardous-waste-management-system.git
-   cd Hazardous-waste-management-system
-   ```
-
-2. **安装依赖**
-   ```bash
-   # 安装后端依赖
-   cd backend
-   npm install
-
-   # 安装前端依赖
-   cd ../frontend
-   npm install
-   ```
-
-3. **配置MySQL数据库**
-   确保MySQL服务已启动，并创建以下用户（或使用已有的具有创建数据库权限的用户）：
-   - 用户名：Xiangyu
-   - 密码：990924
-
-   ```sql
-   CREATE USER 'Xiangyu'@'localhost' IDENTIFIED BY '990924';
-   GRANT ALL PRIVILEGES ON *.* TO 'Xiangyu'@'localhost';
-   FLUSH PRIVILEGES;
-   ```
-
-4. **初始化数据库**
-   ```bash
-   cd db/mysql
-   node init_db.js
-   ```
-
-5. **启动后端服务**
-   ```bash
-   cd backend
-   node server.js
-   ```
-
-6. **启动前端开发服务器**
-   ```bash
-   cd frontend
-   npm run serve
-   ```
-
-7. **访问应用**
-   在浏览器中打开 [http://localhost:8080](http://localhost:8080)
-
-## 生产环境部署
-
-### 前提条件
-- 一台运行 Linux 的服务器
-- 已安装 Node.js (推荐v14+) 和 npm
-- 已安装 MySQL 数据库
-- 已安装 Nginx 或其他 Web 服务器
-
-### 部署步骤
-
-#### 1. 准备服务器环境
-
-确保服务器已安装以下软件：
+### 1.1 安装 Node.js
 
 ```bash
-# Ubuntu系统
+# 使用 nvm 安装 Node.js (推荐)
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
+source ~/.bashrc
+nvm install 14
+nvm use 14
+
+# 或者直接安装
+# Ubuntu/Debian
 sudo apt update
-sudo apt install -y nodejs npm mysql-server nginx
-
-# CentOS系统
-sudo yum update
-sudo yum install -y nodejs npm mysql-server nginx
+sudo apt install nodejs npm
 ```
 
-#### 2. 克隆或上传项目
-
-将项目文件上传到服务器，例如：
+### 1.2 安装 MySQL
 
 ```bash
-# 使用git克隆
-git clone <repository-url> /var/www/hazardous-waste-management-system
+# Ubuntu/Debian
+sudo apt update
+sudo apt install mysql-server
 
-# 或上传本地文件到服务器
-scp -r ./Hazardous-waste-management-system user@your-server-ip:/var/www/
-```
-
-#### 3. 配置MySQL数据库
-
-```bash
-# 启动MySQL服务
+# 启动 MySQL 服务
 sudo systemctl start mysql
 sudo systemctl enable mysql
 
-# 登录MySQL并创建用户账号
-sudo mysql
+# 配置 MySQL 安全设置
+sudo mysql_secure_installation
 ```
 
-在MySQL中执行：
+### 1.3 创建数据库和用户
 
-```sql
-CREATE USER 'Xiangyu'@'localhost' IDENTIFIED BY '990924';
-GRANT ALL PRIVILEGES ON *.* TO 'Xiangyu'@'localhost';
+```bash
+# 登录 MySQL
+sudo mysql -u root -p
+
+# 在 MySQL 中执行以下命令
+CREATE DATABASE waste_management;
+CREATE USER 'waste_user'@'localhost' IDENTIFIED BY 'your_password';
+GRANT ALL PRIVILEGES ON waste_management.* TO 'waste_user'@'localhost';
 FLUSH PRIVILEGES;
 EXIT;
 ```
 
-#### 4. 安装项目依赖并初始化数据库
+## 2. 部署后端
+
+### 2.1 获取代码
+
+```bash
+# 克隆代码仓库
+git clone <repository_url>
+cd hazardous-waste-management-system
+```
+
+### 2.2 安装依赖
 
 ```bash
 # 安装后端依赖
-cd /var/www/hazardous-waste-management-system/backend
+cd backend
 npm install
 
-# 安装前端依赖
-cd /var/www/hazardous-waste-management-system/frontend
+# 安装数据库初始化脚本依赖
+cd ../db/mysql
 npm install
+```
+
+### 2.3 配置数据库连接
+
+编辑 `db/mysql/init_db.js` 和 `db/mysql/init_db_simple.js` 文件，修改数据库连接配置：
+
+```javascript
+const dbConfig = {
+  host: 'localhost',
+  user: 'waste_user',  // 修改为您创建的用户名
+  password: 'your_password',  // 修改为您设置的密码
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
+};
+```
+
+同样，编辑 `backend/server.js` 文件，修改数据库连接配置：
+
+```javascript
+const dbConfig = {
+  host: 'localhost',
+  user: 'waste_user',  // 修改为您创建的用户名
+  password: 'your_password',  // 修改为您设置的密码
+  database: 'waste_management',
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
+  multipleStatements: true
+};
+```
+
+### 2.4 初始化数据库
+
+```bash
+# 返回项目根目录
+cd ../../
 
 # 初始化数据库
-cd /var/www/hazardous-waste-management-system/db/mysql
-node init_db.js
+cd backend
+npm run init-db
 ```
 
-#### 5. 构建前端项目
+### 2.5 创建上传目录
 
 ```bash
-cd /var/www/hazardous-waste-management-system/frontend
-npm run build
+# 在项目根目录下创建上传目录
+mkdir -p uploads
+chmod 755 uploads
 ```
 
-这会在 `frontend/dist` 目录下生成生产环境的前端文件。
-
-#### 6. 配置Nginx
-
-创建一个Nginx配置文件：
+### 2.6 使用 PM2 运行后端服务
 
 ```bash
-sudo vim /etc/nginx/sites-available/hazardous-waste
-```
-
-添加以下内容：
-
-```nginx
-server {
-    listen 80;
-    server_name your-domain.com; # 替换为你的域名或服务器IP
-
-    # 前端资源
-    location / {
-        root /var/www/hazardous-waste-management-system/frontend/dist;
-        try_files $uri $uri/ /index.html;
-        index index.html;
-    }
-
-    # 后端API代理
-    location /api {
-        proxy_pass http://localhost:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-    }
-
-    # 上传文件目录
-    location /uploads {
-        alias /var/www/hazardous-waste-management-system/uploads;
-    }
-}
-```
-
-启用配置并重启Nginx：
-
-```bash
-sudo ln -s /etc/nginx/sites-available/hazardous-waste /etc/nginx/sites-enabled/
-sudo nginx -t
-sudo systemctl restart nginx
-```
-
-#### 7. 配置后端服务
-
-为确保后端服务持续运行，可以使用PM2进程管理器：
-
-```bash
-# 安装PM2
-sudo npm install -g pm2
+# 安装 PM2
+npm install -g pm2
 
 # 启动后端服务
-cd /var/www/hazardous-waste-management-system/backend
-pm2 start server.js --name "hazardous-waste-api"
+cd backend
+pm2 start server.js --name "waste-management-backend"
 
-# 设置PM2随系统启动
+# 设置开机自启
 pm2 startup
 pm2 save
 ```
 
-#### 8. 确保目录权限正确
+## 3. 部署前端
+
+### 3.1 安装依赖并构建前端
 
 ```bash
-# 创建并设置uploads目录权限
-mkdir -p /var/www/hazardous-waste-management-system/uploads
-sudo chown -R www-data:www-data /var/www/hazardous-waste-management-system/uploads
-sudo chmod -R 755 /var/www/hazardous-waste-management-system/uploads
+# 进入前端目录
+cd ../frontend
+
+# 安装依赖
+npm install
+
+# 构建生产版本
+npm run build
 ```
 
-#### 9. 配置防火墙
+### 3.2 配置 Nginx
 
-确保服务器防火墙允许HTTP/HTTPS流量：
+安装 Nginx：
 
 ```bash
-# Ubuntu
-sudo ufw allow 80/tcp
-sudo ufw allow 443/tcp
-
-# CentOS
-sudo firewall-cmd --permanent --add-service=http
-sudo firewall-cmd --permanent --add-service=https
-sudo firewall-cmd --reload
+# Ubuntu/Debian
+sudo apt update
+sudo apt install nginx
 ```
 
-## 使用Nginx进行代理
+创建 Nginx 配置文件：
 
-### Windows环境下的Nginx配置
+```bash
+sudo nano /etc/nginx/sites-available/waste-management
+```
 
-1. **下载并安装Nginx**
-   - 从[Nginx官网](http://nginx.org/en/download.html)下载Windows版本
-   - 解压到任意目录，如`C:\nginx`
-
-2. **创建Nginx配置文件**
-   在Nginx安装目录的`conf`文件夹中，创建一个名为`hazardous-waste.conf`的文件，内容如下：
-
-   ```nginx
-   server {
-       listen 80;
-       server_name localhost;
-
-       # 前端资源
-       location / {
-           proxy_pass http://localhost:8080;
-           proxy_http_version 1.1;
-           proxy_set_header Upgrade $http_upgrade;
-           proxy_set_header Connection 'upgrade';
-           proxy_set_header Host $host;
-           proxy_cache_bypass $http_upgrade;
-       }
-
-       # 后端API代理
-       location /api {
-           proxy_pass http://localhost:3000;
-           proxy_http_version 1.1;
-           proxy_set_header Upgrade $http_upgrade;
-           proxy_set_header Connection 'upgrade';
-           proxy_set_header Host $host;
-           proxy_cache_bypass $http_upgrade;
-       }
-
-       # 上传文件目录
-       location /uploads {
-           proxy_pass http://localhost:3000;
-           proxy_http_version 1.1;
-           proxy_set_header Upgrade $http_upgrade;
-           proxy_set_header Connection 'upgrade';
-           proxy_set_header Host $host;
-           proxy_cache_bypass $http_upgrade;
-       }
-   }
-   ```
-
-3. **在主配置文件中引入自定义配置**
-   编辑`C:\nginx\conf\nginx.conf`文件，在`http`块中添加：
-   ```nginx
-   include hazardous-waste.conf;
-   ```
-
-4. **启动Nginx**
-   打开命令提示符或PowerShell，执行：
-   ```
-   cd C:\nginx
-   start nginx
-   ```
-
-5. **重新加载配置**
-   修改配置后重新加载：
-   ```
-   cd C:\nginx
-   nginx -s reload
-   ```
-
-6. **停止Nginx**
-   ```
-   cd C:\nginx
-   nginx -s stop
-   ```
-
-7. **访问应用**
-   在浏览器中打开 [http://localhost](http://localhost)
-
-### 生产环境的Nginx配置
-
-对于生产环境，建议使用以下配置：
+添加以下配置：
 
 ```nginx
 server {
     listen 80;
-    server_name your-domain.com;
-    
-    # 将HTTP请求重定向到HTTPS
-    return 301 https://$host$request_uri;
-}
-
-server {
-    listen 443 ssl;
-    server_name your-domain.com;
-
-    # SSL证书配置
-    ssl_certificate /path/to/your/certificate.crt;
-    ssl_certificate_key /path/to/your/private.key;
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_prefer_server_ciphers on;
-    ssl_ciphers ECDHE-RSA-AES256-GCM-SHA512:DHE-RSA-AES256-GCM-SHA512:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES256-GCM-SHA384;
+    server_name your_domain.com;  # 替换为您的域名或服务器 IP
 
     # 前端资源
     location / {
-        root /var/www/hazardous-waste-management-system/frontend/dist;
-        try_files $uri $uri/ /index.html;
+        root /path/to/hazardous-waste-management-system/frontend/dist;
         index index.html;
-        
-        # 缓存静态资源
-        expires 1d;
-        add_header Cache-Control "public";
+        try_files $uri $uri/ /index.html;
     }
 
-    # 后端API代理
+    # 后端 API 代理
     location /api {
         proxy_pass http://localhost:3000;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
         proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
         proxy_cache_bypass $http_upgrade;
+        client_max_body_size 10M;  # 允许上传最大 10MB 的文件
     }
 
     # 上传文件目录
     location /uploads {
-        alias /var/www/hazardous-waste-management-system/uploads;
-        
-        # 限制上传文件大小
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
         client_max_body_size 10M;
+    }
+
+    # 错误页面
+    error_page 500 502 503 504 /50x.html;
+    location = /50x.html {
+        root /usr/share/nginx/html;
     }
 }
 ```
 
-## 常见问题排查
+启用配置并重启 Nginx：
 
-1. **前端无法连接后端**
-   - 检查Nginx配置中的代理设置是否正确
-   - 确认后端服务是否正在运行(`pm2 status`或`node server.js`)
-   - 检查浏览器控制台是否有CORS错误
+```bash
+sudo ln -s /etc/nginx/sites-available/waste-management /etc/nginx/sites-enabled/
+sudo nginx -t  # 测试配置是否有效
+sudo systemctl restart nginx
+```
 
-2. **图片上传失败**
-   - 检查uploads目录权限
-   - 确认nginx用户对uploads目录有写入权限
-   - 检查服务器磁盘空间是否充足
+## 4. 安全配置
 
-3. **数据库连接错误**
-   - 检查MySQL服务是否启动
-   - 验证用户名/密码配置是否正确
-   - 检查数据库连接字符串
+### 4.1 配置防火墙
 
-4. **Nginx配置问题**
-   - 使用`nginx -t`命令检查配置语法
-   - 查看Nginx错误日志(`/var/log/nginx/error.log`或Windows下的`logs/error.log`)
+```bash
+# Ubuntu/Debian 使用 ufw
+sudo ufw allow ssh
+sudo ufw allow http
+sudo ufw allow https
+sudo ufw enable
+```
 
-## 系统维护
+### 4.2 设置 HTTPS (推荐)
 
-### 更新系统
+使用 Let's Encrypt 获取免费 SSL 证书：
 
-当需要更新系统时：
+```bash
+sudo apt install certbot python3-certbot-nginx
+sudo certbot --nginx -d your_domain.com
+```
+
+## 5. 系统维护
+
+### 5.1 日志查看
+
+```bash
+# 查看后端日志
+pm2 logs waste-management-backend
+
+# 查看 Nginx 访问日志
+sudo tail -f /var/log/nginx/access.log
+
+# 查看 Nginx 错误日志
+sudo tail -f /var/log/nginx/error.log
+```
+
+### 5.2 系统更新
 
 ```bash
 # 拉取最新代码
-cd /var/www/hazardous-waste-management-system
 git pull
 
-# 更新依赖
+# 更新后端依赖
 cd backend
 npm install
+
+# 更新前端依赖并重新构建
 cd ../frontend
 npm install
-
-# 重新构建前端
-cd ../frontend
 npm run build
 
 # 重启后端服务
-pm2 restart hazardous-waste-api
+cd ../backend
+pm2 restart waste-management-backend
 ```
 
-### 备份数据库
-
-定期备份数据库是良好的维护习惯：
+### 5.3 数据库备份
 
 ```bash
 # 创建备份目录
-mkdir -p /var/backups/hazardous-waste
+mkdir -p ~/backups
 
 # 备份数据库
-mysqldump -u Xiangyu -p waste_management > /var/backups/hazardous-waste/backup_$(date +%Y%m%d).sql
-
-# 设置定时备份（每天凌晨3点）
-echo "0 3 * * * mysqldump -u Xiangyu -p990924 waste_management > /var/backups/hazardous-waste/backup_$(date +\\%Y\\%m\\%d).sql" | sudo tee -a /etc/crontab
+mysqldump -u waste_user -p waste_management > ~/backups/waste_management_$(date +%Y%m%d).sql
 ```
 
-## 安全建议
+## 6. 故障排除
 
-1. **使用HTTPS**
-   - 获取并配置SSL证书
-   - 将HTTP请求重定向到HTTPS
+### 6.1 后端服务无法启动
 
-2. **定期更新依赖**
-   ```bash
-   npm audit fix
-   ```
+- 检查数据库连接配置是否正确
+- 检查 Node.js 版本是否兼容
+- 检查日志文件获取详细错误信息
 
-3. **限制上传文件类型和大小**
-   - 在Nginx配置中设置`client_max_body_size`
-   - 在后端代码中验证文件类型和大小
+### 6.2 前端无法访问
 
-4. **设置强密码策略**
-   - 要求密码包含大小写字母、数字和特殊字符
-   - 定期更换密码
+- 检查 Nginx 配置是否正确
+- 确保前端已正确构建
+- 检查 Nginx 错误日志
 
-5. **配置防火墙**
-   - 只开放必要的端口
-   - 限制SSH访问
+### 6.3 文件上传失败
 
-6. **定期备份**
-   - 数据库备份
-   - 代码备份
-   - 上传文件备份
+- 检查上传目录权限
+- 确保 Nginx 配置中的 `client_max_body_size` 设置足够大
+- 检查后端服务器的磁盘空间是否充足
+
+## 7. 联系支持
+
+如有任何部署问题，请联系系统管理员或开发团队获取支持。
