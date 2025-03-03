@@ -20,7 +20,7 @@
         ref="wasteForm" 
         :model="form" 
         :rules="rules" 
-        label-width="120px"
+        label-position="top"
         class="waste-form"
       >
         <el-form-item label="废物类型" prop="wasteTypeId">
@@ -38,31 +38,32 @@
           <el-input v-model="form.location" placeholder="请输入废物产生地点" />
         </el-form-item>
 
-        <el-form-item label="收集日期">
-          <el-date-picker
-            v-model="form.collectionDate"
-            type="date"
-            placeholder="选择日期"
-            format="YYYY-MM-DD"
-            value-format="YYYY-MM-DD"
-            style="width: 100%"
-          />
-        </el-form-item>
+        <div class="form-row">
+          <el-form-item label="收集日期" class="date-item">
+            <el-date-picker
+              v-model="form.collectionDate"
+              type="date"
+              placeholder="选择日期"
+              format="YYYY-MM-DD"
+              value-format="YYYY-MM-DD"
+              style="width: 100%"
+            />
+          </el-form-item>
 
-        <el-form-item label="收集时间">
-          <el-time-picker
-            v-model="form.collectionTime"
-            format="HH:mm"
-            placeholder="选择时间"
-            value-format="HH:mm"
-            style="width: 100%"
-          >
-            <template #prefix>
-              <el-icon><clock /></el-icon>
-            </template>
-          </el-time-picker>
-          <!-- <div class="time-tip">只需选择小时和分钟</div> -->
-        </el-form-item>
+          <el-form-item label="收集时间" class="time-item">
+            <el-time-picker
+              v-model="form.collectionTime"
+              format="HH:mm"
+              placeholder="选择时间"
+              value-format="HH:mm"
+              style="width: 100%"
+            >
+              <template #prefix>
+                <el-icon><clock /></el-icon>
+              </template>
+            </el-time-picker>
+          </el-form-item>
+        </div>
 
         <el-form-item label="收集数量(吨)" prop="quantity">
           <el-input-number 
@@ -71,10 +72,12 @@
             :precision="3" 
             :step="0.001" 
             style="width: 100%"
+            controls-position="right"
           />
         </el-form-item>
 
         <el-form-item label="现场照片（收集前）" prop="photosBefore">
+          <div class="photo-tip">请上传废物收集前的现场照片（最多10张）</div>
           <el-upload
             class="waste-photo-uploader"
             action="#"
@@ -89,10 +92,10 @@
           >
             <el-icon><plus /></el-icon>
           </el-upload>
-          <div class="photo-tip">请上传废物收集前的现场照片（最多10张）</div>
         </el-form-item>
 
         <el-form-item label="现场照片（收集后）" prop="photosAfter">
+          <div class="photo-tip">请上传废物收集后的现场照片（最多10张）</div>
           <el-upload
             class="waste-photo-uploader"
             action="#"
@@ -107,13 +110,12 @@
           >
             <el-icon><plus /></el-icon>
           </el-upload>
-          <div class="photo-tip">请上传废物收集后的现场照片（最多10张）</div>
         </el-form-item>
 
-        <el-form-item>
-          <el-button type="primary" @click="submitForm" :loading="loading">提交</el-button>
-          <el-button @click="resetForm">重置</el-button>
-        </el-form-item>
+        <div class="form-actions">
+          <el-button type="primary" @click="submitForm" :loading="loading" class="submit-btn">提交</el-button>
+          <el-button @click="resetForm" class="reset-btn">重置</el-button>
+        </div>
       </el-form>
     </div>
 
@@ -396,15 +398,26 @@ export default {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  background-color: #f5f7fa;
 }
 
 .header {
   background-color: #409EFF;
   color: white;
-  padding: 20px;
+  padding: 12px 16px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.header h1 {
+  font-size: 18px;
+  margin: 0;
+  font-weight: 500;
 }
 
 .back-button, .view-records {
@@ -413,12 +426,13 @@ export default {
   align-items: center;
   gap: 5px;
   font-size: 14px;
+  white-space: nowrap;
 }
 
 .content {
   flex: 1;
-  padding: 30px;
-  max-width: 800px;
+  padding: 16px;
+  max-width: 100%;
   margin: 0 auto;
   width: 100%;
   box-sizing: border-box;
@@ -426,7 +440,7 @@ export default {
 
 .unit-info {
   text-align: center;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .unit-info h2 {
@@ -434,29 +448,134 @@ export default {
   border-bottom: 2px solid #409EFF;
   display: inline-block;
   padding-bottom: 5px;
+  font-size: 18px;
+  margin: 0;
 }
 
 .waste-form {
-  background-color: #f9f9f9;
-  padding: 20px;
+  background-color: #ffffff;
+  padding: 16px;
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+}
+
+.form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+@media (min-width: 768px) {
+  .form-row {
+    flex-direction: row;
+  }
+  
+  .date-item, .time-item {
+    flex: 1;
+  }
+  
+  .content {
+    padding: 24px;
+    max-width: 800px;
+  }
+  
+  .header h1 {
+    font-size: 22px;
+  }
 }
 
 .waste-photo-uploader {
   width: 100%;
 }
 
+.waste-photo-uploader :deep(.el-upload--picture-card) {
+  width: 80px;
+  height: 80px;
+  line-height: 80px;
+}
+
+.waste-photo-uploader :deep(.el-upload-list--picture-card .el-upload-list__item) {
+  width: 80px;
+  height: 80px;
+}
+
 .photo-tip, .time-tip {
   font-size: 12px;
-  color: #999;
-  margin-top: 5px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.form-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.submit-btn, .reset-btn {
+  width: 100%;
+  height: 44px;
+  font-size: 16px;
+  border-radius: 8px;
+}
+
+.submit-btn {
+  margin-right: 0;
+}
+
+@media (min-width: 768px) {
+  .form-actions {
+    flex-direction: row;
+  }
+  
+  .submit-btn, .reset-btn {
+    width: auto;
+  }
+  
+  .submit-btn {
+    margin-right: 12px;
+  }
 }
 
 .footer {
   background-color: #f5f5f5;
-  padding: 15px;
+  padding: 12px;
   text-align: center;
   color: #666;
+  font-size: 12px;
+}
+
+:deep(.el-form-item__label) {
+  font-size: 15px;
+  font-weight: 500;
+  color: #333;
+  padding-bottom: 4px;
+}
+
+:deep(.el-input__inner), 
+:deep(.el-select__input), 
+:deep(.el-input-number__decrease), 
+:deep(.el-input-number__increase) {
+  height: 44px;
+  font-size: 15px;
+}
+
+:deep(.el-button) {
+  font-size: 15px;
+  padding: 12px 20px;
+}
+
+:deep(.el-select-dropdown__item) {
+  font-size: 15px;
+  padding: 12px 20px;
+}
+
+:deep(.el-date-editor.el-input), 
+:deep(.el-date-editor.el-input__inner) {
+  width: 100%;
+}
+
+:deep(.el-form-item) {
+  margin-bottom: 20px;
 }
 </style>
