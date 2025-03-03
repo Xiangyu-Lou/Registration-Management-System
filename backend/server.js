@@ -5,6 +5,10 @@ const multer = require('multer');
 const fs = require('fs');
 const mysql = require('mysql2/promise');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+
+// JWT 密钥
+const JWT_SECRET = 'your-secret-key'; // 在生产环境中应该使用环境变量
 
 // 创建Express应用
 const app = express();
@@ -148,7 +152,7 @@ app.get('/api/test', (req, res) => {
 // 用户登录
 app.post('/api/login', async (req, res) => {
   console.log('登录请求数据:', req.body);
-  const { phone, password } = req.body;
+  const { phone, password, rememberMe } = req.body;
   
   if (!phone) {
     console.log('登录失败: 缺少手机号');
@@ -179,7 +183,18 @@ app.post('/api/login', async (req, res) => {
     // 员工登录（仅需手机号）
     if (user.role_id === 1) {
       console.log('员工登录成功:', user.username);
-      // 员工登录成功，不需要密码
+      // 生成 token
+      const token = jwt.sign(
+        { 
+          id: user.id,
+          phone: user.phone,
+          role_id: user.role_id,
+          unit_id: user.unit_id
+        },
+        JWT_SECRET,
+        { expiresIn: rememberMe ? '30d' : '24h' } // 如果选择记住登录，token 30天过期，否则24小时过期
+      );
+      
       return res.json({
         id: user.id,
         username: user.username,
@@ -187,7 +202,8 @@ app.post('/api/login', async (req, res) => {
         role: user.role_name,
         role_id: user.role_id,
         unit_id: user.unit_id,
-        unit_name: user.unit_name
+        unit_name: user.unit_name,
+        token
       });
     }
 
@@ -204,6 +220,18 @@ app.post('/api/login', async (req, res) => {
       return res.status(401).json({ error: '密码错误' });
     }
 
+    // 生成 token
+    const token = jwt.sign(
+      { 
+        id: user.id,
+        phone: user.phone,
+        role_id: user.role_id,
+        unit_id: user.unit_id
+      },
+      JWT_SECRET,
+      { expiresIn: rememberMe ? '30d' : '24h' } // 如果选择记住登录，token 30天过期，否则24小时过期
+    );
+
     res.json({
       id: user.id,
       username: user.username,
@@ -211,13 +239,31 @@ app.post('/api/login', async (req, res) => {
       role: user.role_name,
       role_id: user.role_id,
       unit_id: user.unit_id,
-      unit_name: user.unit_name
+      unit_name: user.unit_name,
+      token
     });
   } catch (error) {
     console.error('登录错误:', error);
     res.status(500).json({ error: '服务器错误' });
   }
 });
+
+// 验证 token 的中间件
+const verifyToken = (req, res, next) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  
+  if (!token) {
+    return res.status(401).json({ error: '未提供认证令牌' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (error) {
+    return res.status(401).json({ error: '无效的认证令牌' });
+  }
+};
 
 // 获取所有用户（用于管理员）
 app.get('/api/users', async (req, res) => {

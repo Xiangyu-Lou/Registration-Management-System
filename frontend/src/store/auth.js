@@ -5,6 +5,7 @@ import apiConfig from '../config/api';
 // 初始化状态
 const defaultState = {
   user: null,
+  token: null,
   isLoggedIn: false,
   loading: false,
   error: null
@@ -15,23 +16,30 @@ const state = reactive({
   ...defaultState
 });
 
-// 从localStorage获取已保存的用户信息
+// 从localStorage获取已保存的用户信息和token
 const init = () => {
   const savedUser = localStorage.getItem('user');
-  if (savedUser) {
+  const savedToken = localStorage.getItem('token');
+  if (savedUser && savedToken) {
     try {
       const user = JSON.parse(savedUser);
       state.user = user;
+      state.token = savedToken;
       state.isLoggedIn = true;
+      // 设置 token 到 httpService
+      if (httpService.defaults && httpService.defaults.headers) {
+        httpService.defaults.headers.common['Authorization'] = `Bearer ${savedToken}`;
+      }
     } catch (e) {
       console.error('Error parsing saved user data:', e);
       localStorage.removeItem('user');
+      localStorage.removeItem('token');
     }
   }
 };
 
 // 登录方法
-const login = async (phone, password) => {
+const login = async (phone, password, rememberMe = false) => {
   // 设置加载状态
   state.loading = true;
   state.error = null;
@@ -40,7 +48,7 @@ const login = async (phone, password) => {
 
   try {
     // 员工登录不发送密码字段，管理员必须发送密码
-    const postData = { phone };
+    const postData = { phone, rememberMe };
     
     // 只有在密码存在且非空时才添加到请求中
     if (password !== null && password !== undefined && password !== '') {
@@ -54,12 +62,25 @@ const login = async (phone, password) => {
     const response = await httpService.post(apiConfig.endpoints.login, postData);
     console.log('登录请求成功响应:', response.data);
 
-    const user = response.data;
+    const { token, ...user } = response.data;
     state.user = user;
+    state.token = token;
     state.isLoggedIn = true;
     
-    // 保存到localStorage以便刷新后保持登录状态
-    localStorage.setItem('user', JSON.stringify(user));
+    // 设置 token 到 httpService
+    if (httpService.defaults && httpService.defaults.headers) {
+      httpService.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    }
+    
+    // 如果选择记住登录，保存到localStorage
+    if (rememberMe) {
+      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('token', token);
+    } else {
+      // 否则只保存在 sessionStorage 中
+      sessionStorage.setItem('user', JSON.stringify(user));
+      sessionStorage.setItem('token', token);
+    }
     
     return { success: true, user };
   } catch (error) {
@@ -74,11 +95,18 @@ const login = async (phone, password) => {
 // 注销方法
 const logout = () => {
   state.user = null;
+  state.token = null;
   state.isLoggedIn = false;
+  if (httpService.defaults && httpService.defaults.headers) {
+    delete httpService.defaults.headers.common['Authorization'];
+  }
   localStorage.removeItem('user');
+  localStorage.removeItem('token');
+  sessionStorage.removeItem('user');
+  sessionStorage.removeItem('token');
 };
 
-// 初始化
+// 初始化认证状态
 init();
 
 export default {

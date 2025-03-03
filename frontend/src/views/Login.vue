@@ -39,6 +39,10 @@
         </el-form-item>
         
         <el-form-item>
+          <el-checkbox v-model="form.rememberMe">记住登录</el-checkbox>
+        </el-form-item>
+        
+        <el-form-item>
           <el-button 
             type="primary" 
             native-type="submit"
@@ -74,7 +78,8 @@ export default {
     const form = reactive({
       phone: '',
       password: '',
-      userType: 1 // 默认为员工
+      userType: 1, // 默认为员工
+      rememberMe: false // 添加记住登录选项
     });
     
     // 员工登录不需要密码，管理员需要
@@ -161,10 +166,10 @@ export default {
         let result;
         if (form.userType === 1) {
           console.log('员工登录，不发送密码');
-          result = await auth.login(form.phone, null);
+          result = await auth.login(form.phone, null, form.rememberMe);
         } else {
           console.log('管理员登录，发送密码');
-          result = await auth.login(form.phone, form.password);
+          result = await auth.login(form.phone, form.password, form.rememberMe);
         }
         console.log('登录响应:', result);
         
