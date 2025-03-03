@@ -139,15 +139,15 @@
             <el-table-column prop="collection_start_time" label="收集开始时间" width="160" />
             <el-table-column prop="quantity" label="数量(吨)" width="100" />
             <el-table-column prop="created_at" label="记录时间" width="160" />
-            <el-table-column label="现场照片" width="100">
+            <el-table-column label="现场照片（清理前）" width="120">
               <template #default="scope">
-                <div v-if="scope.row.photo_path">
+                <div v-if="scope.row.photo_path_before">
                   <!-- 多张照片显示 -->
                   <div 
-                    v-for="(path, index) in parsePhotoPath(scope.row.photo_path)" 
+                    v-for="(path, index) in parsePhotoPath(scope.row.photo_path_before)" 
                     :key="index"
                     class="photo-thumbnail-container"
-                    @click="previewPhoto(parsePhotoPath(scope.row.photo_path), index)"
+                    @click="previewPhoto(parsePhotoPath(scope.row.photo_path_before), index)"
                   >
                     <el-image 
                       :src="`${apiConfig.baseURL}${path}`"
@@ -162,8 +162,38 @@
                       </template>
                     </el-image>
                   </div>
-                  <div v-if="parsePhotoPath(scope.row.photo_path).length > 1" class="photo-count">
-                    {{ parsePhotoPath(scope.row.photo_path).length }}张
+                  <div v-if="parsePhotoPath(scope.row.photo_path_before).length > 1" class="photo-count">
+                    {{ parsePhotoPath(scope.row.photo_path_before).length }}张
+                  </div>
+                </div>
+                <span v-else>无照片</span>
+              </template>
+            </el-table-column>
+            <el-table-column label="现场照片（清理后）" width="120">
+              <template #default="scope">
+                <div v-if="scope.row.photo_path_after">
+                  <!-- 多张照片显示 -->
+                  <div 
+                    v-for="(path, index) in parsePhotoPath(scope.row.photo_path_after)" 
+                    :key="index"
+                    class="photo-thumbnail-container"
+                    @click="previewPhoto(parsePhotoPath(scope.row.photo_path_after), index)"
+                  >
+                    <el-image 
+                      :src="`${apiConfig.baseURL}${path}`"
+                      fit="cover"
+                      class="record-image"
+                      :style="{ margin: index > 0 ? '2px 0 0 0' : '0' }"
+                    >
+                      <template #error>
+                        <div class="image-error">
+                          <el-icon><picture-failed /></el-icon>
+                        </div>
+                      </template>
+                    </el-image>
+                  </div>
+                  <div v-if="parsePhotoPath(scope.row.photo_path_after).length > 1" class="photo-count">
+                    {{ parsePhotoPath(scope.row.photo_path_after).length }}张
                   </div>
                 </div>
                 <span v-else>无照片</span>
