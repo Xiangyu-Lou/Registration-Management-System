@@ -96,6 +96,7 @@
             multiple
             list-type="picture-card"
             :on-preview="handlePictureCardPreview"
+            :before-upload="handleBeforeUpload"
           >
             <el-icon><plus /></el-icon>
           </el-upload>
@@ -149,28 +150,29 @@ export default {
     const unitName = ref('');
     const wasteTypes = ref([]);
     const units = ref([]);
-    const photoFiles = ref([]);
     const photoList = ref([]);
+    const photoFiles = ref([]);
+    const existingPhotoPaths = ref([]);
     const previewImages = ref([]);
     const showViewer = ref(false);
     const previewIndex = ref(0);
-    const existingPhotoPaths = ref([]);
     const createdAt = ref('');
-
-    // 确定是新增还是编辑
-    const isNew = computed(() => !route.params.id || route.params.id === 'new');
+    
+    // 是否为新增记录
+    const isNew = computed(() => !route.params.id);
     
     // 是否为超级管理员
     const isSuperAdmin = computed(() => {
       return auth.state.isLoggedIn && auth.state.user.role_id === 3;
     });
-
+    
+    // 表单数据
     const form = reactive({
       unitId: '',
       wasteTypeId: '',
       location: '',
-      collectionDate: new Date().toISOString().slice(0, 10), // 默认为当天
-      collectionTime: '08:00',
+      collectionDate: '',
+      collectionTime: '',
       quantity: 0,
       recordId: null,
       creatorId: auth.state.user?.id || null
@@ -289,6 +291,7 @@ export default {
           // 解析JSON格式的照片路径
           try {
             const photoPaths = JSON.parse(record.photo_path);
+            console.log('解析到的照片路径:', photoPaths);
             
             // 设置预览图片
             previewImages.value = photoPaths.map(path => `${apiConfig.baseURL}${path}`);
@@ -298,12 +301,17 @@ export default {
             
             // 设置上传组件的文件列表，使现有照片能显示在上传组件中
             photoList.value = photoPaths.map((path, index) => {
+              const url = `${apiConfig.baseURL}${path}`;
+              console.log(`照片${index + 1}的URL:`, url);
               return {
                 name: `现有照片${index + 1}`,
-                url: `${apiConfig.baseURL}${path}`,
-                uid: `existing-${index}`
+                url: url,
+                uid: `existing-${index}`,
+                status: 'success' // 添加状态，表示已上传成功
               };
             });
+            
+            console.log('设置的photoList:', photoList.value);
           } catch (error) {
             console.error('解析照片路径失败:', error);
             previewImages.value = [];
@@ -326,8 +334,23 @@ export default {
       }
     };
 
+    // 处理上传前的文件检查
+    const handleBeforeUpload = (file) => {
+      console.log('上传前处理文件:', file);
+      
+      // 确保文件对象有唯一的uid
+      if (!file.uid) {
+        file.uid = Date.now() + '-' + Math.random().toString(36).substr(2, 10);
+        console.log('为文件分配新的uid:', file.uid);
+      }
+      
+      return true; // 允许上传
+    };
+
     // 处理照片变更
     const handlePhotoChange = (file, fileList) => {
+      console.log('照片变更:', file, fileList);
+      
       // 更新photoFiles，只包含新上传的文件
       photoFiles.value = fileList
         .filter(f => f.raw) // 只处理新上传的文件
@@ -336,7 +359,7 @@ export default {
       // 更新existingPhotoPaths，只保留仍在fileList中的现有照片
       if (!isNew.value) {
         const existingFileUids = fileList
-          .filter(f => f.uid && f.uid.startsWith('existing-'))
+          .filter(f => f.uid && typeof f.uid === 'string' && f.uid.startsWith('existing-'))
           .map(f => f.uid);
         
         // 保留仍在fileList中的现有照片
@@ -347,12 +370,16 @@ export default {
       
       // 更新预览图片列表
       updatePreviewImages(fileList);
+      
+      return false; // 阻止自动上传
     };
 
     // 处理照片移除
     const handlePhotoRemove = (file, fileList) => {
+      console.log('照片移除:', file, fileList);
+      
       // 如果移除的是现有照片
-      if (file.uid && file.uid.startsWith('existing-')) {
+      if (file.uid && typeof file.uid === 'string' && file.uid.startsWith('existing-')) {
         const index = parseInt(file.uid.replace('existing-', ''));
         // 从existingPhotoPaths中移除
         existingPhotoPaths.value = existingPhotoPaths.value.filter((_, i) => i !== index);
@@ -369,14 +396,20 @@ export default {
 
     // 更新预览图片列表
     const updatePreviewImages = (fileList) => {
+      console.log('更新预览图片列表:', fileList);
+      
       previewImages.value = fileList.map(file => {
         if (file.url) {
           return file.url;
         } else if (file.raw) {
           return URL.createObjectURL(file.raw);
+        } else if (file instanceof File) {
+          return URL.createObjectURL(file);
         }
         return '';
       }).filter(url => url);
+      
+      console.log('预览图片列表:', previewImages.value);
     };
 
     // 处理图片预览
@@ -489,6 +522,7 @@ export default {
       handlePhotoChange,
       handlePhotoRemove,
       handlePictureCardPreview,
+      handleBeforeUpload,
       closeViewer,
       submitForm,
       goBack
