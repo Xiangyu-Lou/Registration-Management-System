@@ -74,21 +74,40 @@
           />
         </el-form-item>
 
-        <el-form-item label="现场照片" prop="photos">
+        <el-form-item label="现场照片（收集前）" prop="photosBefore">
           <el-upload
             class="waste-photo-uploader"
             action="#"
             :auto-upload="false"
-            :on-change="handlePhotoChange"
-            :on-remove="handlePhotoRemove"
-            :file-list="fileList"
+            :on-change="handlePhotoBeforeChange"
+            :on-remove="handlePhotoBeforeRemove"
+            :file-list="fileListBefore"
             :limit="10"
             multiple
             list-type="picture-card"
+            :before-upload="handleBeforeUpload"
           >
             <el-icon><plus /></el-icon>
           </el-upload>
-          <div class="photo-tip">请上传废物现场照片（最多10张）</div>
+          <div class="photo-tip">请上传废物收集前的现场照片（最多10张）</div>
+        </el-form-item>
+
+        <el-form-item label="现场照片（收集后）" prop="photosAfter">
+          <el-upload
+            class="waste-photo-uploader"
+            action="#"
+            :auto-upload="false"
+            :on-change="handlePhotoAfterChange"
+            :on-remove="handlePhotoAfterRemove"
+            :file-list="fileListAfter"
+            :limit="10"
+            multiple
+            list-type="picture-card"
+            :before-upload="handleBeforeUpload"
+          >
+            <el-icon><plus /></el-icon>
+          </el-upload>
+          <div class="photo-tip">请上传废物收集后的现场照片（最多10张）</div>
         </el-form-item>
 
         <el-form-item>
@@ -133,8 +152,10 @@ export default {
     const loading = ref(false);
     const unitName = ref('');
     const wasteTypes = ref([]);
-    const photoFiles = ref([]);
-    const fileList = ref([]);
+    const photoFilesBefore = ref([]);
+    const photoFilesAfter = ref([]);
+    const fileListBefore = ref([]);
+    const fileListAfter = ref([]);
     
     // 检查用户是否为超级管理员
     const isAdmin = computed(() => {
@@ -148,7 +169,8 @@ export default {
       collectionDate: new Date().toISOString().slice(0, 10), // 默认为当天
       collectionTime: '08:00',
       quantity: 0,
-      photos: []
+      photosBefore: [],
+      photosAfter: []
     });
 
     const rules = {
@@ -197,15 +219,54 @@ export default {
       }
     };
 
-    // 多图片上传处理
-    const handlePhotoChange = (file, _fileList) => {
-      // 更新文件列表
-      photoFiles.value = _fileList.map(f => f.raw);
+    // 处理上传前的文件处理
+    const handleBeforeUpload = (file) => {
+      if (!file.uid) {
+        file.uid = Date.now() + '-' + Math.random().toString(36).substr(2, 10);
+      }
+      return true; // 允许上传
     };
 
-    // 删除图片处理
-    const handlePhotoRemove = (file, fileList) => {
-      photoFiles.value = fileList.map(f => f.raw);
+    // 处理收集前照片变更
+    const handlePhotoBeforeChange = (file, fileList) => {
+      // 更新文件列表
+      console.log('收集前照片变更:', file);
+      fileListBefore.value = fileList;
+      photoFilesBefore.value = fileList
+        .filter(f => f.raw) // 只处理新上传的文件
+        .map(f => f.raw);
+      console.log('更新后的photoFilesBefore:', photoFilesBefore.value);
+    };
+
+    // 处理收集前照片移除
+    const handlePhotoBeforeRemove = (file, fileList) => {
+      console.log('收集前照片移除:', file);
+      fileListBefore.value = fileList;
+      photoFilesBefore.value = fileList
+        .filter(f => f.raw)
+        .map(f => f.raw);
+      console.log('更新后的photoFilesBefore:', photoFilesBefore.value);
+    };
+
+    // 处理收集后照片变更
+    const handlePhotoAfterChange = (file, fileList) => {
+      // 更新文件列表
+      console.log('收集后照片变更:', file);
+      fileListAfter.value = fileList;
+      photoFilesAfter.value = fileList
+        .filter(f => f.raw) // 只处理新上传的文件
+        .map(f => f.raw);
+      console.log('更新后的photoFilesAfter:', photoFilesAfter.value);
+    };
+
+    // 处理收集后照片移除
+    const handlePhotoAfterRemove = (file, fileList) => {
+      console.log('收集后照片移除:', file);
+      fileListAfter.value = fileList;
+      photoFilesAfter.value = fileList
+        .filter(f => f.raw)
+        .map(f => f.raw);
+      console.log('更新后的photoFilesAfter:', photoFilesAfter.value);
     };
 
     const submitForm = () => {
@@ -225,19 +286,53 @@ export default {
             }
             formData.append('quantity', form.quantity);
             
-            // 添加多张照片
-            if (photoFiles.value && photoFiles.value.length > 0) {
-              photoFiles.value.forEach((file) => {
-                formData.append('photos', file);
+            // 添加创建者ID（如果用户已登录）
+            if (auth.state.isLoggedIn && auth.state.user) {
+              formData.append('creatorId', auth.state.user.id);
+            }
+            
+            console.log('提交表单数据:', {
+              unitId: props.id,
+              wasteTypeId: form.wasteTypeId,
+              location: form.location,
+              quantity: form.quantity,
+              photosBefore: photoFilesBefore.value ? photoFilesBefore.value.length : 0,
+              photosAfter: photoFilesAfter.value ? photoFilesAfter.value.length : 0
+            });
+            
+            // 添加收集前照片
+            if (photoFilesBefore.value && photoFilesBefore.value.length > 0) {
+              console.log('添加收集前照片数量:', photoFilesBefore.value.length);
+              photoFilesBefore.value.forEach((file, index) => {
+                if (file) {
+                  console.log(`收集前照片 ${index+1}:`, file.name);
+                  formData.append('photosBefore', file);
+                }
+              });
+            }
+            
+            // 添加收集后照片
+            if (photoFilesAfter.value && photoFilesAfter.value.length > 0) {
+              console.log('添加收集后照片数量:', photoFilesAfter.value.length);
+              photoFilesAfter.value.forEach((file, index) => {
+                if (file) {
+                  console.log(`收集后照片 ${index+1}:`, file.name);
+                  formData.append('photosAfter', file);
+                }
               });
             }
 
-            await httpService.postForm(apiConfig.endpoints.wasteRecords, formData);
+            const response = await httpService.postForm(apiConfig.endpoints.wasteRecords, formData);
+            console.log('提交响应:', response.data);
 
             ElMessage.success('废物记录提交成功');
             resetForm();
           } catch (error) {
             console.error('Error submitting form:', error);
+            if (error.response) {
+              console.error('错误响应数据:', error.response.data);
+              console.error('错误状态码:', error.response.status);
+            }
             ElMessage.error('提交失败，请稍后再试');
           } finally {
             loading.value = false;
@@ -252,8 +347,10 @@ export default {
       if (wasteForm.value) {
         wasteForm.value.resetFields();
       }
-      photoFiles.value = [];
-      fileList.value = [];
+      photoFilesBefore.value = [];
+      photoFilesAfter.value = [];
+      fileListBefore.value = [];
+      fileListAfter.value = [];
       form.quantity = 0;
       form.collectionDate = new Date().toISOString().slice(0, 10); // 重置为今天
       form.collectionTime = '08:00'; // 重置为默认时间
@@ -278,9 +375,13 @@ export default {
       unitName,
       wasteTypes,
       isAdmin,
-      fileList,
-      handlePhotoChange,
-      handlePhotoRemove,
+      fileListBefore,
+      fileListAfter,
+      handlePhotoBeforeChange,
+      handlePhotoBeforeRemove,
+      handlePhotoAfterChange,
+      handlePhotoAfterRemove,
+      handleBeforeUpload,
       submitForm,
       resetForm,
       goBack,

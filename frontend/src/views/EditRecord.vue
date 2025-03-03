@@ -84,14 +84,14 @@
           />
         </el-form-item>
 
-        <el-form-item label="现场照片" prop="photos">
+        <el-form-item label="现场照片（收集前）" prop="photosBefore">
           <el-upload
             class="waste-photo-uploader"
             action="#"
             :auto-upload="false"
-            :on-change="handlePhotoChange"
-            :on-remove="handlePhotoRemove"
-            :file-list="photoList"
+            :on-change="handlePhotoBeforeChange"
+            :on-remove="handlePhotoBeforeRemove"
+            :file-list="photoBeforeList"
             :limit="10"
             multiple
             list-type="picture-card"
@@ -100,7 +100,26 @@
           >
             <el-icon><plus /></el-icon>
           </el-upload>
-          <div class="photo-tip">请上传废物现场照片（最多10张）</div>
+          <div class="photo-tip">请上传废物收集前的现场照片（最多10张）</div>
+        </el-form-item>
+
+        <el-form-item label="现场照片（收集后）" prop="photosAfter">
+          <el-upload
+            class="waste-photo-uploader"
+            action="#"
+            :auto-upload="false"
+            :on-change="handlePhotoAfterChange"
+            :on-remove="handlePhotoAfterRemove"
+            :file-list="photoAfterList"
+            :limit="10"
+            multiple
+            list-type="picture-card"
+            :on-preview="handlePictureCardPreview"
+            :before-upload="handleBeforeUpload"
+          >
+            <el-icon><plus /></el-icon>
+          </el-upload>
+          <div class="photo-tip">请上传废物收集后的现场照片（最多10张）</div>
           
           <!-- 添加独立的图片预览组件 -->
           <el-image-viewer
@@ -112,7 +131,7 @@
         </el-form-item>
 
         <el-form-item>
-          <el-button type="primary" @click="submitForm" :loading="submitting">保存</el-button>
+          <el-button type="primary" @click="submitForm" :loading="loading">保存</el-button>
           <el-button @click="goBack">取消</el-button>
         </el-form-item>
       </el-form>
@@ -150,9 +169,12 @@ export default {
     const unitName = ref('');
     const wasteTypes = ref([]);
     const units = ref([]);
-    const photoList = ref([]);
-    const photoFiles = ref([]);
-    const existingPhotoPaths = ref([]);
+    const photoBeforeList = ref([]);
+    const photoAfterList = ref([]);
+    const photoBeforeFiles = ref([]);
+    const photoAfterFiles = ref([]);
+    const existingPhotosPathsBefore = ref([]);
+    const existingPhotosPathsAfter = ref([]);
     const previewImages = ref([]);
     const showViewer = ref(false);
     const previewIndex = ref(0);
@@ -213,7 +235,7 @@ export default {
         
         // 如果有记录ID，则获取记录详情
         if (!isNew.value) {
-          await fetchRecordDetails(route.params.id);
+          await fetchRecordDetails();
         } else {
           // 新增记录默认使用当前用户的单位（非超级管理员）
           if (!isSuperAdmin.value && auth.state.user) {
@@ -265,17 +287,18 @@ export default {
     };
 
     // 获取记录详情
-    const fetchRecordDetails = async (recordId) => {
-      loading.value = true;
+    const fetchRecordDetails = async () => {
       try {
-        const response = await httpService.get(`${apiConfig.endpoints.wasteRecords}/detail/${recordId}`);
-        const record = response.data;
+        loading.value = true;
+        const response = await httpService.get(`${apiConfig.endpoints.wasteRecords}/detail/${route.params.id}`);
         
-        // 填充表单数据
+        const record = response.data;
+        console.log('获取到的记录详情:', record);
+        
         form.unitId = record.unit_id;
         form.wasteTypeId = record.waste_type_id;
         form.location = record.location;
-        form.recordId = recordId; // 设置记录ID
+        form.recordId = record.id;
         
         // 处理收集时间
         if (record.collection_start_time) {
@@ -286,38 +309,58 @@ export default {
         
         form.quantity = record.quantity;
         
-        // 处理照片
-        if (record.photo_path) {
-          // 解析JSON格式的照片路径
-          try {
-            const photoPaths = JSON.parse(record.photo_path);
-            console.log('解析到的照片路径:', photoPaths);
-            
-            // 设置预览图片
-            previewImages.value = photoPaths.map(path => `${apiConfig.baseURL}${path}`);
-            
-            // 设置已有照片路径
-            existingPhotoPaths.value = photoPaths;
-            
-            // 设置上传组件的文件列表，使现有照片能显示在上传组件中
-            photoList.value = photoPaths.map((path, index) => {
-              const url = `${apiConfig.baseURL}${path}`;
-              console.log(`照片${index + 1}的URL:`, url);
-              return {
-                name: `现有照片${index + 1}`,
-                url: url,
-                uid: `existing-${index}`,
-                status: 'success' // 添加状态，表示已上传成功
-              };
-            });
-            
-            console.log('设置的photoList:', photoList.value);
-          } catch (error) {
-            console.error('解析照片路径失败:', error);
-            previewImages.value = [];
-            existingPhotoPaths.value = [];
-            photoList.value = [];
+        // 处理照片路径
+        try {
+          // 处理收集前照片
+          let photoPathsBefore = [];
+          if (record.photo_path_before) {
+            photoPathsBefore = JSON.parse(record.photo_path_before);
+            console.log('解析的收集前照片路径:', photoPathsBefore);
           }
+          
+          // 处理收集后照片
+          let photoPathsAfter = [];
+          if (record.photo_path_after) {
+            photoPathsAfter = JSON.parse(record.photo_path_after);
+            console.log('解析的收集后照片路径:', photoPathsAfter);
+          }
+          
+          // 设置已有照片路径
+          existingPhotosPathsBefore.value = photoPathsBefore;
+          existingPhotosPathsAfter.value = photoPathsAfter;
+          
+          // 设置上传组件的文件列表，使现有照片能显示在上传组件中
+          photoBeforeList.value = photoPathsBefore.map((path, index) => {
+            const url = `${apiConfig.baseURL}${path}`;
+            console.log(`收集前照片${index + 1}的URL:`, url);
+            return {
+              name: `收集前照片${index + 1}`,
+              url: url,
+              uid: `before-${index}`,
+              status: 'success' // 添加状态，表示已上传成功
+            };
+          });
+          
+          photoAfterList.value = photoPathsAfter.map((path, index) => {
+            const url = `${apiConfig.baseURL}${path}`;
+            console.log(`收集后照片${index + 1}的URL:`, url);
+            return {
+              name: `收集后照片${index + 1}`,
+              url: url,
+              uid: `after-${index}`,
+              status: 'success' // 添加状态，表示已上传成功
+            };
+          });
+          
+          // 更新预览图片
+          updatePreviewImages([...photoBeforeList.value, ...photoAfterList.value]);
+        } catch (error) {
+          console.error('解析照片路径失败:', error);
+          previewImages.value = [];
+          existingPhotosPathsBefore.value = [];
+          existingPhotosPathsAfter.value = [];
+          photoBeforeList.value = [];
+          photoAfterList.value = [];
         }
         
         // 获取单位名称
@@ -334,70 +377,122 @@ export default {
       }
     };
 
-    // 处理上传前的文件检查
+    // 处理上传前的文件处理
     const handleBeforeUpload = (file) => {
-      console.log('上传前处理文件:', file);
-      
-      // 确保文件对象有唯一的uid
       if (!file.uid) {
         file.uid = Date.now() + '-' + Math.random().toString(36).substr(2, 10);
-        console.log('为文件分配新的uid:', file.uid);
       }
-      
       return true; // 允许上传
     };
 
-    // 处理照片变更
-    const handlePhotoChange = (file, fileList) => {
-      console.log('照片变更:', file, fileList);
+    // 处理收集前的照片变更
+    const handlePhotoBeforeChange = (file, fileList) => {
+      console.log('收集前照片变更:', file, fileList);
       
-      // 更新photoFiles，只包含新上传的文件
-      photoFiles.value = fileList
+      // 更新photoBeforeList
+      photoBeforeList.value = fileList;
+      
+      // 更新photoBeforeFiles，只包含新上传的文件
+      photoBeforeFiles.value = fileList
         .filter(f => f.raw) // 只处理新上传的文件
         .map(f => f.raw);
       
-      // 更新existingPhotoPaths，只保留仍在fileList中的现有照片
+      // 更新existingPhotosPathsBefore，只保留仍在fileList中的现有照片
       if (!isNew.value) {
         const existingFileUids = fileList
-          .filter(f => f.uid && typeof f.uid === 'string' && f.uid.startsWith('existing-'))
+          .filter(f => f.uid && typeof f.uid === 'string' && f.uid.startsWith('before-'))
           .map(f => f.uid);
         
         // 保留仍在fileList中的现有照片
-        existingPhotoPaths.value = existingPhotoPaths.value.filter((_, index) => {
-          return existingFileUids.includes(`existing-${index}`);
+        existingPhotosPathsBefore.value = existingPhotosPathsBefore.value.filter((_, index) => {
+          return existingFileUids.includes(`before-${index}`);
         });
       }
       
-      // 更新预览图片列表
-      updatePreviewImages(fileList);
+      // 更新预览图片
+      updatePreviewImages([...photoBeforeList.value, ...photoAfterList.value]);
       
       return false; // 阻止自动上传
     };
 
-    // 处理照片移除
-    const handlePhotoRemove = (file, fileList) => {
-      console.log('照片移除:', file, fileList);
+    // 处理收集前的照片移除
+    const handlePhotoBeforeRemove = (file, fileList) => {
+      console.log('收集前照片移除:', file, fileList);
       
-      // 如果移除的是现有照片
-      if (file.uid && typeof file.uid === 'string' && file.uid.startsWith('existing-')) {
-        const index = parseInt(file.uid.replace('existing-', ''));
-        // 从existingPhotoPaths中移除
-        existingPhotoPaths.value = existingPhotoPaths.value.filter((_, i) => i !== index);
+      // 更新photoBeforeList
+      photoBeforeList.value = fileList;
+      
+      // 如果是现有照片，从existingPhotosPathsBefore中移除
+      if (file.uid && typeof file.uid === 'string' && file.uid.startsWith('before-')) {
+        const index = parseInt(file.uid.replace('before-', ''));
+        // 从existingPhotosPathsBefore中移除
+        existingPhotosPathsBefore.value = existingPhotosPathsBefore.value.filter((_, i) => i !== index);
       }
       
-      // 更新photoFiles，只包含新上传的文件
-      photoFiles.value = fileList
+      // 更新photoBeforeFiles，只包含新上传的文件
+      photoBeforeFiles.value = fileList
         .filter(f => f.raw)
         .map(f => f.raw);
       
-      // 更新预览图片列表
-      updatePreviewImages(fileList);
+      // 更新预览图片
+      updatePreviewImages([...photoBeforeList.value, ...photoAfterList.value]);
     };
 
-    // 更新预览图片列表
-    const updatePreviewImages = (fileList) => {
-      console.log('更新预览图片列表:', fileList);
+    // 处理收集后的照片变更
+    const handlePhotoAfterChange = (file, fileList) => {
+      console.log('收集后照片变更:', file, fileList);
       
+      // 更新photoAfterList
+      photoAfterList.value = fileList;
+      
+      // 更新photoAfterFiles，只包含新上传的文件
+      photoAfterFiles.value = fileList
+        .filter(f => f.raw) // 只处理新上传的文件
+        .map(f => f.raw);
+      
+      // 更新existingPhotosPathsAfter，只保留仍在fileList中的现有照片
+      if (!isNew.value) {
+        const existingFileUids = fileList
+          .filter(f => f.uid && typeof f.uid === 'string' && f.uid.startsWith('after-'))
+          .map(f => f.uid);
+        
+        // 保留仍在fileList中的现有照片
+        existingPhotosPathsAfter.value = existingPhotosPathsAfter.value.filter((_, index) => {
+          return existingFileUids.includes(`after-${index}`);
+        });
+      }
+      
+      // 更新预览图片
+      updatePreviewImages([...photoBeforeList.value, ...photoAfterList.value]);
+      
+      return false; // 阻止自动上传
+    };
+
+    // 处理收集后的照片移除
+    const handlePhotoAfterRemove = (file, fileList) => {
+      console.log('收集后照片移除:', file, fileList);
+      
+      // 更新photoAfterList
+      photoAfterList.value = fileList;
+      
+      // 如果是现有照片，从existingPhotosPathsAfter中移除
+      if (file.uid && typeof file.uid === 'string' && file.uid.startsWith('after-')) {
+        const index = parseInt(file.uid.replace('after-', ''));
+        // 从existingPhotosPathsAfter中移除
+        existingPhotosPathsAfter.value = existingPhotosPathsAfter.value.filter((_, i) => i !== index);
+      }
+      
+      // 更新photoAfterFiles，只包含新上传的文件
+      photoAfterFiles.value = fileList
+        .filter(f => f.raw)
+        .map(f => f.raw);
+      
+      // 更新预览图片
+      updatePreviewImages([...photoBeforeList.value, ...photoAfterList.value]);
+    };
+
+    // 更新预览图片
+    const updatePreviewImages = (fileList) => {
       previewImages.value = fileList.map(file => {
         if (file.url) {
           return file.url;
@@ -435,59 +530,80 @@ export default {
     };
 
     // 提交表单
-    const submitForm = () => {
+    const submitForm = async () => {
       recordForm.value.validate(async (valid) => {
         if (valid) {
-          submitting.value = true;
-          
           try {
+            loading.value = true;
+            
+            // 创建FormData对象
             const formData = new FormData();
+            
+            // 添加基本字段
             formData.append('unitId', form.unitId);
             formData.append('wasteTypeId', form.wasteTypeId);
             formData.append('location', form.location);
+            formData.append('quantity', form.quantity);
             
-            // 组合日期和时间，如果有的话
             if (form.collectionDate && form.collectionTime) {
               const combinedDateTime = `${form.collectionDate} ${form.collectionTime}:00`;
               formData.append('collectionStartTime', combinedDateTime);
             }
-            formData.append('quantity', form.quantity);
-            formData.append('creatorId', form.creatorId);
             
-            // 添加多张照片
-            if (photoFiles.value && photoFiles.value.length > 0) {
-              photoFiles.value.forEach(file => {
+            // 添加收集前照片
+            if (photoBeforeFiles.value && photoBeforeFiles.value.length > 0) {
+              photoBeforeFiles.value.forEach(file => {
                 if (file) {
-                  formData.append('photos', file);
+                  formData.append('photosBefore', file);
                 }
               });
             }
             
-            // 添加现有照片路径（用于更新时保留未更改的照片）
-            if (!isNew.value && existingPhotoPaths.value.length > 0) {
-              formData.append('existingPhotoPaths', JSON.stringify(existingPhotoPaths.value));
+            // 添加收集后照片
+            if (photoAfterFiles.value && photoAfterFiles.value.length > 0) {
+              photoAfterFiles.value.forEach(file => {
+                if (file) {
+                  formData.append('photosAfter', file);
+                }
+              });
             }
+            
+            // 添加现有收集前照片路径（用于更新时保留未更改的照片）
+            if (!isNew.value && existingPhotosPathsBefore.value.length > 0) {
+              formData.append('existingPhotosPathsBefore', JSON.stringify(existingPhotosPathsBefore.value));
+            }
+            
+            // 添加现有收集后照片路径（用于更新时保留未更改的照片）
+            if (!isNew.value && existingPhotosPathsAfter.value.length > 0) {
+              formData.append('existingPhotosPathsAfter', JSON.stringify(existingPhotosPathsAfter.value));
+            }
+            
+            let response;
             
             if (isNew.value) {
               // 新增记录
-              await httpService.postForm(apiConfig.endpoints.wasteRecords, formData);
+              response = await httpService.postForm(apiConfig.endpoints.wasteRecords, formData);
               ElMessage.success('废物记录添加成功');
             } else {
-              // 更新记录 - 使用PUT方法
-              await httpService.putForm(`${apiConfig.endpoints.wasteRecords}/${form.recordId}`, formData);
+              // 更新记录
+              response = await httpService.putForm(`${apiConfig.endpoints.wasteRecords}/${form.recordId}`, formData);
               ElMessage.success('废物记录更新成功');
             }
             
-            // 返回记录列表
+            console.log('提交响应:', response.data);
+            
+            // 返回列表页
             goBack();
           } catch (error) {
             console.error('提交表单失败:', error);
-            ElMessage.error('保存失败，请稍后再试');
+            ElMessage.error('提交表单失败');
           } finally {
-            submitting.value = false;
+            loading.value = false;
           }
         } else {
-          ElMessage.warning('请完成必填项');
+          console.log('表单验证失败');
+          ElMessage.error('请填写必填字段');
+          return false;
         }
       });
     };
@@ -513,14 +629,17 @@ export default {
       unitName,
       wasteTypes,
       units,
-      photoList,
+      photoBeforeList,
+      photoAfterList,
       previewImages,
       showViewer,
       previewIndex,
       isNew,
       isSuperAdmin,
-      handlePhotoChange,
-      handlePhotoRemove,
+      handlePhotoBeforeChange,
+      handlePhotoBeforeRemove,
+      handlePhotoAfterChange,
+      handlePhotoAfterRemove,
       handlePictureCardPreview,
       handleBeforeUpload,
       closeViewer,
