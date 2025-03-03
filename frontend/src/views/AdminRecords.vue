@@ -139,6 +139,9 @@
             border 
             v-loading="loading"
             stripe
+            class="responsive-table"
+            height="500"
+            @scroll="handleScroll"
           >
             <el-table-column prop="unit_name" label="单位" width="100" />
             <el-table-column prop="waste_type_name" label="废物类型" width="100" />
@@ -207,27 +210,34 @@
                 <span v-else>无照片</span>
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="180">
+            <el-table-column label="操作" width="70" fixed="right">
               <template #default="scope">
-                <el-button 
-                  type="primary" 
-                  size="small" 
-                  @click="editRecord(scope.row.id)"
-                  text
-                >
-                  编辑
-                </el-button>
-                <el-button 
-                  type="danger" 
-                  size="small" 
-                  @click="confirmDelete(scope.row)"
-                  text
-                >
-                  删除
-                </el-button>
+                <div class="operation-buttons">
+                  <el-button 
+                    type="primary" 
+                    size="small" 
+                    @click="editRecord(scope.row.id)"
+                    text
+                  >
+                    编辑
+                  </el-button>
+                  <el-button 
+                    type="danger" 
+                    size="small" 
+                    @click="confirmDelete(scope.row)"
+                    text
+                  >
+                    删除
+                  </el-button>
+                </div>
               </template>
             </el-table-column>
           </el-table>
+          
+          <div v-if="loadingMore" class="loading-more">
+            <el-icon class="loading"><loading /></el-icon>
+            加载更多...
+          </div>
           
           <div class="empty-block" v-if="records.length === 0 && !loading">
             <el-empty description="暂无废物记录" />
@@ -255,7 +265,7 @@ import { ref, onMounted, computed, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox, ElImageViewer } from 'element-plus';
 import axios from 'axios';
-import { Plus, Refresh, PictureFailed, User, ArrowDown, ArrowUp, Download } from '@element-plus/icons-vue';
+import { Plus, Refresh, PictureFailed, User, ArrowDown, ArrowUp, Download, Loading } from '@element-plus/icons-vue';
 import auth from '../store/auth';
 import { exportToExcel } from '../utils/exportUtils';
 import api from '../config/api';
@@ -283,7 +293,8 @@ export default {
     ArrowDown,
     ArrowUp,
     Download,
-    ElImageViewer
+    ElImageViewer,
+    Loading
   },
   setup() {
     const router = useRouter();
@@ -297,6 +308,12 @@ export default {
     const showViewer = ref(false);
     const previewImages = ref([]);
     const previewIndex = ref(0);
+    
+    // 添加分页相关的响应式变量
+    const page = ref(1);
+    const pageSize = ref(20);
+    const hasMore = ref(true);
+    const loadingMore = ref(false);
     
     // 筛选表单
     const filterForm = reactive({
@@ -403,23 +420,58 @@ export default {
       }
     };
 
-    const fetchRecords = async () => {
-      loading.value = true;
+    const fetchRecords = async (isLoadMore = false) => {
+      if (!isLoadMore) {
+        loading.value = true;
+        page.value = 1;
+        records.value = [];
+      } else {
+        loadingMore.value = true;
+      }
+      
       try {
-        // 使用超级管理员ID获取所有记录
-        const response = await axios.get(`${api.getUrl(api.endpoints.wasteRecords)}/user/${auth.state.user.id}`);
-        records.value = response.data;
+        const params = {
+          page: page.value,
+          pageSize: pageSize.value,
+          wasteTypeId: filterForm.wasteTypeId,
+          minQuantity: filterForm.minQuantity,
+          maxQuantity: filterForm.maxQuantity,
+          location: filterForm.location,
+        };
+        
+        // Only add dateRange if it exists and has both start and end dates
+        if (filterForm.dateRange && filterForm.dateRange.length === 2) {
+          params.dateRange = JSON.stringify(filterForm.dateRange);
+        }
+        
+        const response = await axios.get(
+          `${api.getUrl(api.endpoints.wasteRecords)}/user/${auth.state.user.id}`,
+          { params }
+        );
         
         // 格式化日期
-        records.value.forEach(record => {
-          record.created_at = formatDateTime(record.created_at);
-          record.collection_start_time = formatDateTime(record.collection_start_time);
-        });
+        const formattedRecords = response.data.records.map(record => ({
+          ...record,
+          created_at: formatDateTime(record.created_at),
+          collection_start_time: formatDateTime(record.collection_start_time)
+        }));
+        
+        if (isLoadMore) {
+          records.value = [...records.value, ...formattedRecords];
+        } else {
+          records.value = formattedRecords;
+        }
+        
+        hasMore.value = response.data.hasMore;
+        if (hasMore.value) {
+          page.value++;
+        }
       } catch (error) {
         console.error('获取废物记录失败:', error);
         ElMessage.error('获取废物记录失败');
       } finally {
         loading.value = false;
+        loadingMore.value = false;
       }
     };
 
@@ -432,7 +484,6 @@ export default {
         day: '2-digit',
         hour: '2-digit',
         minute: '2-digit',
-        second: '2-digit',
         hour12: false
       });
     };
@@ -454,60 +505,85 @@ export default {
     };
 
     // 应用筛选
-    const applyFilter = () => {
-      // 筛选已在 computed 属性中处理
+    const applyFilter = async () => {
+      await fetchRecords();
       ElMessage.success('筛选已应用');
     };
     
     // 重置筛选
-    const resetFilter = () => {
+    const resetFilter = async () => {
       filterForm.unitId = null;
       filterForm.dateRange = null;
       filterForm.wasteTypeId = null;
       filterForm.minQuantity = null;
       filterForm.maxQuantity = null;
       filterForm.location = '';
+      await fetchRecords();
       ElMessage.info('筛选条件已重置');
     };
     
     // 导出筛选后的记录为Excel
-    const exportRecords = () => {
+    const exportRecords = async () => {
       if (filteredRecords.value.length === 0) {
         ElMessage.warning('没有可导出的记录');
         return;
       }
       
-      // 定义导出列
-      const exportHeaders = [
-        { title: '单位', field: 'unit_name', width: 15 },
-        { title: '废物类型', field: 'waste_type_name', width: 15 },
-        { title: '产生地点', field: 'location', width: 20 },
-        { title: '收集开始时间', field: 'collection_start_time', width: 20, type: 'datetime' },
-        { title: '数量(吨)', field: 'quantity', width: 12, type: 'number' },
-        { title: '记录时间', field: 'created_at', width: 20, type: 'datetime' }
-      ];
-      
-      // 构建文件名
-      let fileName = '全部废物记录';
-      
-      // 添加筛选条件到文件名
-      if (filterForm.unitId) {
-        const unit = units.value.find(u => u.id === filterForm.unitId);
-        if (unit) {
-          fileName = `${unit.name}_废物记录`;
+      try {
+        loading.value = true;
+        // 获取所有符合当前筛选条件的记录
+        const response = await axios.get(
+          `${api.getUrl(api.endpoints.wasteRecords)}/export/user/${auth.state.user.id}`,
+          {
+            params: {
+              unitId: filterForm.unitId,
+              wasteTypeId: filterForm.wasteTypeId,
+              minQuantity: filterForm.minQuantity,
+              maxQuantity: filterForm.maxQuantity,
+              location: filterForm.location,
+              dateRange: filterForm.dateRange
+            }
+          }
+        );
+        
+        const allRecords = response.data.map(record => ({
+          ...record,
+          created_at: formatDateTime(record.created_at),
+          collection_start_time: formatDateTime(record.collection_start_time)
+        }));
+        
+        // 定义导出列
+        const exportHeaders = [
+          { title: '单位', field: 'unit_name', width: 15 },
+          { title: '废物类型', field: 'waste_type_name', width: 15 },
+          { title: '产生地点', field: 'location', width: 20 },
+          { title: '收集开始时间', field: 'collection_start_time', width: 20, type: 'datetime' },
+          { title: '数量(吨)', field: 'quantity', width: 12, type: 'number' },
+          { title: '记录时间', field: 'created_at', width: 20, type: 'datetime' }
+        ];
+        
+        let fileName = '全部废物记录';
+        if (filterForm.unitId) {
+          const unit = units.value.find(u => u.id === filterForm.unitId);
+          if (unit) {
+            fileName = `${unit.name}_废物记录`;
+          }
         }
-      }
-      
-      if (filterForm.wasteTypeId) {
-        const wasteType = wasteTypes.value.find(t => t.id === filterForm.wasteTypeId);
-        if (wasteType) {
-          fileName += `_${wasteType.name}`;
+        if (filterForm.wasteTypeId) {
+          const wasteType = wasteTypes.value.find(type => type.id === filterForm.wasteTypeId);
+          if (wasteType) {
+            fileName += `_${wasteType.name}`;
+          }
         }
+        
+        exportToExcel(allRecords, fileName, exportHeaders);
+        ElMessage.success('导出成功');
+      } catch (error) {
+        console.error('导出记录失败:', error);
+        ElMessage.error('导出记录失败');
+      } finally {
+        loading.value = false;
       }
-      
-      // 导出数据
-      exportToExcel(filteredRecords.value, fileName, exportHeaders);
-      ElMessage.success('导出成功');
     };
     
     // 确认删除记录
@@ -548,6 +624,18 @@ export default {
       showViewer.value = false;
     };
 
+    // 添加滚动加载处理函数
+    const handleScroll = async (e) => {
+      const element = e.target;
+      if (
+        !loadingMore.value &&
+        hasMore.value &&
+        element.scrollHeight - element.scrollTop - element.clientHeight < 100
+      ) {
+        await fetchRecords(true);
+      }
+    };
+
     return {
       records,
       filteredRecords,
@@ -571,7 +659,12 @@ export default {
       previewIndex,
       previewPhoto,
       closeViewer,
-      apiBaseURL
+      apiBaseURL,
+      page,
+      pageSize,
+      hasMore,
+      loadingMore,
+      handleScroll
     };
   }
 };
@@ -703,6 +796,38 @@ export default {
 .photo-thumbnail-container {
   cursor: pointer;
   display: inline-block;
+}
+
+.operation-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+}
+
+.operation-buttons .el-button {
+  margin-left: 0;
+  padding: 4px 8px;
+}
+
+.loading-more {
+  text-align: center;
+  padding: 10px 0;
+  color: #909399;
+}
+
+.loading-more .loading {
+  margin-right: 5px;
+  animation: rotating 2s linear infinite;
+}
+
+@keyframes rotating {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>
 

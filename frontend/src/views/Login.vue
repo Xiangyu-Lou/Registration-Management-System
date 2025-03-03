@@ -162,15 +162,14 @@ export default {
         // 添加调试信息
         console.log('开始处理登录操作...');
         
-        // 员工登录不传密码参数
-        let result;
-        if (form.userType === 1) {
-          console.log('员工登录，不发送密码');
-          result = await auth.login(form.phone, null, form.rememberMe);
-        } else {
-          console.log('管理员登录，发送密码');
-          result = await auth.login(form.phone, form.password, form.rememberMe);
-        }
+        // 根据用户类型和密码进行登录
+        const result = await auth.login(
+          form.phone,
+          form.userType === 1 ? null : form.password,
+          form.rememberMe,
+          form.userType
+        );
+        
         console.log('登录响应:', result);
         
         if (result.success) {
@@ -192,12 +191,10 @@ export default {
         } else {
           // 显示登录失败错误
           ElMessage.error(result.error || '登录失败');
-          console.error('登录失败:', result.error);
         }
       } catch (error) {
         // 捕获并显示非预期错误
-        ElMessage.error('登录失败，请检查网络连接');
-        console.error('登录错误:', error);
+        ElMessage.error(error.response?.data?.error || '登录失败，请检查网络连接');
       }
     };
     
@@ -235,6 +232,7 @@ export default {
   align-items: center;
   min-height: 100vh;
   background-color: #f0f2f5;
+  padding: 15px;
 }
 
 .login-card {
@@ -271,5 +269,26 @@ export default {
   text-align: center;
   margin-top: 15px;
   font-size: 14px;
+}
+
+/* 移动端适配 */
+@media screen and (max-width: 480px) {
+  .login-card {
+    width: 100%;
+    padding: 20px;
+    box-shadow: none;
+  }
+  
+  .login-header h1 {
+    font-size: 20px;
+  }
+  
+  .login-header h2 {
+    font-size: 16px;
+  }
+  
+  .el-form-item {
+    margin-bottom: 15px;
+  }
 }
 </style>

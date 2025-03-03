@@ -152,7 +152,7 @@ app.get('/api/test', (req, res) => {
 // 用户登录
 app.post('/api/login', async (req, res) => {
   console.log('登录请求数据:', req.body);
-  const { phone, password, rememberMe } = req.body;
+  const { phone, password, rememberMe, userType } = req.body;
   
   if (!phone) {
     console.log('登录失败: 缺少手机号');
@@ -180,6 +180,12 @@ app.post('/api/login', async (req, res) => {
     const user = rows[0];
     console.log('查询到用户信息:', { id: user.id, role_id: user.role_id, username: user.username });
 
+    // 验证用户角色与选择的登录类型是否匹配
+    if (user.role_id !== userType) {
+      console.log('登录失败: 用户角色与登录类型不匹配', { role_id: user.role_id, userType });
+      return res.status(401).json({ error: '请选择正确的登录类型' });
+    }
+
     // 员工登录（仅需手机号）
     if (user.role_id === 1) {
       console.log('员工登录成功:', user.username);
@@ -192,7 +198,7 @@ app.post('/api/login', async (req, res) => {
           unit_id: user.unit_id
         },
         JWT_SECRET,
-        { expiresIn: rememberMe ? '30d' : '24h' } // 如果选择记住登录，token 30天过期，否则24小时过期
+        { expiresIn: rememberMe ? '30d' : '24h' }
       );
       
       return res.json({
@@ -229,7 +235,7 @@ app.post('/api/login', async (req, res) => {
         unit_id: user.unit_id
       },
       JWT_SECRET,
-      { expiresIn: rememberMe ? '30d' : '24h' } // 如果选择记住登录，token 30天过期，否则24小时过期
+      { expiresIn: rememberMe ? '30d' : '24h' }
     );
 
     res.json({
@@ -840,9 +846,10 @@ app.get('/api/waste-records/detail/:id', async (req, res) => {
   }
 });
 
-// 获取用户创建的废物记录
+// 获取用户创建的废物记录（支持分页）
 app.get('/api/waste-records/user/:userId', async (req, res) => {
   const { userId } = req.params;
+  const { page = 1, pageSize = 20, wasteTypeId, minQuantity, maxQuantity, location, dateRange } = req.query;
   
   try {
     // 获取用户信息以确定其权限
@@ -853,48 +860,169 @@ app.get('/api/waste-records/user/:userId', async (req, res) => {
     }
     
     const user = users[0];
-    let sql;
-    let params;
+    let baseSql = `
+      FROM waste_records wr
+      JOIN units u ON wr.unit_id = u.id
+      JOIN waste_types wt ON wr.waste_type_id = wt.id
+      LEFT JOIN users creator ON wr.creator_id = creator.id
+      WHERE 1=1
+    `;
     
-    // 根据用户角色查询不同范围的记录
-    if (user.role_id === 3) {
-      // 超级管理员查看全部记录
-      sql = `SELECT wr.*, u.name as unit_name, wt.name as waste_type_name, 
-             IFNULL(creator.username, creator.phone) as creator_name
-             FROM waste_records wr
-             JOIN units u ON wr.unit_id = u.id
-             JOIN waste_types wt ON wr.waste_type_id = wt.id
-             LEFT JOIN users creator ON wr.creator_id = creator.id
-             ORDER BY wr.created_at DESC`;
-      params = [];
-    } else if (user.role_id === 2) {
-      // 单位管理员查看本单位所有记录
-      sql = `SELECT wr.*, u.name as unit_name, wt.name as waste_type_name, 
-             IFNULL(creator.username, creator.phone) as creator_name
-             FROM waste_records wr
-             JOIN units u ON wr.unit_id = u.id
-             JOIN waste_types wt ON wr.waste_type_id = wt.id
-             LEFT JOIN users creator ON wr.creator_id = creator.id
-             WHERE wr.unit_id = ?
-             ORDER BY wr.created_at DESC`;
-      params = [user.unit_id];
-    } else {
-      // 普通员工只能查看自己创建的记录
-      sql = `SELECT wr.*, u.name as unit_name, wt.name as waste_type_name, 
-             IFNULL(creator.username, creator.phone) as creator_name
-             FROM waste_records wr
-             JOIN units u ON wr.unit_id = u.id
-             JOIN waste_types wt ON wr.waste_type_id = wt.id
-             LEFT JOIN users creator ON wr.creator_id = creator.id
-             WHERE wr.unit_id = ? AND (wr.creator_id = ? OR wr.creator_id IS NULL)
-             ORDER BY wr.created_at DESC`;
-      params = [user.unit_id, userId];
+    const params = [];
+    
+    // 根据用户角色添加权限过滤
+    if (user.role_id !== 3) { // 不是超级管理员
+      baseSql += ' AND wr.unit_id = ?';
+      params.push(user.unit_id);
+      
+      if (user.role_id !== 2) { // 不是单位管理员
+        baseSql += ' AND (wr.creator_id = ? OR wr.creator_id IS NULL)';
+        params.push(userId);
+      }
     }
     
-    const [rows] = await pool.query(sql, params);
-    res.json(rows);
+    // 添加筛选条件
+    if (wasteTypeId) {
+      baseSql += ' AND wr.waste_type_id = ?';
+      params.push(wasteTypeId);
+    }
+    
+    if (minQuantity !== undefined && minQuantity !== '') {
+      baseSql += ' AND wr.quantity >= ?';
+      params.push(parseFloat(minQuantity));
+    }
+    
+    if (maxQuantity !== undefined && maxQuantity !== '') {
+      baseSql += ' AND wr.quantity <= ?';
+      params.push(parseFloat(maxQuantity));
+    }
+    
+    if (location) {
+      baseSql += ' AND wr.location LIKE ?';
+      params.push(`%${location}%`);
+    }
+    
+    if (dateRange) {
+      try {
+        const [startDate, endDate] = JSON.parse(dateRange);
+        if (startDate && endDate) {
+          baseSql += ' AND DATE(wr.collection_start_time) BETWEEN ? AND ?';
+          params.push(startDate, endDate);
+        }
+      } catch (error) {
+        console.error('解析日期范围失败:', error);
+      }
+    }
+    
+    // 添加排序
+    baseSql += ' ORDER BY wr.created_at DESC';
+    
+    // 获取总记录数
+    const countSql = `SELECT COUNT(*) as total ${baseSql}`;
+    const [countResult] = await pool.query(countSql, params);
+    const total = countResult[0].total;
+    
+    // 添加分页
+    const dataSql = `
+      SELECT wr.*, u.name as unit_name, wt.name as waste_type_name,
+      IFNULL(creator.username, creator.phone) as creator_name
+      ${baseSql} LIMIT ? OFFSET ?
+    `;
+    
+    const limit = parseInt(pageSize);
+    const offset = (parseInt(page) - 1) * limit;
+    params.push(limit, offset);
+    
+    // 获取分页数据
+    const [records] = await pool.query(dataSql, params);
+    
+    // 计算是否还有更多数据
+    const hasMore = offset + records.length < total;
+    
+    res.json({
+      records,
+      hasMore,
+      total
+    });
   } catch (error) {
     console.error('获取用户废物记录错误:', error);
+    res.status(500).json({ error: '服务器错误' });
+  }
+});
+
+// 导出用户的废物记录（获取所有符合条件的记录）
+app.get('/api/waste-records/export/user/:userId', async (req, res) => {
+  const { userId } = req.params;
+  const { wasteTypeId, minQuantity, maxQuantity, location, dateRange } = req.query;
+  
+  try {
+    // 获取用户信息以确定其权限
+    const [users] = await pool.query('SELECT * FROM users WHERE id = ?', [userId]);
+    
+    if (users.length === 0) {
+      return res.status(404).json({ error: '用户不存在' });
+    }
+    
+    const user = users[0];
+    let sql = `
+      SELECT wr.*, u.name as unit_name, wt.name as waste_type_name,
+      IFNULL(creator.username, creator.phone) as creator_name
+      FROM waste_records wr
+      JOIN units u ON wr.unit_id = u.id
+      JOIN waste_types wt ON wr.waste_type_id = wt.id
+      LEFT JOIN users creator ON wr.creator_id = creator.id
+      WHERE 1=1
+    `;
+    
+    const params = [];
+    
+    // 根据用户角色添加权限过滤
+    if (user.role_id !== 3) { // 不是超级管理员
+      sql += ' AND wr.unit_id = ?';
+      params.push(user.unit_id);
+      
+      if (user.role_id !== 2) { // 不是单位管理员
+        sql += ' AND (wr.creator_id = ? OR wr.creator_id IS NULL)';
+        params.push(userId);
+      }
+    }
+    
+    // 添加筛选条件
+    if (wasteTypeId) {
+      sql += ' AND wr.waste_type_id = ?';
+      params.push(wasteTypeId);
+    }
+    
+    if (minQuantity !== undefined) {
+      sql += ' AND wr.quantity >= ?';
+      params.push(minQuantity);
+    }
+    
+    if (maxQuantity !== undefined) {
+      sql += ' AND wr.quantity <= ?';
+      params.push(maxQuantity);
+    }
+    
+    if (location) {
+      sql += ' AND wr.location LIKE ?';
+      params.push(`%${location}%`);
+    }
+    
+    if (dateRange) {
+      const [startDate, endDate] = JSON.parse(dateRange);
+      if (startDate && endDate) {
+        sql += ' AND DATE(wr.collection_start_time) BETWEEN ? AND ?';
+        params.push(startDate, endDate);
+      }
+    }
+    
+    // 添加排序
+    sql += ' ORDER BY wr.created_at DESC';
+    
+    const [records] = await pool.query(sql, params);
+    res.json(records);
+  } catch (error) {
+    console.error('导出废物记录错误:', error);
     res.status(500).json({ error: '服务器错误' });
   }
 });

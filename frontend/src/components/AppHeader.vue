@@ -103,4 +103,61 @@ export default {
   align-items: center;
   color: white;
 }
+
+/* 移动端适配 */
+@media screen and (max-width: 768px) {
+  .app-header {
+    padding: 0 10px;
+    height: 50px;
+    flex-wrap: wrap;
+  }
+  
+  .header-title h1 {
+    font-size: 16px;
+  }
+  
+  .user-info {
+    gap: 10px;
+  }
+  
+  .welcome-text {
+    font-size: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  
+  .role-tag, .unit-tag {
+    font-size: 10px;
+    margin-left: 3px;
+    padding: 1px 4px;
+  }
+  
+  .logout-button {
+    margin-left: 5px;
+    padding: 4px 8px;
+  }
+}
+
+/* 小屏幕手机适配 */
+@media screen and (max-width: 480px) {
+  .app-header {
+    flex-direction: column;
+    height: auto;
+    padding: 10px;
+  }
+  
+  .header-title {
+    margin-bottom: 5px;
+  }
+  
+  .user-info {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .unit-tag {
+    display: none;
+  }
+}
 </style>

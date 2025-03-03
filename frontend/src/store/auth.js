@@ -39,16 +39,20 @@ const init = () => {
 };
 
 // 登录方法
-const login = async (phone, password, rememberMe = false) => {
+const login = async (phone, password, rememberMe = false, userType = 1) => {
   // 设置加载状态
   state.loading = true;
   state.error = null;
   
-  console.log('auth.login 开始执行，手机号:', phone);
+  console.log('auth.login 开始执行，手机号:', phone, '用户类型:', userType);
 
   try {
-    // 员工登录不发送密码字段，管理员必须发送密码
-    const postData = { phone, rememberMe };
+    // 构建登录请求数据
+    const postData = { 
+      phone, 
+      rememberMe,
+      userType // 添加用户类型
+    };
     
     // 只有在密码存在且非空时才添加到请求中
     if (password !== null && password !== undefined && password !== '') {
@@ -84,6 +88,7 @@ const login = async (phone, password, rememberMe = false) => {
     
     return { success: true, user };
   } catch (error) {
+    // 只设置错误状态，不显示错误消息
     state.error = error.response?.data?.error || '登录失败，请检查网络连接';
     console.error('Login error:', error);
     return { success: false, error: state.error };

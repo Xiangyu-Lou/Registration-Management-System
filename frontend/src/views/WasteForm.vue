@@ -47,6 +47,9 @@
               format="YYYY-MM-DD"
               value-format="YYYY-MM-DD"
               style="width: 100%"
+              :editable="false"
+              popper-class="date-picker-popup"
+              :teleported="false"
             />
           </el-form-item>
 
@@ -57,6 +60,9 @@
               placeholder="选择时间"
               value-format="HH:mm"
               style="width: 100%"
+              :editable="false"
+              popper-class="time-picker-popup"
+              :teleported="false"
             >
               <template #prefix>
                 <el-icon><clock /></el-icon>
@@ -66,13 +72,18 @@
         </div>
 
         <el-form-item label="收集数量(吨)" prop="quantity">
-          <el-input-number 
-            v-model="form.quantity" 
-            :min="0" 
-            :precision="3" 
-            :step="0.001" 
+          <el-input-number
+            v-model="form.quantity"
+            :min="0"
+            :precision="2"
+            :step="0.1"
             style="width: 100%"
-            controls-position="right"
+            @focus="selectAllText($event)"
+            :input-props="{
+              inputmode: 'decimal',
+              pattern: '[0-9]*[.,]?[0-9]*'
+            }"
+            :controls="false"
           />
         </el-form-item>
 
@@ -115,8 +126,8 @@
         </el-form-item>
 
         <div class="form-actions">
-          <el-button type="primary" @click="submitForm" :loading="loading" class="submit-btn">提交</el-button>
-          <el-button @click="resetForm" class="reset-btn">重置</el-button>
+          <el-button type="primary" class="submit-btn" @click="submitForm" :loading="loading">提交</el-button>
+          <el-button class="reset-btn" @click="resetForm">重置</el-button>
         </div>
       </el-form>
     </div>
@@ -128,7 +139,7 @@
 </template>
 
 <script>
-import { ref, reactive, onMounted, computed } from 'vue';
+import { ref, reactive, onMounted, computed, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import httpService from '../config/httpService';
@@ -172,7 +183,7 @@ export default {
       location: '',
       collectionDate: new Date().toISOString().slice(0, 10), // 默认为当天
       collectionTime: '08:00',
-      quantity: 0,
+      quantity: undefined,
       photosBefore: [],
       photosAfter: []
     });
@@ -196,8 +207,34 @@ export default {
     };
 
     onMounted(async () => {
+      // 设置viewport meta标签
+      const viewportMeta = document.createElement('meta');
+      viewportMeta.setAttribute('name', 'viewport');
+      viewportMeta.setAttribute('content', 'width=device-width,initial-scale=1.0,user-scalable=no,maximum-scale=1');
+      document.head.appendChild(viewportMeta);
+
+      // 保存原始的viewport meta标签（如果存在）
+      const originalViewport = document.querySelector('meta[name="viewport"]');
+      if (originalViewport && originalViewport !== viewportMeta) {
+        originalViewport.remove();
+      }
+
       await fetchUnitName();
       await fetchWasteTypes();
+    });
+
+    onBeforeUnmount(() => {
+      // 移除我们添加的viewport meta标签
+      const viewportMeta = document.querySelector('meta[name="viewport"]');
+      if (viewportMeta) {
+        viewportMeta.remove();
+      }
+
+      // 恢复原始的viewport设置
+      const originalViewport = document.createElement('meta');
+      originalViewport.setAttribute('name', 'viewport');
+      originalViewport.setAttribute('content', 'width=device-width,initial-scale=1.0');
+      document.head.appendChild(originalViewport);
     });
 
     const fetchUnitName = async () => {
@@ -365,7 +402,7 @@ export default {
       photoFilesAfter.value = [];
       fileListBefore.value = [];
       fileListAfter.value = [];
-      form.quantity = 0;
+      form.quantity = undefined;
       form.collectionDate = new Date().toISOString().slice(0, 10); // 重置为今天
       form.collectionTime = '08:00'; // 重置为默认时间
     };
@@ -379,6 +416,19 @@ export default {
 
     const viewRecords = () => {
       router.push({ name: 'RecordsList', params: { unitId: props.id } });
+    };
+
+    const selectAllText = (event) => {
+      // 使用setTimeout确保DOM已完全渲染
+      setTimeout(() => {
+        if (event && event.target) {
+          // 找到el-input-number内部的input元素
+          const inputEl = event.target.querySelector('input');
+          if (inputEl) {
+            inputEl.select();
+          }
+        }
+      }, 10);
     };
 
     return {
@@ -399,7 +449,8 @@ export default {
       submitForm,
       resetForm,
       goBack,
-      viewRecords
+      viewRecords,
+      selectAllText
     };
   }
 };
@@ -519,33 +570,25 @@ export default {
 
 .form-actions {
   display: flex;
-  flex-direction: column;
+  justify-content: center;
   gap: 12px;
   margin-top: 24px;
 }
 
 .submit-btn, .reset-btn {
-  width: 100%;
+  width: 45%;
   height: 44px;
   font-size: 16px;
   border-radius: 8px;
 }
 
-.submit-btn {
-  margin-right: 0;
-}
-
 @media (min-width: 768px) {
   .form-actions {
-    flex-direction: row;
+    justify-content: flex-start;
   }
   
   .submit-btn, .reset-btn {
     width: auto;
-  }
-  
-  .submit-btn {
-    margin-right: 12px;
   }
 }
 
@@ -589,5 +632,19 @@ export default {
 
 :deep(.el-form-item) {
   margin-bottom: 20px;
+}
+
+:deep(.date-picker-popup),
+:deep(.time-picker-popup) {
+  touch-action: none;
+}
+
+:deep(.el-input__wrapper) {
+  cursor: pointer;
+}
+
+:deep(.el-input__inner) {
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
 }
 </style>

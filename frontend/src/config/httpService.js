@@ -2,6 +2,7 @@ import axios from 'axios';
 import { ElMessage } from 'element-plus';
 import auth from '../store/auth';
 import apiConfig from './api';
+import router from '../router';
 
 // 创建 axios 实例
 const axiosInstance = axios.create({
@@ -39,10 +40,16 @@ axiosInstance.interceptors.response.use(
     if (error.response) {
       switch (error.response.status) {
         case 401:
-          // token 过期或无效，清除登录状态并跳转到登录页
-          auth.logout();
-          ElMessage.error('登录已过期，请重新登录');
-          window.location.href = '/login';
+          // 检查是否是登录请求
+          if (error.config.url.includes('/api/login')) {
+            // 登录失败，不在这里显示错误信息，让组件自己处理
+            return Promise.reject(error);
+          } else {
+            // token 过期或无效，清除登录状态并跳转到登录页
+            auth.logout();
+            ElMessage.error('登录已过期，请重新登录');
+            router.push('/login');
+          }
           break;
         case 403:
           ElMessage.error('没有权限访问该资源');

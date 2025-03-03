@@ -1,0 +1,139 @@
+/* 响应式样式 */
+
+/* 移动设备通用样式 */
+@media screen and (max-width: 768px) {
+  /* 容器样式 */
+  .container {
+    padding: 10px !important;
+    margin: 0 !important;
+    width: 100% !important;
+  }
+  
+  /* 表单样式 */
+  .el-form-item {
+    margin-bottom: 15px !important;
+  }
+  
+  .el-form-item__label {
+    padding: 0 0 8px !important;
+    line-height: 1.2 !important;
+    display: block !important;
+    text-align: left !important;
+  }
+  
+  .el-form-item__content {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+  
+  /* 表格样式 */
+  .el-table {
+    width: 100% !important;
+    font-size: 12px !important;
+  }
+  
+  .el-table .cell {
+    padding-left: 5px !important;
+    padding-right: 5px !important;
+  }
+  
+  /* 按钮样式 */
+  .el-button {
+    padding: 8px 15px !important;
+    font-size: 14px !important;
+  }
+  
+  .button-group .el-button {
+    margin-bottom: 10px !important;
+  }
+  
+  /* 卡片样式 */
+  .el-card {
+    margin-bottom: 15px !important;
+  }
+  
+  /* 对话框样式 */
+  .el-dialog {
+    width: 90% !important;
+    margin: 10px auto !important;
+  }
+  
+  /* 导航菜单样式 */
+  .el-menu-item, .el-submenu__title {
+    height: 50px !important;
+    line-height: 50px !important;
+    font-size: 14px !important;
+  }
+  
+  /* 页面标题 */
+  h1 {
+    font-size: 20px !important;
+    margin-bottom: 15px !important;
+  }
+  
+  h2 {
+    font-size: 18px !important;
+    margin-bottom: 12px !important;
+  }
+  
+  /* 间距调整 */
+  .mobile-margin-bottom {
+    margin-bottom: 15px !important;
+  }
+  
+  .mobile-padding {
+    padding: 10px !important;
+  }
+  
+  /* 弹性布局调整 */
+  .mobile-flex-column {
+    flex-direction: column !important;
+  }
+  
+  /* 隐藏在移动设备上不必要的元素 */
+  .mobile-hidden {
+    display: none !important;
+  }
+  
+  /* 移动设备上全宽显示 */
+  .mobile-full-width {
+    width: 100% !important;
+  }
+}
+
+/* 小型移动设备 (手机) */
+@media screen and (max-width: 480px) {
+  .el-button {
+    padding: 7px 12px !important;
+    font-size: 13px !important;
+  }
+  
+  .el-form-item {
+    margin-bottom: 12px !important;
+  }
+  
+  .el-table {
+    font-size: 11px !important;
+  }
+  
+  h1 {
+    font-size: 18px !important;
+  }
+  
+  h2 {
+    font-size: 16px !important;
+  }
+}
+
+/* 横屏模式优化 */
+@media screen and (max-height: 480px) and (orientation: landscape) {
+  .el-dialog {
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+  }
+  
+  .el-form {
+    max-height: 70vh !important;
+    overflow-y: auto !important;
+  }
+} 
