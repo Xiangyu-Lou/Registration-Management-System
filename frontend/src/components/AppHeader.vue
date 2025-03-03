@@ -12,16 +12,9 @@
           {{ auth.state.user.unit_name }}
         </span>
       </span>
-      <el-dropdown @command="handleCommand">
-        <span class="el-dropdown-link">
-          <el-icon><setting /></el-icon>
-        </span>
-        <template #dropdown>
-          <el-dropdown-menu>
-            <el-dropdown-item command="logout">退出登录</el-dropdown-item>
-          </el-dropdown-menu>
-        </template>
-      </el-dropdown>
+      <el-button type="text" class="logout-button" @click="handleLogout">
+        退出登录
+      </el-button>
     </div>
   </div>
 </template>
@@ -30,14 +23,10 @@
 import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
-import { Setting } from '@element-plus/icons-vue';
 import auth from '../store/auth';
 
 export default {
   name: 'AppHeader',
-  components: {
-    Setting
-  },
   setup() {
     const router = useRouter();
     
@@ -47,19 +36,17 @@ export default {
       return auth.state.user.username || auth.state.user.phone;
     });
     
-    // 处理下拉菜单命令
-    const handleCommand = (command) => {
-      if (command === 'logout') {
-        auth.logout();
-        ElMessage.success('已退出登录');
-        router.push('/login');
-      }
+    // 处理退出登录
+    const handleLogout = () => {
+      auth.logout();
+      ElMessage.success('已退出登录');
+      router.push('/login');
     };
     
     return {
       auth,
       userName,
-      handleCommand
+      handleLogout
     };
   }
 };
@@ -97,6 +84,17 @@ export default {
   padding: 2px 6px;
   border-radius: 4px;
   background-color: rgba(255, 255, 255, 0.3);
+}
+
+.logout-button {
+  color: white;
+  font-weight: bold;
+  margin-left: 15px;
+}
+
+.logout-button:hover {
+  color: #f0f0f0;
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 .el-dropdown-link {

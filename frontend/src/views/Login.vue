@@ -12,6 +12,7 @@
         :rules="rules" 
         label-width="80px"
         class="login-form"
+        @submit.prevent="submitForm"
       >
         <el-form-item label="手机号" prop="phone">
           <el-input 
@@ -42,6 +43,7 @@
         <el-form-item>
           <el-button 
             type="primary" 
+            native-type="submit"
             @click="submitForm" 
             :loading="auth.state.loading"
             style="width: 100%"
