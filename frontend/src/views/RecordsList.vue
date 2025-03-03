@@ -139,6 +139,7 @@
             <el-table-column prop="collection_start_time" label="收集开始时间" width="160" />
             <el-table-column prop="quantity" label="数量(吨)" width="100" />
             <el-table-column prop="created_at" label="记录时间" width="160" />
+            <el-table-column prop="creator_name" label="汇报人" width="100" />
             <el-table-column label="现场照片（清理前）" width="120">
               <template #default="scope">
                 <div v-if="scope.row.photo_path_before">

@@ -16,8 +16,8 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // 静态文件服务
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
@@ -43,7 +43,32 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({ storage: storage });
+// 文件类型过滤器
+const fileFilter = function(req, file, cb) {
+  // 接受的图片类型
+  const acceptedMimeTypes = [
+    'image/jpeg', 
+    'image/jpg', 
+    'image/png', 
+    'image/gif', 
+    'image/bmp', 
+    'image/webp'
+  ];
+  
+  if (acceptedMimeTypes.includes(file.mimetype)) {
+    cb(null, true); // 接受文件
+  } else {
+    cb(new Error('只接受JPEG、JPG、PNG、GIF、BMP和WEBP格式的图片文件'), false); // 拒绝文件
+  }
+};
+
+const upload = multer({ 
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB file size limit
+  }
+});
 
 // 数据库连接配置
 const dbConfig = {
@@ -471,13 +496,8 @@ app.post('/api/waste-records', upload.fields([
       message: '废物记录添加成功'
     });
   } catch (error) {
-    console.error('添加废物记录错误:', error);
-    console.error('错误详情:', error.message);
-    console.error('SQL错误码:', error.code);
-    console.error('SQL状态:', error.sqlState);
-    console.error('SQL错误号:', error.errno);
-    
-    res.status(500).json({ error: '服务器错误', message: error.message });
+    console.error('添加废物记录失败:', error);
+    res.status(500).json({ error: error.message || '添加废物记录失败' });
   }
 });
 
@@ -487,10 +507,12 @@ app.get('/api/waste-records/:unitId', async (req, res) => {
   
   try {
     const [rows] = await pool.query(
-      `SELECT wr.*, u.name as unit_name, wt.name as waste_type_name 
+      `SELECT wr.*, u.name as unit_name, wt.name as waste_type_name,
+       IFNULL(creator.username, creator.phone) as creator_name
        FROM waste_records wr
        JOIN units u ON wr.unit_id = u.id
        JOIN waste_types wt ON wr.waste_type_id = wt.id
+       LEFT JOIN users creator ON wr.creator_id = creator.id
        WHERE wr.unit_id = ?
        ORDER BY wr.created_at DESC`,
       [unitId]
@@ -718,8 +740,8 @@ app.put('/api/waste-records/:id', upload.fields([
       message: '废物记录更新成功'
     });
   } catch (error) {
-    console.error('更新废物记录错误:', error);
-    res.status(500).json({ error: '服务器错误' });
+    console.error('更新废物记录失败:', error);
+    res.status(500).json({ error: error.message || '更新废物记录失败' });
   }
 });
 
@@ -729,10 +751,12 @@ app.get('/api/waste-records/detail/:id', async (req, res) => {
   
   try {
     const [rows] = await pool.query(
-      `SELECT wr.*, u.name as unit_name, wt.name as waste_type_name 
+      `SELECT wr.*, u.name as unit_name, wt.name as waste_type_name,
+       IFNULL(creator.username, creator.phone) as creator_name
        FROM waste_records wr
        JOIN units u ON wr.unit_id = u.id
        JOIN waste_types wt ON wr.waste_type_id = wt.id
+       LEFT JOIN users creator ON wr.creator_id = creator.id
        WHERE wr.id = ?`,
       [id]
     );
@@ -767,27 +791,33 @@ app.get('/api/waste-records/user/:userId', async (req, res) => {
     // 根据用户角色查询不同范围的记录
     if (user.role_id === 3) {
       // 超级管理员查看全部记录
-      sql = `SELECT wr.*, u.name as unit_name, wt.name as waste_type_name 
+      sql = `SELECT wr.*, u.name as unit_name, wt.name as waste_type_name, 
+             IFNULL(creator.username, creator.phone) as creator_name
              FROM waste_records wr
              JOIN units u ON wr.unit_id = u.id
              JOIN waste_types wt ON wr.waste_type_id = wt.id
+             LEFT JOIN users creator ON wr.creator_id = creator.id
              ORDER BY wr.created_at DESC`;
       params = [];
     } else if (user.role_id === 2) {
       // 单位管理员查看本单位所有记录
-      sql = `SELECT wr.*, u.name as unit_name, wt.name as waste_type_name 
+      sql = `SELECT wr.*, u.name as unit_name, wt.name as waste_type_name, 
+             IFNULL(creator.username, creator.phone) as creator_name
              FROM waste_records wr
              JOIN units u ON wr.unit_id = u.id
              JOIN waste_types wt ON wr.waste_type_id = wt.id
+             LEFT JOIN users creator ON wr.creator_id = creator.id
              WHERE wr.unit_id = ?
              ORDER BY wr.created_at DESC`;
       params = [user.unit_id];
     } else {
       // 普通员工只能查看自己创建的记录
-      sql = `SELECT wr.*, u.name as unit_name, wt.name as waste_type_name 
+      sql = `SELECT wr.*, u.name as unit_name, wt.name as waste_type_name, 
+             IFNULL(creator.username, creator.phone) as creator_name
              FROM waste_records wr
              JOIN units u ON wr.unit_id = u.id
              JOIN waste_types wt ON wr.waste_type_id = wt.id
+             LEFT JOIN users creator ON wr.creator_id = creator.id
              WHERE wr.unit_id = ? AND (wr.creator_id = ? OR wr.creator_id IS NULL)
              ORDER BY wr.created_at DESC`;
       params = [user.unit_id, userId];
@@ -904,4 +934,19 @@ process.on('SIGINT', async () => {
     console.error('关闭数据库连接池错误:', error);
   }
   process.exit(0);
+});
+
+// 处理multer错误
+app.use((err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    // Multer错误
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(413).json({ error: '文件大小超过限制，最大允许10MB' });
+    }
+    return res.status(400).json({ error: `文件上传错误: ${err.message}` });
+  } else if (err) {
+    // 其他错误
+    return res.status(500).json({ error: err.message });
+  }
+  next();
 });

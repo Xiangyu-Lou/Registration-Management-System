@@ -89,6 +89,7 @@
             multiple
             list-type="picture-card"
             :before-upload="handleBeforeUpload"
+            accept="image/jpeg,image/jpg,image/png,image/gif,image/bmp,image/webp,.jpeg,.jpg,.png,.gif,.bmp,.webp"
           >
             <el-icon><plus /></el-icon>
           </el-upload>
@@ -107,6 +108,7 @@
             multiple
             list-type="picture-card"
             :before-upload="handleBeforeUpload"
+            accept="image/jpeg,image/jpg,image/png,image/gif,image/bmp,image/webp,.jpeg,.jpg,.png,.gif,.bmp,.webp"
           >
             <el-icon><plus /></el-icon>
           </el-upload>
@@ -223,6 +225,16 @@ export default {
 
     // 处理上传前的文件处理
     const handleBeforeUpload = (file) => {
+      // 检查文件类型是否为图片
+      const acceptedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/bmp', 'image/webp'];
+      const isImage = acceptedTypes.includes(file.type);
+      
+      if (!isImage) {
+        ElMessage.error('只能上传图片文件!');
+        return false;
+      }
+      
+      // 为文件添加唯一标识符
       if (!file.uid) {
         file.uid = Date.now() + '-' + Math.random().toString(36).substr(2, 10);
       }

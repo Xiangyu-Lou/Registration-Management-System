@@ -7,7 +7,9 @@ const httpClient = axios.create({
   timeout: 10000, // 10秒超时
   headers: {
     'Content-Type': 'application/json'
-  }
+  },
+  maxContentLength: 10 * 1024 * 1024, // 10MB
+  maxBodyLength: 10 * 1024 * 1024 // 10MB
 });
 
 // 请求拦截器
@@ -50,7 +52,9 @@ const httpService = {
     return httpClient.post(endpoint, formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
-      }
+      },
+      maxContentLength: 10 * 1024 * 1024, // 10MB
+      maxBodyLength: 10 * 1024 * 1024 // 10MB
     });
   },
   
@@ -64,7 +68,9 @@ const httpService = {
     return httpClient.put(endpoint, formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
-      }
+      },
+      maxContentLength: 10 * 1024 * 1024, // 10MB
+      maxBodyLength: 10 * 1024 * 1024 // 10MB
     });
   },
   
