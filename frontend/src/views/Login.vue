@@ -18,7 +18,6 @@
           <el-input 
             v-model="form.phone" 
             placeholder="请输入手机号" 
-            @keyup.enter="submitForm"
           />
         </el-form-item>
         
@@ -28,7 +27,6 @@
             type="password" 
             placeholder="请输入密码" 
             show-password
-            @keyup.enter="submitForm"
           />
         </el-form-item>
         
@@ -85,12 +83,12 @@ export default {
     // 根据用户类型动态设置验证规则
     const rules = computed(() => {
       const phoneRules = [
-        { required: true, message: '请输入手机号', trigger: 'blur' },
-        { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号格式', trigger: 'blur' }
+        { required: true, message: '请输入手机号', trigger: 'submit' },
+        { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号格式', trigger: 'submit' }
       ];
       
       const passwordRules = showPassword.value ? [
-        { required: true, message: '请输入密码', trigger: 'blur' }
+        { required: true, message: '请输入密码', trigger: 'submit' }
       ] : [];
       
       return {
@@ -126,19 +124,16 @@ export default {
       // 员工登录不需要密码
       if (form.userType === 1) {
         console.log('员工登录模式');
-        // 手机号简单验证
-        if (!form.phone) {
-          ElMessage.warning('请输入手机号');
-          return;
-        }
-
-        if (!/^1[3-9]\d{9}$/.test(form.phone)) {
-          ElMessage.warning('请输入正确的手机号格式');
-          return;
-        }
-        
-        console.log('员工登录开始执行...');
-        await doLogin(); // 直接执行登录
+        // 手机号简单验证 - 使用表单验证而不是手动验证
+        loginForm.value.validate(async (valid) => {
+          if (valid) {
+            console.log('员工登录表单验证通过');
+            await doLogin();
+          } else {
+            console.log('员工表单验证失败');
+            // 不再显示额外的消息，表单验证会自动显示
+          }
+        });
       } else {
         console.log('管理员登录模式');
         // 管理员需要验证整个表单

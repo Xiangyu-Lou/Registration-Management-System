@@ -289,7 +289,7 @@ export default {
     const loading = ref(false);
     const units = ref([]);
     const wasteTypes = ref([]);
-    const showFilterPanel = ref(false);
+    const showFilterPanel = ref(true);
     
     // 图片预览相关
     const showViewer = ref(false);
