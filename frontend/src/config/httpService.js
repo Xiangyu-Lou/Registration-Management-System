@@ -59,6 +59,15 @@ const httpService = {
     return httpClient.put(endpoint, data);
   },
   
+  // 带文件上传的PUT请求
+  putForm(endpoint, formData) {
+    return httpClient.put(endpoint, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+  },
+  
   // DELETE请求
   delete(endpoint) {
     return httpClient.delete(endpoint);

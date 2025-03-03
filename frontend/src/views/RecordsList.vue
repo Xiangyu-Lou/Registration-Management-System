@@ -142,13 +142,15 @@
             <el-table-column label="现场照片" width="100">
               <template #default="scope">
                 <div v-if="scope.row.photo_path">
-                  <template v-if="isJsonPhotoPath(scope.row.photo_path)">
-                    <!-- 多张照片显示 -->
+                  <!-- 多张照片显示 -->
+                  <div 
+                    v-for="(path, index) in parsePhotoPath(scope.row.photo_path)" 
+                    :key="index"
+                    class="photo-thumbnail-container"
+                    @click="previewPhoto(parsePhotoPath(scope.row.photo_path), index)"
+                  >
                     <el-image 
-                      v-for="(path, index) in parsePhotoPath(scope.row.photo_path)" 
-                      :key="index"
                       :src="`${apiConfig.baseURL}${path}`"
-                      :preview-src-list="parsePhotoPath(scope.row.photo_path).map(p => `${apiConfig.baseURL}${p}`)"
                       fit="cover"
                       class="record-image"
                       :style="{ margin: index > 0 ? '2px 0 0 0' : '0' }"
@@ -159,25 +161,10 @@
                         </div>
                       </template>
                     </el-image>
-                    <div v-if="parsePhotoPath(scope.row.photo_path).length > 1" class="photo-count">
-                      {{ parsePhotoPath(scope.row.photo_path).length }}张
-                    </div>
-                  </template>
-                  <template v-else>
-                    <!-- 单张照片显示 (兼容旧版本) -->
-                    <el-image 
-                      :src="`${apiConfig.baseURL}${scope.row.photo_path}`"
-                      :preview-src-list="[`${apiConfig.baseURL}${scope.row.photo_path}`]"
-                      fit="cover"
-                      class="record-image"
-                    >
-                      <template #error>
-                        <div class="image-error">
-                          <el-icon><picture-failed /></el-icon>
-                        </div>
-                      </template>
-                    </el-image>
-                  </template>
+                  </div>
+                  <div v-if="parsePhotoPath(scope.row.photo_path).length > 1" class="photo-count">
+                    {{ parsePhotoPath(scope.row.photo_path).length }}张
+                  </div>
                 </div>
                 <span v-else>无照片</span>
               </template>
@@ -216,35 +203,34 @@
     <div class="footer">
       <p>&copy; 2025 危险废物管理系统</p>
     </div>
+
+    <!-- 添加独立的图片预览组件 -->
+    <el-image-viewer
+      v-if="showViewer"
+      :url-list="previewImages"
+      :initial-index="previewIndex"
+      @close="closeViewer"
+    />
   </div>
 </template>
 
 <script>
 import { ref, onMounted, computed, reactive } from 'vue';
 import { useRouter } from 'vue-router';
-import { ElMessage, ElMessageBox } from 'element-plus';
+import { ElMessage, ElMessageBox, ElImageViewer } from 'element-plus';
 import httpService from '../config/httpService';
 import apiConfig from '../config/api';
 import { ArrowLeft, Home, Refresh, PictureFailed, Plus, User, ArrowDown, ArrowUp, Download } from '@element-plus/icons-vue';
 import { exportToExcel } from '../utils/exportUtils';
 import auth from '../store/auth';
 
-// 判断是否为JSON格式的照片路径
-const isJsonPhotoPath = (path) => {
-  try {
-    const parsed = JSON.parse(path);
-    return Array.isArray(parsed);
-  } catch (error) {
-    return false;
-  }
-};
-
 // 解析JSON格式的照片路径
 const parsePhotoPath = (path) => {
   try {
     return JSON.parse(path);
   } catch (error) {
-    return [path];
+    console.error('解析照片路径失败:', error);
+    return [];
   }
 };
 
@@ -259,7 +245,8 @@ export default {
     User,
     ArrowDown,
     ArrowUp,
-    Download
+    Download,
+    ElImageViewer
   },
   props: {
     unitId: {
@@ -346,6 +333,23 @@ export default {
     const isUnitAdmin = computed(() => {
       return auth.state.isLoggedIn && auth.state.user.role_id === 2;
     });
+
+    // 图片预览相关
+    const showViewer = ref(false);
+    const previewImages = ref([]);
+    const previewIndex = ref(0);
+    
+    // 预览照片
+    const previewPhoto = (paths, index) => {
+      previewImages.value = paths.map(path => `${apiConfig.baseURL}${path}`);
+      previewIndex.value = index;
+      showViewer.value = true;
+    };
+    
+    // 关闭预览
+    const closeViewer = () => {
+      showViewer.value = false;
+    };
 
     onMounted(async () => {
       await fetchUnitName();
@@ -541,7 +545,6 @@ export default {
       wasteTypes,
       isAdmin,
       isUnitAdmin,
-      isJsonPhotoPath,
       parsePhotoPath,
       refreshRecords,
       goBack,
@@ -558,7 +561,13 @@ export default {
       applyFilter,
       resetFilter,
       // 导出相关
-      exportRecords
+      exportRecords,
+      // 图片预览相关
+      showViewer,
+      previewImages,
+      previewIndex,
+      previewPhoto,
+      closeViewer
     };
   }
 };
@@ -700,6 +709,11 @@ export default {
   padding: 15px;
   text-align: center;
   color: #666;
+}
+
+.photo-thumbnail-container {
+  cursor: pointer;
+  display: inline-block;
 }
 </style>
 

@@ -482,7 +482,7 @@ app.get('/api/waste-records/:unitId', async (req, res) => {
 // 修改废物记录
 app.put('/api/waste-records/:id', upload.array('photos', 10), async (req, res) => {
   const { id } = req.params;
-  const { unitId, wasteTypeId, location, collectionStartTime, quantity } = req.body;
+  const { unitId, wasteTypeId, location, collectionStartTime, quantity, existingPhotoPaths } = req.body;
   
   if (!unitId || !wasteTypeId || !location || !quantity) {
     return res.status(400).json({ error: '废物类型、产生地点和收集数量是必填的' });
@@ -501,16 +501,71 @@ app.put('/api/waste-records/:id', upload.array('photos', 10), async (req, res) =
     // 准备更新数据
     let photoPath = record.photo_path;
     
-    // 处理多张照片上传
+    // 处理照片更新
     if (req.files && req.files.length > 0) {
-      // 如果有新的照片上传，先处理旧照片的删除
+      // 有新上传的照片
+      const newPhotoPathsArray = req.files.map(file => `/uploads/${file.filename}`);
+      
+      // 如果同时有existingPhotoPaths参数，合并现有照片和新上传的照片
+      if (existingPhotoPaths) {
+        try {
+          const existingPathsArray = JSON.parse(existingPhotoPaths);
+          const combinedPaths = [...existingPathsArray, ...newPhotoPathsArray];
+          photoPath = JSON.stringify(combinedPaths);
+        } catch (error) {
+          console.error('解析existingPhotoPaths失败:', error);
+          photoPath = JSON.stringify(newPhotoPathsArray);
+        }
+      } else {
+        // 只有新上传的照片，删除所有旧照片
+        if (record.photo_path) {
+          try {
+            // 解析旧的照片路径JSON字符串
+            const oldPhotoPaths = JSON.parse(record.photo_path);
+            
+            // 删除旧照片文件
+            oldPhotoPaths.forEach(oldPath => {
+              const fullPath = path.join(__dirname, '..', oldPath);
+              if (fs.existsSync(fullPath)) {
+                try {
+                  fs.unlinkSync(fullPath);
+                  console.log(`已删除旧照片: ${fullPath}`);
+                } catch (err) {
+                  console.error(`删除旧照片失败: ${fullPath}`, err);
+                }
+              }
+            });
+          } catch (error) {
+            // 如果解析JSON失败，可能是旧版本的单张照片格式
+            const fullPath = path.join(__dirname, '..', record.photo_path);
+            if (fs.existsSync(fullPath)) {
+              try {
+                fs.unlinkSync(fullPath);
+                console.log(`已删除旧照片: ${fullPath}`);
+              } catch (err) {
+                console.error(`删除旧照片失败: ${fullPath}`, err);
+              }
+            }
+          }
+        }
+        
+        photoPath = JSON.stringify(newPhotoPathsArray);
+      }
+    } else if (existingPhotoPaths) {
+      // 只有existingPhotoPaths参数，没有新上传的照片
+      photoPath = existingPhotoPaths;
+      
+      // 删除不在existingPhotoPaths中的旧照片
       if (record.photo_path) {
         try {
-          // 解析旧的照片路径JSON字符串
+          const existingPathsArray = JSON.parse(existingPhotoPaths);
           const oldPhotoPaths = JSON.parse(record.photo_path);
           
-          // 删除旧照片文件
-          oldPhotoPaths.forEach(oldPath => {
+          // 找出需要删除的照片
+          const pathsToDelete = oldPhotoPaths.filter(path => !existingPathsArray.includes(path));
+          
+          // 删除不再需要的照片文件
+          pathsToDelete.forEach(oldPath => {
             const fullPath = path.join(__dirname, '..', oldPath);
             if (fs.existsSync(fullPath)) {
               try {
@@ -522,22 +577,9 @@ app.put('/api/waste-records/:id', upload.array('photos', 10), async (req, res) =
             }
           });
         } catch (error) {
-          // 如果解析JSON失败，可能是旧版本的单张照片格式
-          const fullPath = path.join(__dirname, '..', record.photo_path);
-          if (fs.existsSync(fullPath)) {
-            try {
-              fs.unlinkSync(fullPath);
-              console.log(`已删除旧照片: ${fullPath}`);
-            } catch (err) {
-              console.error(`删除旧照片失败: ${fullPath}`, err);
-            }
-          }
+          console.error('处理照片删除失败:', error);
         }
       }
-      
-      // 保存新上传的照片路径
-      const photoPathsArray = req.files.map(file => `/uploads/${file.filename}`);
-      photoPath = JSON.stringify(photoPathsArray);
     }
     
     // 格式化收集开始时间（只保留到分钟）

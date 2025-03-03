@@ -154,6 +154,8 @@ export default {
     const previewImages = ref([]);
     const showViewer = ref(false);
     const previewIndex = ref(0);
+    const existingPhotoPaths = ref([]);
+    const createdAt = ref('');
 
     // 确定是新增还是编辑
     const isNew = computed(() => !route.params.id || route.params.id === 'new');
@@ -262,69 +264,105 @@ export default {
 
     // 获取记录详情
     const fetchRecordDetails = async (recordId) => {
+      loading.value = true;
       try {
         const response = await httpService.get(`${apiConfig.endpoints.wasteRecords}/detail/${recordId}`);
         const record = response.data;
         
-        // 更新表单数据
+        // 填充表单数据
         form.unitId = record.unit_id;
         form.wasteTypeId = record.waste_type_id;
         form.location = record.location;
+        form.recordId = recordId; // 设置记录ID
         
-        // 拆分收集时间为日期和时间
+        // 处理收集时间
         if (record.collection_start_time) {
           const dateTime = new Date(record.collection_start_time);
           form.collectionDate = dateTime.toISOString().slice(0, 10);
-          form.collectionTime = dateTime.toISOString().slice(11, 16);
+          form.collectionTime = dateTime.toTimeString().slice(0, 5);
         }
         
         form.quantity = record.quantity;
-        form.recordId = record.id;
         
-        // 设置单位名称
-        unitName.value = record.unit_name;
-        
-        // 设置图片预览
+        // 处理照片
         if (record.photo_path) {
+          // 解析JSON格式的照片路径
           try {
-            // 尝试解析JSON格式的照片路径数组
             const photoPaths = JSON.parse(record.photo_path);
-            if (Array.isArray(photoPaths)) {
-              photoList.value = photoPaths.map((path, index) => ({
-                name: `现场照片${index + 1}`,
-                url: `${apiConfig.baseURL}${path}`
-              }));
-              // 更新预览图片列表
-              previewImages.value = photoList.value.map(item => item.url);
-            }
+            
+            // 设置预览图片
+            previewImages.value = photoPaths.map(path => `${apiConfig.baseURL}${path}`);
+            
+            // 设置已有照片路径
+            existingPhotoPaths.value = photoPaths;
+            
+            // 设置上传组件的文件列表，使现有照片能显示在上传组件中
+            photoList.value = photoPaths.map((path, index) => {
+              return {
+                name: `现有照片${index + 1}`,
+                url: `${apiConfig.baseURL}${path}`,
+                uid: `existing-${index}`
+              };
+            });
           } catch (error) {
-            // 如果解析失败，可能是旧版本的单张照片格式
-            photoList.value = [
-              {
-                name: '现场照片',
-                url: `${apiConfig.baseURL}${record.photo_path}`
-              }
-            ];
-            // 更新预览图片列表
-            previewImages.value = [`${apiConfig.baseURL}${record.photo_path}`];
+            console.error('解析照片路径失败:', error);
+            previewImages.value = [];
+            existingPhotoPaths.value = [];
+            photoList.value = [];
           }
         }
+        
+        // 获取单位名称
+        unitName.value = record.unit_name;
+        
+        // 设置创建时间
+        createdAt.value = record.created_at;
+        
       } catch (error) {
         console.error('获取记录详情失败:', error);
         ElMessage.error('获取记录详情失败');
+      } finally {
+        loading.value = false;
       }
     };
 
     // 处理照片变更
     const handlePhotoChange = (file, fileList) => {
-      photoFiles.value = fileList.map(f => f.raw).filter(f => f);
+      // 更新photoFiles，只包含新上传的文件
+      photoFiles.value = fileList
+        .filter(f => f.raw) // 只处理新上传的文件
+        .map(f => f.raw);
+      
+      // 更新existingPhotoPaths，只保留仍在fileList中的现有照片
+      if (!isNew.value) {
+        const existingFileUids = fileList
+          .filter(f => f.uid && f.uid.startsWith('existing-'))
+          .map(f => f.uid);
+        
+        // 保留仍在fileList中的现有照片
+        existingPhotoPaths.value = existingPhotoPaths.value.filter((_, index) => {
+          return existingFileUids.includes(`existing-${index}`);
+        });
+      }
+      
       // 更新预览图片列表
       updatePreviewImages(fileList);
     };
 
     // 处理照片移除
     const handlePhotoRemove = (file, fileList) => {
-      photoFiles.value = fileList.map(f => f.raw).filter(f => f);
+      // 如果移除的是现有照片
+      if (file.uid && file.uid.startsWith('existing-')) {
+        const index = parseInt(file.uid.replace('existing-', ''));
+        // 从existingPhotoPaths中移除
+        existingPhotoPaths.value = existingPhotoPaths.value.filter((_, i) => i !== index);
+      }
+      
+      // 更新photoFiles，只包含新上传的文件
+      photoFiles.value = fileList
+        .filter(f => f.raw)
+        .map(f => f.raw);
+      
       // 更新预览图片列表
       updatePreviewImages(fileList);
     };
@@ -392,13 +430,18 @@ export default {
               });
             }
             
+            // 添加现有照片路径（用于更新时保留未更改的照片）
+            if (!isNew.value && existingPhotoPaths.value.length > 0) {
+              formData.append('existingPhotoPaths', JSON.stringify(existingPhotoPaths.value));
+            }
+            
             if (isNew.value) {
               // 新增记录
               await httpService.postForm(apiConfig.endpoints.wasteRecords, formData);
               ElMessage.success('废物记录添加成功');
             } else {
-              // 更新记录
-              await httpService.postForm(`${apiConfig.endpoints.wasteRecords}/${form.recordId}`, formData);
+              // 更新记录 - 使用PUT方法
+              await httpService.putForm(`${apiConfig.endpoints.wasteRecords}/${form.recordId}`, formData);
               ElMessage.success('废物记录更新成功');
             }
             
