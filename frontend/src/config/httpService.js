@@ -7,7 +7,7 @@ import router from '../router';
 // 创建 axios 实例
 const axiosInstance = axios.create({
   baseURL: apiConfig.baseURL,
-  timeout: 10000, // 10秒超时
+  timeout: 300000, // 300秒超时
   headers: {
     'Content-Type': 'application/json'
   },
@@ -90,6 +90,7 @@ const httpService = {
       headers: {
         'Content-Type': 'multipart/form-data'
       },
+      timeout: 300000, // 300秒超时
       maxContentLength: 50 * 1024 * 1024, // 50MB
       maxBodyLength: 50 * 1024 * 1024 // 50MB
     };
@@ -113,6 +114,7 @@ const httpService = {
       headers: {
         'Content-Type': 'multipart/form-data'
       },
+      timeout: 300000, // 300秒超时
       maxContentLength: 50 * 1024 * 1024, // 50MB
       maxBodyLength: 50 * 1024 * 1024 // 50MB
     };
