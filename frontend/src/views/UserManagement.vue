@@ -91,8 +91,7 @@
         
         <el-form-item 
           label="密码" 
-          prop="password" 
-          v-if="form.roleId === 2 || form.roleId === 3"
+          prop="password"
         >
           <el-input 
             v-model="form.password" 
@@ -100,7 +99,7 @@
             type="password"
             show-password
           />
-          <div class="password-hint" v-if="!isEdit">管理员账号必须设置密码</div>
+          <div class="password-hint" v-if="!isEdit">所有账号必须设置密码</div>
           <div class="password-hint" v-else>不修改密码请留空</div>
         </el-form-item>
       </el-form>
@@ -185,8 +184,8 @@ export default {
       password: [
         { 
           required: function() {
-            // 新增管理员账号时密码必填
-            return !isEdit.value && (form.roleId === 2 || form.roleId === 3);
+            // 新增账号时密码必填
+            return !isEdit.value;
           }, 
           message: '请输入密码', 
           trigger: 'blur' 

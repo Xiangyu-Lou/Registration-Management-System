@@ -26,6 +26,9 @@
         <el-button @click="refreshRecords">
           <el-icon><refresh /></el-icon> 刷新
         </el-button>
+        <el-button type="primary" @click="exportRecords" :loading="loading">
+          <el-icon><download /></el-icon> 导出记录
+        </el-button>
       </div>
       
       <!-- 筛选面板 -->
@@ -275,7 +278,7 @@ import { ElMessage, ElMessageBox, ElImageViewer } from 'element-plus';
 import httpService from '../config/httpService';
 import apiConfig from '../config/api';
 import { ArrowLeft, Home, Refresh, Plus, User, ArrowDown, ArrowUp, Download, Loading } from '@element-plus/icons-vue';
-import { exportToExcel } from '../utils/exportUtils';
+import { exportToExcel, prepareImageExportData } from '../utils/exportUtils';
 import auth from '../store/auth';
 
 export default {
@@ -514,51 +517,75 @@ export default {
     };
     
     // 导出记录
-    const exportRecords = () => {
-      // 使用后端API导出记录
+    const exportRecords = async () => {
       try {
-        const userId = auth.getUserId();
-        if (!userId) {
-          ElMessage.error('用户未登录');
+        loading.value = true;
+        console.log('开始导出记录...');
+        
+        // 获取要导出的记录
+        const recordsToExport = filteredRecords.value;
+        
+        console.log(`导出记录数量: ${recordsToExport.length}`);
+        
+        if (recordsToExport.length === 0) {
+          ElMessage.warning('没有可导出的记录');
+          loading.value = false;
           return;
         }
         
-        // 构建筛选参数
-        const params = {};
-        if (filterForm.wasteTypeId) params.wasteTypeId = filterForm.wasteTypeId;
-        if (filterForm.minQuantity !== null) params.minQuantity = filterForm.minQuantity;
-        if (filterForm.maxQuantity !== null) params.maxQuantity = filterForm.maxQuantity;
-        if (filterForm.location) params.location = filterForm.location;
-        if (filterForm.dateRange && filterForm.dateRange.length === 2) {
-          params.dateRange = JSON.stringify(filterForm.dateRange);
-        }
+        // 设置导出基础URL
+        const exportBaseUrl = window.location.origin;
+        console.log('导出基础URL:', exportBaseUrl);
         
-        // 使用前端导出工具
-        const dataToExport = filteredRecords.value.map(record => ({
-          '单位': unitName.value,
-          '废物类型': record.waste_type_name,
-          '收集地点': record.location,
-          '收集时间': parseFormattedDateTime(record.collection_start_time),
-          '数量(kg)': record.quantity,
-          '记录时间': parseFormattedDateTime(record.created_at),
-          '汇报人': record.creator_name || '未知'
+        // 准备导出数据
+        const exportData = recordsToExport.map(record => ({
+          '单位': record.unit_name || '',
+          '废物类型': record.waste_type_name || '',
+          '收集地点': record.location || '',
+          '收集时间': record.collection_start_time ? new Date(record.collection_start_time).toLocaleString() : '',
+          '数量(kg)': record.quantity || 0,
+          '记录时间': record.created_at ? new Date(record.created_at).toLocaleString() : '',
+          '汇报人': record.creator_name || '未知',
+          '清理前照片': '',
+          '清理后照片': ''
         }));
         
+        console.log('导出数据准备完成');
+        
+        // 准备图片数据
+        console.log('准备图片数据...');
+        const imageData = await prepareImageExportData(recordsToExport, exportBaseUrl);
+        console.log('图片数据准备完成，数量:', Object.keys(imageData).length);
+        
+        // 导出文件
+        const fileName = `${unitName.value}危险废物记录`;
         const headers = [
-          { title: '单位', field: '单位' },
-          { title: '废物类型', field: '废物类型' },
-          { title: '收集地点', field: '收集地点' },
-          { title: '收集时间', field: '收集时间' },
-          { title: '数量(kg)', field: '数量(kg)', type: 'number' },
-          { title: '记录时间', field: '记录时间' },
-          { title: '汇报人', field: '汇报人' }
+          { text: '单位', field: '单位' },
+          { text: '废物类型', field: '废物类型' },
+          { text: '收集地点', field: '收集地点' },
+          { text: '收集时间', field: '收集时间' },
+          { text: '数量(kg)', field: '数量(kg)' },
+          { text: '记录时间', field: '记录时间' },
+          { text: '汇报人', field: '汇报人' },
+          { text: '清理前照片', field: '清理前照片' },
+          { text: '清理后照片', field: '清理后照片' }
         ];
         
-        exportToExcel(dataToExport, `${unitName.value}危险废物记录`, headers);
-        ElMessage.success('导出成功');
+        console.log('开始导出Excel文件...');
+        const result = exportToExcel(exportData, fileName, headers, imageData);
+        
+        if (result) {
+          console.log('导出成功');
+          ElMessage.success('导出成功');
+        } else {
+          console.log('导出失败，已回退到CSV导出');
+          ElMessage.warning('Excel导出失败，已回退到CSV导出');
+        }
       } catch (error) {
-        console.error('导出记录失败:', error);
-        ElMessage.error('导出记录失败');
+        console.error('导出过程中发生错误:', error);
+        ElMessage.error('导出失败: ' + error.message);
+      } finally {
+        loading.value = false;
       }
     };
     

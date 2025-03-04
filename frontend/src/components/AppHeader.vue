@@ -7,7 +7,6 @@
       <span class="welcome-text">
         欢迎,
         <strong>{{ userName }}</strong>
-        <span class="role-tag">({{ auth.state.user.role }})</span>
         <span v-if="auth.state.user.unit_name" class="unit-tag">
           {{ auth.state.user.unit_name }}
         </span>

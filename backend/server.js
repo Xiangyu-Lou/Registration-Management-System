@@ -199,6 +199,11 @@ app.post('/api/login', async (req, res) => {
     return res.status(400).json({ error: '手机号是必填项' });
   }
 
+  if (!password) {
+    console.log('登录失败: 缺少密码');
+    return res.status(400).json({ error: '密码是必填项' });
+  }
+
   try {
     console.log('开始查询用户:', phone);
     // 查询用户
@@ -226,43 +231,17 @@ app.post('/api/login', async (req, res) => {
       return res.status(401).json({ error: '请选择正确的登录类型' });
     }
 
-    // 员工登录（仅需手机号）
-    if (user.role_id === 1) {
-      console.log('员工登录成功:', user.username);
-      // 生成 token
-      const token = jwt.sign(
-        { 
-          id: user.id,
-          phone: user.phone,
-          role_id: user.role_id,
-          unit_id: user.unit_id
-        },
-        JWT_SECRET,
-        { expiresIn: rememberMe ? '30d' : '24h' }
-      );
-      
-      return res.json({
-        id: user.id,
-        username: user.username,
-        phone: user.phone,
-        role: user.role_name,
-        role_id: user.role_id,
-        unit_id: user.unit_id,
-        unit_name: user.unit_name,
-        token
-      });
-    }
-
-    // 管理员登录（需要密码）
-    if (!password) {
-      console.log('管理员登录失败: 缺少密码');
-      return res.status(400).json({ error: '管理员登录需要输入密码' });
+    // 所有用户类型都需要密码验证
+    // 检查用户是否有密码
+    if (!user.password) {
+      console.log('登录失败: 用户没有设置密码');
+      return res.status(401).json({ error: '该账户尚未设置密码，请联系管理员设置密码' });
     }
 
     // 使用bcrypt比较密码
     const passwordMatch = await comparePassword(password, user.password);
     if (!passwordMatch) {
-      console.log('管理员登录失败: 密码错误');
+      console.log('登录失败: 密码错误');
       return res.status(401).json({ error: '密码错误' });
     }
 
@@ -277,7 +256,7 @@ app.post('/api/login', async (req, res) => {
       JWT_SECRET,
       { expiresIn: rememberMe ? '30d' : '24h' }
     );
-
+    
     res.json({
       id: user.id,
       username: user.username,
@@ -366,9 +345,9 @@ app.post('/api/users', async (req, res) => {
     return res.status(400).json({ error: '员工和单位管理员必须指定单位' });
   }
   
-  // 对于管理员，需要验证密码
-  if ((roleId == 2 || roleId == 3) && !password) {
-    return res.status(400).json({ error: '管理员账号必须设置密码' });
+  // 对于所有用户类型，都需要验证密码
+  if (!password) {
+    return res.status(400).json({ error: '所有账号必须设置密码' });
   }
   
   try {
@@ -435,6 +414,11 @@ app.put('/api/users/:id', async (req, res) => {
     // 如果是更改角色且新角色是管理员但没有密码
     if ((roleId == 2 || roleId == 3) && existingUser.role_id == 1 && !password && !existingUser.password) {
       return res.status(400).json({ error: '从普通员工提升为管理员需要设置密码' });
+    }
+    
+    // 如果用户没有密码且没有提供新密码
+    if (!existingUser.password && !password) {
+      return res.status(400).json({ error: '用户没有密码，必须设置密码' });
     }
     
     // 准备更新数据

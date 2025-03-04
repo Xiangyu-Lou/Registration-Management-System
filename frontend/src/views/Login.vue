@@ -21,7 +21,7 @@
           />
         </el-form-item>
         
-        <el-form-item v-if="showPassword" label="密码" prop="password">
+        <el-form-item label="密码" prop="password">
           <el-input 
             v-model="form.password" 
             type="password" 
@@ -82,8 +82,8 @@ export default {
       rememberMe: false // 添加记住登录选项
     });
     
-    // 员工登录不需要密码，管理员需要
-    const showPassword = computed(() => form.userType !== 1);
+    // 所有用户类型都需要密码
+    const showPassword = computed(() => true);
     
     // 根据用户类型动态设置验证规则
     const rules = computed(() => {
@@ -92,9 +92,9 @@ export default {
         { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号格式', trigger: 'submit' }
       ];
       
-      const passwordRules = showPassword.value ? [
+      const passwordRules = [
         { required: true, message: '请输入密码', trigger: 'submit' }
-      ] : [];
+      ];
       
       return {
         phone: phoneRules,
@@ -104,9 +104,6 @@ export default {
     
     // 切换用户类型时重置表单
     const handleUserTypeChange = () => {
-      if (form.userType === 1) {
-        form.password = '';
-      }
       if (loginForm.value) {
         loginForm.value.clearValidate();
       }
@@ -126,33 +123,16 @@ export default {
         return;
       }
       
-      // 员工登录不需要密码
-      if (form.userType === 1) {
-        console.log('员工登录模式');
-        // 手机号简单验证 - 使用表单验证而不是手动验证
-        loginForm.value.validate(async (valid) => {
-          if (valid) {
-            console.log('员工登录表单验证通过');
-            await doLogin();
-          } else {
-            console.log('员工表单验证失败');
-            // 不再显示额外的消息，表单验证会自动显示
-          }
-        });
-      } else {
-        console.log('管理员登录模式');
-        // 管理员需要验证整个表单
-        loginForm.value.validate(async (valid) => {
-          if (valid) {
-            console.log('管理员表单验证通过');
-            await doLogin();
-          } else {
-            console.log('表单验证失败');
-            // 移除这行，让表单验证自动显示错误信息，避免重复
-            // ElMessage.warning('请填写必要的登录信息');
-          }
-        });
-      }
+      // 所有用户类型都需要验证整个表单
+      console.log('登录模式');
+      loginForm.value.validate(async (valid) => {
+        if (valid) {
+          console.log('表单验证通过');
+          await doLogin();
+        } else {
+          console.log('表单验证失败');
+        }
+      });
     };
     
     // 执行登录
@@ -162,10 +142,10 @@ export default {
         // 添加调试信息
         console.log('开始处理登录操作...');
         
-        // 根据用户类型和密码进行登录
+        // 所有用户类型都需要密码
         const result = await auth.login(
           form.phone,
-          form.userType === 1 ? null : form.password,
+          form.password,
           form.rememberMe,
           form.userType
         );
