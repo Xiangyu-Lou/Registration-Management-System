@@ -278,7 +278,7 @@ import { ElMessage, ElMessageBox, ElImageViewer } from 'element-plus';
 import httpService from '../config/httpService';
 import apiConfig from '../config/api';
 import { ArrowLeft, Home, Refresh, Plus, User, ArrowDown, ArrowUp, Download, Loading } from '@element-plus/icons-vue';
-import { exportToExcel } from '../utils/exportUtils';
+import { exportToExcelWithImages } from '../utils/exportUtils';
 import auth from '../store/auth';
 import axios from 'axios';
 
@@ -550,21 +550,27 @@ export default {
         }
         
         // 准备导出数据
-        const exportData = data.map(record => ({
-          '单位': record.unit_name,
-          '废物类型': record.waste_type_name,
-          '产生地点': record.location,
-          '数量(kg)': record.quantity,
-          '收集开始时间': parseFormattedDateTime(record.collection_start_time),
-          '填报人': record.creator_name || '系统',
-          '清理前照片': '查看原始记录',
-          '清理后照片': '查看原始记录'
-        }));
+        const exportData = data.map(record => {
+          // 解析图片路径
+          const beforePhotos = parsePhotoPath(record.photo_path_before);
+          const afterPhotos = parsePhotoPath(record.photo_path_after);
+          
+          return {
+            '单位': record.unit_name,
+            '废物类型': record.waste_type_name,
+            '产生地点': record.location,
+            '数量(kg)': record.quantity,
+            '收集开始时间': parseFormattedDateTime(record.collection_start_time),
+            '填报人': record.creator_name || '系统',
+            '清理前照片': beforePhotos.length > 0 ? beforePhotos[0] : '',  // 使用第一张图片的路径
+            '清理后照片': afterPhotos.length > 0 ? afterPhotos[0] : ''    // 使用第一张图片的路径
+          };
+        });
         
         // 设置文件名
         const fileName = `危险废物记录_${unitName.value ? unitName.value : '全部单位'}`;
         
-        // 设置表头
+        // 设置表头，添加isImage标志
         const headers = [
           { text: '单位', field: '单位' },
           { text: '废物类型', field: '废物类型' },
@@ -572,12 +578,15 @@ export default {
           { text: '数量(kg)', field: '数量(kg)' },
           { text: '收集开始时间', field: '收集开始时间' },
           { text: '填报人', field: '填报人' },
-          { text: '清理前照片', field: '清理前照片' },
-          { text: '清理后照片', field: '清理后照片' }
+          { text: '清理前照片', field: '清理前照片', isImage: true },
+          { text: '清理后照片', field: '清理后照片', isImage: true }
         ];
         
-        // 执行导出
-        const result = exportToExcel(exportData, fileName, headers);
+        // 获取服务器的基础URL
+        const baseUrl = window.location.origin;
+        
+        // 执行带图片的导出
+        const result = await exportToExcelWithImages(exportData, fileName, headers, baseUrl);
         
         if (result) {
           ElMessage.success('导出成功');

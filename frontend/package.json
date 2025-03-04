@@ -12,6 +12,7 @@
     "bcrypt": "^5.1.1",
     "core-js": "^3.32.1",
     "element-plus": "^2.3.12",
+    "exceljs": "^4.4.0",
     "vue": "^3.3.4",
     "vue-router": "^4.2.4",
     "xlsx": "^0.18.5"

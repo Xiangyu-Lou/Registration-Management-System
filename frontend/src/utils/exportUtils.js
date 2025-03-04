@@ -1,208 +1,91 @@
 // 用于导出数据到CSV和Excel的工具函数
 import * as XLSX from 'xlsx';
-// import Table2Excel from 'js-table2excel';
+import ExcelJS from 'exceljs';
 // import { saveAs } from 'file-saver';
 
 // 检查XLSX库是否正确加载
 console.log('XLSX库版本:', XLSX.version);
 console.log('XLSX库可用方法:', Object.keys(XLSX).join(', '));
 
-// 解析照片路径
-const parsePhotoPath = (path) => {
-  console.log('解析照片路径:', path);
+/**
+ * 从服务器获取图片并作为ArrayBuffer返回
+ * @param {String} imageUrl - 图片的URL地址
+ * @param {String} baseUrl - 基础URL，默认为当前域名
+ * @returns {Promise<ArrayBuffer>} 图片的ArrayBuffer数据
+ */
+const fetchImageAsBuffer = async (imageUrl, baseUrl = window.location.origin) => {
+  console.log('获取图片:', imageUrl);
   
+  if (!imageUrl) {
+    console.error('图片URL为空');
+    return null;
+  }
+  
+  // 如果是相对路径，添加baseUrl
+  const fullUrl = imageUrl.startsWith('/') 
+    ? `${baseUrl}${imageUrl}` 
+    : imageUrl;
+  
+  try {
+    console.log('获取图片:', fullUrl);
+    const response = await fetch(fullUrl, {
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`获取图片失败: ${response.status} ${response.statusText}`);
+    }
+    
+    const arrayBuffer = await response.arrayBuffer();
+    console.log('图片获取成功，大小:', arrayBuffer.byteLength, '字节');
+    return arrayBuffer;
+  } catch (error) {
+    console.error('获取图片失败:', error);
+    return null;
+  }
+};
+
+/**
+ * 解析照片路径，支持JSON字符串和数组
+ * @param {String|Array} path - 照片路径字符串或数组
+ * @returns {Array} 解析后的照片路径数组
+ */
+const parsePhotoPath = (path) => {
   if (!path) {
-    console.log('照片路径为空');
     return [];
   }
   
-  // 如果path已经是数组，直接返回
+  // 如果已经是数组，直接返回
   if (Array.isArray(path)) {
-    console.log('照片路径已经是数组:', path);
     return path;
   }
   
   try {
-    // 尝试解析为JSON
+    // 尝试解析JSON字符串
     if (typeof path === 'string' && path.startsWith('[') && path.endsWith(']')) {
-      console.log('尝试将照片路径解析为JSON');
       const parsed = JSON.parse(path);
-      console.log('JSON解析结果:', parsed);
-      
-      if (Array.isArray(parsed)) {
-        return parsed;
-      } else {
-        console.error('JSON解析结果不是数组:', parsed);
-        return [path]; // 如果解析结果不是数组，则将原始路径作为单个元素返回
-      }
+      return Array.isArray(parsed) ? parsed : [path];
     }
     
-    // 如果不是JSON格式，则将其作为单个路径返回
-    console.log('照片路径不是JSON格式，作为单个路径返回');
+    // 非JSON格式，作为单个路径返回
     return [path];
   } catch (error) {
     console.error('解析照片路径失败:', error);
-    console.error('错误详情:', error.message);
-    // 如果解析失败，则将原始路径作为单个元素返回
     return [path];
   }
 };
 
-// 将图片URL转换为Base64
-const imageUrlToBase64 = (url) => {
-  console.log('开始转换图片URL到Base64:', url);
-  
-  // 检查URL是否有效
-  if (!url || typeof url !== 'string') {
-    console.error('无效的图片URL:', url);
-    return Promise.reject(new Error('Invalid image URL'));
-  }
-  
-  // 检查URL是否为相对路径，如果是，添加origin
-  let fullUrl = url;
-  if (url.startsWith('/')) {
-    fullUrl = window.location.origin + url;
-    console.log('转换为完整URL:', fullUrl);
-  }
-  
-  // 添加时间戳参数，避免缓存问题
-  const timestamp = new Date().getTime();
-  fullUrl = fullUrl.includes('?') 
-    ? `${fullUrl}&_t=${timestamp}` 
-    : `${fullUrl}?_t=${timestamp}`;
-  console.log('添加时间戳后的URL:', fullUrl);
-  
-  return new Promise((resolve, reject) => {
-    // 尝试直接使用fetch API获取图片，可以更好地处理跨域问题
-    console.log('使用fetch API获取图片:', fullUrl);
-    
-    fetch(fullUrl)
-      .then(response => {
-        if (!response.ok) {
-          throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
-        }
-        return response.blob();
-      })
-      .then(blob => {
-        console.log('图片获取成功，大小:', blob.size, '字节');
-        console.log('图片类型:', blob.type);
-        
-        const reader = new FileReader();
-        reader.onload = () => {
-          const base64data = reader.result;
-          console.log('图片转换为Base64成功，长度:', base64data.length);
-          resolve(base64data);
-        };
-        reader.onerror = (error) => {
-          console.error('图片转换为Base64失败:', error);
-          reject(error);
-        };
-        reader.readAsDataURL(blob);
-      })
-      .catch(error => {
-        console.error('获取图片失败，尝试使用Image对象:', error);
-        
-        // 如果fetch失败，回退到使用Image对象
-        const img = new Image();
-        img.crossOrigin = 'anonymous'; // 尝试解决跨域问题
-        
-        img.onload = () => {
-          try {
-            const canvas = document.createElement('canvas');
-            canvas.width = img.width;
-            canvas.height = img.height;
-            
-            console.log('图片尺寸:', img.width, 'x', img.height);
-            
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0);
-            
-            // 尝试不同的格式
-            let base64data;
-            try {
-              base64data = canvas.toDataURL('image/jpeg', 0.8);
-              console.log('JPEG格式转换成功');
-            } catch (jpegError) {
-              console.error('JPEG格式转换失败，尝试PNG:', jpegError);
-              try {
-                base64data = canvas.toDataURL('image/png');
-                console.log('PNG格式转换成功');
-              } catch (pngError) {
-                console.error('PNG格式也转换失败:', pngError);
-                throw pngError;
-              }
-            }
-            
-            console.log('图片转换为Base64成功，长度:', base64data.length);
-            resolve(base64data);
-          } catch (canvasError) {
-            console.error('Canvas处理图片失败:', canvasError);
-            reject(canvasError);
-          }
-        };
-        
-        img.onerror = (imgError) => {
-          console.error('图片加载失败:', imgError);
-          console.error('URL:', fullUrl);
-          reject(new Error(`Failed to load image: ${imgError}`));
-        };
-        
-        // 设置超时
-        const timeout = setTimeout(() => {
-          console.error('图片加载超时');
-          img.src = ''; // 取消加载
-          reject(new Error('Image loading timeout'));
-        }, 10000); // 10秒超时
-        
-        img.onload = () => {
-          clearTimeout(timeout);
-          try {
-            const canvas = document.createElement('canvas');
-            canvas.width = img.width;
-            canvas.height = img.height;
-            
-            console.log('图片尺寸:', img.width, 'x', img.height);
-            
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0);
-            
-            // 尝试不同的格式
-            let base64data;
-            try {
-              base64data = canvas.toDataURL('image/jpeg', 0.8);
-              console.log('JPEG格式转换成功');
-            } catch (jpegError) {
-              console.error('JPEG格式转换失败，尝试PNG:', jpegError);
-              try {
-                base64data = canvas.toDataURL('image/png');
-                console.log('PNG格式转换成功');
-              } catch (pngError) {
-                console.error('PNG格式也转换失败:', pngError);
-                throw pngError;
-              }
-            }
-            
-            console.log('图片转换为Base64成功，长度:', base64data.length);
-            resolve(base64data);
-          } catch (canvasError) {
-            console.error('Canvas处理图片失败:', canvasError);
-            reject(canvasError);
-          }
-        };
-        
-        // 设置图片源
-        img.src = fullUrl;
-      });
-  });
-};
-
 /**
- * 将数据导出为Excel文件，包含图片（使用XLSX库）
+ * 将数据导出为Excel文件，包含图片
  * @param {Array} data - 要导出的数据数组
  * @param {String} fileName - 导出的文件名（不含后缀）
  * @param {Array} headers - 要导出的列标题和对应字段名
+ * @param {String} baseUrl - 基础URL，用于构建完整的图片路径
  */
-export const exportToExcelWithImages = async (data, fileName, headers) => {
+export const exportToExcelWithImages = async (data, fileName, headers, baseUrl = window.location.origin) => {
   console.log('=== exportToExcelWithImages 函数被调用 ===');
   console.log('数据条数:', data.length);
   
@@ -212,182 +95,108 @@ export const exportToExcelWithImages = async (data, fileName, headers) => {
   }
 
   try {
-    console.log('使用XLSX导出Excel，开始处理图片...');
-    console.log('数据条数:', data.length);
-    console.log('第一条数据示例:', JSON.stringify(data[0]).substring(0, 200) + '...');
-    
     // 处理文件名
     fileName = fileName.replace(/[\\/:*?"<>|]/g, '_');
     const timestamp = new Date().toISOString().replace(/[-:.]/g, '').substring(0, 14);
-    const fullFileName = `${fileName}_${timestamp}`;
-    console.log('导出文件名:', fullFileName);
+    const fullFileName = `${fileName}_${timestamp}.xlsx`;
     
-    // 预处理图片，确保所有图片都加载完成
-    const processedData = [];
+    // 创建新工作簿
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = '危险废物管理系统';
+    workbook.lastModifiedBy = '危险废物管理系统';
+    workbook.created = new Date();
+    workbook.modified = new Date();
     
-    // 逐行处理数据
+    // 添加工作表
+    const worksheet = workbook.addWorksheet('危险废物记录');
+    
+    // 设置列
+    const columns = headers.map(header => ({
+      header: header.text,
+      key: header.field,
+      width: header.isImage ? 20 : 15
+    }));
+    worksheet.columns = columns;
+    
+    // 设置表头样式
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
+    
+    // 添加数据行并处理图片
+    console.log('开始处理数据行...');
+    
     for (let rowIndex = 0; rowIndex < data.length; rowIndex++) {
-      console.log(`处理第 ${rowIndex + 1}/${data.length} 条记录...`);
       const row = data[rowIndex];
-      const record = row['__original'] || {};
-      console.log(`记录ID: ${record.id || 'unknown'}`);
       
-      // 处理清理前照片
-      let beforePhotoData = null;
-      if (record.photo_path_before) {
-        console.log(`记录 ${rowIndex} 清理前照片路径:`, record.photo_path_before);
-        const photoPaths = parsePhotoPath(record.photo_path_before);
-        console.log(`解析后的照片路径:`, photoPaths);
-        
-        if (photoPaths && photoPaths.length > 0) {
-          const firstPath = photoPaths[0];
-          console.log(`选择第一张照片:`, firstPath);
-          
-          // 检查路径格式
-          if (typeof firstPath === 'string') {
-            // 构建完整URL
-            let imageUrl = firstPath;
-            
-            // 如果是相对路径，添加origin
-            if (firstPath.startsWith('/')) {
-              imageUrl = window.location.origin + firstPath;
-            }
-            
-            console.log(`记录 ${rowIndex} 清理前照片完整URL:`, imageUrl);
-            
-            try {
-              console.log(`开始转换清理前照片...`);
-              beforePhotoData = await imageUrlToBase64(imageUrl);
-              console.log(`记录 ${rowIndex} 清理前照片已转换为Base64，长度:`, beforePhotoData ? beforePhotoData.length : 0);
-            } catch (error) {
-              console.error(`记录 ${rowIndex} 清理前照片转换失败:`, error);
-              console.error('错误详情:', error.message);
-            }
-          } else {
-            console.error(`记录 ${rowIndex} 清理前照片路径格式错误:`, firstPath);
-          }
-        } else {
-          console.log(`记录 ${rowIndex} 没有有效的清理前照片路径`);
-        }
-      } else {
-        console.log(`记录 ${rowIndex} 没有清理前照片`);
-      }
+      console.log(`处理第 ${rowIndex + 1}/${data.length} 条记录...`);
       
-      // 处理清理后照片
-      let afterPhotoData = null;
-      if (record.photo_path_after) {
-        console.log(`记录 ${rowIndex} 清理后照片路径:`, record.photo_path_after);
-        const photoPaths = parsePhotoPath(record.photo_path_after); 
-        console.log(`解析后的照片路径:`, photoPaths);
-        
-        if (photoPaths && photoPaths.length > 0) {
-          const firstPath = photoPaths[0];
-          console.log(`选择第一张照片:`, firstPath);
-          
-          // 检查路径格式
-          if (typeof firstPath === 'string') {
-            // 构建完整URL
-            let imageUrl = firstPath;
-            
-            // 如果是相对路径，添加origin
-            if (firstPath.startsWith('/')) {
-              imageUrl = window.location.origin + firstPath;
-            }
-            
-            console.log(`记录 ${rowIndex} 清理后照片完整URL:`, imageUrl);
-            
-            try {
-              console.log(`开始转换清理后照片...`);
-              afterPhotoData = await imageUrlToBase64(imageUrl);
-              console.log(`记录 ${rowIndex} 清理后照片已转换为Base64，长度:`, afterPhotoData ? afterPhotoData.length : 0);
-            } catch (error) {
-              console.error(`记录 ${rowIndex} 清理后照片转换失败:`, error);
-              console.error('错误详情:', error.message);
-            }
-          } else {
-            console.error(`记录 ${rowIndex} 清理后照片路径格式错误:`, firstPath);
-          }
-        } else {
-          console.log(`记录 ${rowIndex} 没有有效的清理后照片路径`);
-        }
-      } else {
-        console.log(`记录 ${rowIndex} 没有清理后照片`);
-      }
-      
-      // 保存处理后的数据
-      processedData.push({
-        ...row,
-        __beforePhotoData: beforePhotoData,
-        __afterPhotoData: afterPhotoData
-      });
-      console.log(`记录 ${rowIndex} 处理完成`);
-    }
-    
-    console.log('所有图片处理完成，开始创建Excel...');
-    console.log('处理后的数据条数:', processedData.length);
-    
-    // 检查是否有任何图片数据
-    let hasImageData = false;
-    for (const row of processedData) {
-      if (row.__beforePhotoData || row.__afterPhotoData) {
-        hasImageData = true;
-        console.log('找到图片数据，将使用图片导出模式');
-        break;
-      }
-    }
-    
-    if (!hasImageData) {
-      console.warn('没有找到任何有效的图片数据，但仍将尝试使用图片导出模式');
-    }
-    
-    // 准备导出数据
-    const exportRows = [];
-    
-    // 提取表头
-    const headerRow = {};
-    headers.forEach(header => {
-      headerRow[header.text] = header.text;
-    });
-    exportRows.push(headerRow);
-    
-    // 处理数据行
-    processedData.forEach(row => {
-      const exportRow = {};
+      // 首先添加行基本数据
+      const rowData = {};
       headers.forEach(header => {
-        // 对于普通文本字段，直接添加
         if (!header.isImage) {
-          exportRow[header.text] = row[header.field] || '';
-        }
-        // 图片字段只能在导出为带图片的Excel时处理
-        // 这里只能导出图片链接文本
-        else {
-          exportRow[header.text] = row[header.field] || '';
+          rowData[header.field] = row[header.field] || '';
         }
       });
-      exportRows.push(exportRow);
-    });
+      
+      // 添加行数据
+      const excelRow = worksheet.addRow(rowData);
+      
+      // 设置行高
+      excelRow.height = 80; // 设置足够的高度显示图片
+      
+      // 处理图片字段
+      for (const header of headers) {
+        if (header.isImage) {
+          const fieldName = header.field;
+          const imagePath = row[fieldName]; // 直接从导出数据中获取图片路径
+          
+          if (imagePath) {
+            console.log(`记录 ${rowIndex + 1} 的 ${fieldName} 字段有图片路径: ${imagePath}`);
+            
+            // 获取图片
+            try {
+              const imageBuffer = await fetchImageAsBuffer(imagePath, baseUrl);
+              
+              if (imageBuffer) {
+                // 找到这个字段在列中的位置
+                const colIndex = headers.findIndex(h => h.field === fieldName) + 1;
+                
+                // 获取单元格位置
+                const cellRef = worksheet.getCell(rowIndex + 2, colIndex).address;
+                
+                // 添加图片到工作表
+                const imageId = workbook.addImage({
+                  buffer: imageBuffer,
+                  extension: imagePath.split('.').pop().toLowerCase()
+                });
+                
+                // 将图片添加到单元格
+                worksheet.addImage(imageId, {
+                  tl: { col: colIndex - 1, row: rowIndex + 1 },
+                  br: { col: colIndex, row: rowIndex + 2 },
+                  editAs: 'oneCell'
+                });
+                
+                console.log(`已添加图片到单元格 ${cellRef}`);
+              } else {
+                console.error(`获取图片失败: ${imagePath}`);
+              }
+            } catch (imageError) {
+              console.error(`处理图片时出错:`, imageError);
+            }
+          } else {
+            console.log(`记录 ${rowIndex + 1} 的 ${fieldName} 没有照片路径`);
+          }
+        }
+      }
+    }
     
-    // 创建工作簿
-    const wb = XLSX.utils.book_new();
+    // 导出工作簿
+    console.log('生成Excel数据...');
+    const buffer = await workbook.xlsx.writeBuffer();
     
-    // 创建工作表 - 将准备好的数据行转换为工作表
-    const ws = XLSX.utils.json_to_sheet(exportRows, { skipHeader: true });
-    
-    // 设置列宽
-    const colWidths = headers.map(() => ({ wch: 20 }));
-    ws['!cols'] = colWidths;
-    
-    // 添加工作表到工作簿
-    XLSX.utils.book_append_sheet(wb, ws, '危险废物记录');
-    
-    // 导出Excel文件
-    const excelFileName = `${fullFileName}.xlsx`;
-    
-    // 生成Excel数据
-    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-    
-    // 创建Blob对象
-    const blob = new Blob([wbout], { 
+    // 创建Blob对象并下载
+    const blob = new Blob([buffer], { 
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
     });
     
@@ -395,7 +204,7 @@ export const exportToExcelWithImages = async (data, fileName, headers) => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = excelFileName;
+    link.download = fullFileName;
     
     // 触发下载
     document.body.appendChild(link);
@@ -405,7 +214,6 @@ export const exportToExcelWithImages = async (data, fileName, headers) => {
     
     console.log('Excel导出成功');
     return true;
-    
   } catch (error) {
     console.error('导出Excel失败:', error);
     console.error('错误详情:', error.message);
@@ -423,12 +231,12 @@ export const exportToExcelWithImages = async (data, fileName, headers) => {
 };
 
 /**
- * 将数据导出为Excel文件
+ * 将数据导出为Excel文件(不包含图片)
  * @param {Array} data - 要导出的数据数组
  * @param {String} fileName - 导出的文件名（不含后缀）
  * @param {Array} headers - 要导出的列标题和对应字段名
  */
-export const exportToExcel = (data, fileName, headers) => {
+export const exportToExcel = async (data, fileName, headers) => {
   if (!data || data.length === 0) {
     console.error('导出失败：没有数据');
     return false;
@@ -437,61 +245,58 @@ export const exportToExcel = (data, fileName, headers) => {
   // 处理文件名
   fileName = fileName.replace(/[\\/:*?"<>|]/g, '_');
   const timestamp = new Date().toISOString().replace(/[-:.]/g, '').substring(0, 14);
+  const fullFileName = `${fileName}_${timestamp}.xlsx`;
   
   console.log('导出函数被调用，数据条数:', data.length);
   
-  // 使用XLSX导出Excel
   try {
-    console.log('尝试导出Excel...');
+    console.log('使用ExcelJS导出Excel...');
     
     // 创建工作簿
-    const wb = XLSX.utils.book_new();
-    console.log('工作簿创建成功');
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = '危险废物管理系统';
+    workbook.lastModifiedBy = '危险废物管理系统';
+    workbook.created = new Date();
+    workbook.modified = new Date();
     
-    // 准备数据
-    const exportRows = data.map(row => {
-      const exportRow = {};
+    // 添加工作表
+    const worksheet = workbook.addWorksheet('危险废物记录');
+    
+    // 设置列
+    const columns = headers.map(header => ({
+      header: header.text,
+      key: header.field,
+      width: 15
+    }));
+    worksheet.columns = columns;
+    
+    // 设置表头样式
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
+    
+    // 添加数据行
+    data.forEach(row => {
+      const rowData = {};
       headers.forEach(header => {
-        exportRow[header.text] = row[header.field] || '';
+        rowData[header.field] = row[header.field] || '';
       });
-      return exportRow;
+      worksheet.addRow(rowData);
     });
     
-    console.log('数据准备完成，开始创建工作表');
+    // 导出工作簿
+    console.log('生成Excel数据...');
+    const buffer = await workbook.xlsx.writeBuffer();
     
-    // 创建工作表
-    const ws = XLSX.utils.json_to_sheet(exportRows);
-    
-    console.log('工作表创建成功');
-    
-    // 设置列宽
-    const colWidths = headers.map(() => ({ wch: 20 }));
-    ws['!cols'] = colWidths;
-    
-    // 添加工作表到工作簿
-    XLSX.utils.book_append_sheet(wb, ws, '危险废物记录');
-    console.log('工作表已添加到工作簿');
-    
-    // 导出Excel文件
-    const excelFileName = `${fileName}_${timestamp}.xlsx`;
-    console.log('准备导出Excel文件:', excelFileName);
-    
-    // 使用write方法导出
-    console.log('使用XLSX.write方法导出...');
-    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-    console.log('Excel数据生成成功，大小:', wbout.length, '字节');
-    
-    // 创建Blob对象
-    const blob = new Blob([wbout], { 
+    // 创建Blob对象并下载
+    const blob = new Blob([buffer], { 
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
     });
-    console.log('Blob创建成功，大小:', blob.size, '字节');
     
     // 创建下载链接
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = excelFileName;
+    a.download = fullFileName;
     console.log('下载链接创建成功，准备触发点击');
     
     // 触发下载
@@ -573,12 +378,12 @@ export const exportToCSV = (data, fileName, headers) => {
 };
 
 /**
- * 准备图片数据用于导出
- * @param {Array} records - 记录数据
+ * 准备图片导出数据，为每个记录获取图片
+ * @param {Array} records - 记录数组
  * @param {String} baseUrl - 基础URL
- * @returns {Object} 图片数据对象
+ * @returns {Object} 包含图片arrayBuffer的对象
  */
-export const prepareImageExportData = async (records, baseUrl) => {
+export const prepareImageExportData = async (records, baseUrl = window.location.origin) => {
   const imageData = {};
   
   try {
@@ -586,83 +391,61 @@ export const prepareImageExportData = async (records, baseUrl) => {
     console.log('基础URL:', baseUrl);
     
     // 处理每条记录的图片
-    records.forEach((record, index) => {
+    for (let index = 0; index < records.length; index++) {
+      const record = records[index];
       imageData[index] = {
-        beforeImages: [],
-        afterImages: []
+        beforeImage: null,
+        afterImage: null
       };
       
       // 处理清理前照片
       if (record.photo_path_before) {
-        console.log(`记录 ${index} 清理前照片路径:`, record.photo_path_before);
-        
-        let beforePaths = [];
-        try {
-          // 尝试解析JSON
-          if (typeof record.photo_path_before === 'string' && record.photo_path_before.startsWith('[')) {
-            beforePaths = JSON.parse(record.photo_path_before);
-            console.log(`记录 ${index} 解析后的清理前照片路径:`, beforePaths);
-          } else {
-            beforePaths = [record.photo_path_before];
+        const photoPaths = parsePhotoPath(record.photo_path_before);
+        if (photoPaths.length > 0) {
+          const firstPhotoPath = photoPaths[0];
+          try {
+            const imageBuffer = await fetchImageAsBuffer(firstPhotoPath, baseUrl);
+            if (imageBuffer) {
+              imageData[index].beforeImage = {
+                buffer: imageBuffer,
+                extension: firstPhotoPath.split('.').pop().toLowerCase(),
+                path: firstPhotoPath
+              };
+              console.log(`记录 ${index} 清理前照片获取成功`);
+            }
+          } catch (error) {
+            console.error(`获取清理前照片失败:`, error);
           }
-        } catch (e) {
-          console.error('解析清理前照片路径失败:', e);
-          beforePaths = [record.photo_path_before];
         }
-        
-        // 添加完整URL
-        imageData[index].beforeImages = beforePaths.map(path => {
-          // 确保路径是字符串
-          const pathStr = String(path);
-          // 如果路径已经是完整URL，则直接返回
-          if (pathStr.startsWith('http://') || pathStr.startsWith('https://')) {
-            return pathStr;
-          }
-          // 否则拼接基础URL
-          return `${baseUrl}${pathStr}`;
-        });
-        
-        console.log(`记录 ${index} 完整的清理前照片URL:`, imageData[index].beforeImages);
       }
       
       // 处理清理后照片
       if (record.photo_path_after) {
-        console.log(`记录 ${index} 清理后照片路径:`, record.photo_path_after);
-        
-        let afterPaths = [];
-        try {
-          // 尝试解析JSON
-          if (typeof record.photo_path_after === 'string' && record.photo_path_after.startsWith('[')) {
-            afterPaths = JSON.parse(record.photo_path_after);
-            console.log(`记录 ${index} 解析后的清理后照片路径:`, afterPaths);
-          } else {
-            afterPaths = [record.photo_path_after];
+        const photoPaths = parsePhotoPath(record.photo_path_after);
+        if (photoPaths.length > 0) {
+          const firstPhotoPath = photoPaths[0];
+          try {
+            const imageBuffer = await fetchImageAsBuffer(firstPhotoPath, baseUrl);
+            if (imageBuffer) {
+              imageData[index].afterImage = {
+                buffer: imageBuffer,
+                extension: firstPhotoPath.split('.').pop().toLowerCase(),
+                path: firstPhotoPath
+              };
+              console.log(`记录 ${index} 清理后照片获取成功`);
+            }
+          } catch (error) {
+            console.error(`获取清理后照片失败:`, error);
           }
-        } catch (e) {
-          console.error('解析清理后照片路径失败:', e);
-          afterPaths = [record.photo_path_after];
         }
-        
-        // 添加完整URL
-        imageData[index].afterImages = afterPaths.map(path => {
-          // 确保路径是字符串
-          const pathStr = String(path);
-          // 如果路径已经是完整URL，则直接返回
-          if (pathStr.startsWith('http://') || pathStr.startsWith('https://')) {
-            return pathStr;
-          }
-          // 否则拼接基础URL
-          return `${baseUrl}${pathStr}`;
-        });
-        
-        console.log(`记录 ${index} 完整的清理后照片URL:`, imageData[index].afterImages);
       }
-    });
+      
+      console.log(`已处理 ${index + 1}/${records.length} 条记录`);
+    }
     
-    console.log('图片数据准备完成，总记录数:', Object.keys(imageData).length);
     return imageData;
   } catch (error) {
-    console.error('准备图片数据失败:', error);
+    console.error('准备图片数据时出错:', error);
     return {};
   }
 };
