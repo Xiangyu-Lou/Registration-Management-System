@@ -173,7 +173,7 @@ export const exportToExcelWithImages = async (data, fileName, headers, baseUrl =
                 // 将图片添加到单元格
                 worksheet.addImage(imageId, {
                   tl: { col: colIndex - 1, row: rowIndex + 1 },
-                  br: { col: colIndex, row: rowIndex + 2 },
+                  br: { col: colIndex, row: rowIndex + 1.9 },
                   editAs: 'oneCell'
                 });
                 
