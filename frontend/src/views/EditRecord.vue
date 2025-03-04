@@ -84,15 +84,24 @@
           />
         </el-form-item>
 
-        <el-form-item label="现场照片（收集前）" prop="photosBefore">
+        <el-form-item label="现场照片（收集前）" prop="photo_path_before">
+          <div class="photo-tip">请上传废物收集前的现场照片（最多5张）</div>
+          <div class="upload-warning" v-if="showLargeFileWarning">
+            <el-alert
+              title="上传大文件可能会导致处理时间较长，请耐心等待"
+              type="warning"
+              :closable="false"
+              show-icon
+            />
+          </div>
           <el-upload
             class="waste-photo-uploader"
             action="#"
             :auto-upload="false"
             :on-change="handlePhotoBeforeChange"
             :on-remove="handlePhotoBeforeRemove"
-            :file-list="photoBeforeList"
-            :limit="10"
+            :file-list="fileListBefore"
+            :limit="5"
             multiple
             list-type="picture-card"
             :on-preview="handlePictureCardPreview"
@@ -101,18 +110,18 @@
           >
             <el-icon><plus /></el-icon>
           </el-upload>
-          <div class="photo-tip">请上传废物收集前的现场照片（最多10张）</div>
         </el-form-item>
 
-        <el-form-item label="现场照片（收集后）" prop="photosAfter">
+        <el-form-item label="现场照片（收集后）" prop="photo_path_after">
+          <div class="photo-tip">请上传废物收集后的现场照片（最多5张）</div>
           <el-upload
             class="waste-photo-uploader"
             action="#"
             :auto-upload="false"
             :on-change="handlePhotoAfterChange"
             :on-remove="handlePhotoAfterRemove"
-            :file-list="photoAfterList"
-            :limit="10"
+            :file-list="fileListAfter"
+            :limit="5"
             multiple
             list-type="picture-card"
             :on-preview="handlePictureCardPreview"
@@ -121,7 +130,6 @@
           >
             <el-icon><plus /></el-icon>
           </el-upload>
-          <div class="photo-tip">请上传废物收集后的现场照片（最多10张）</div>
           
           <!-- 添加独立的图片预览组件 -->
           <el-image-viewer
@@ -136,8 +144,55 @@
           <el-button type="primary" @click="submitForm" :loading="loading">保存</el-button>
           <el-button @click="goBack">取消</el-button>
         </el-form-item>
+        
+        <!-- 调试信息 -->
+        <el-collapse v-if="!isNew">
+          <el-collapse-item title="调试信息">
+            <div>
+              <h4>收集前照片路径:</h4>
+              <div v-for="(file, index) in fileListBefore" :key="'before-'+index">
+                <div>名称: {{ file.name }}</div>
+                <div>URL: {{ file.url }}</div>
+                <div>
+                  <img :src="file.url" style="max-width: 200px; max-height: 200px;" />
+                </div>
+                <hr />
+              </div>
+              
+              <h4>收集后照片路径:</h4>
+              <div v-for="(file, index) in fileListAfter" :key="'after-'+index">
+                <div>名称: {{ file.name }}</div>
+                <div>URL: {{ file.url }}</div>
+                <div>
+                  <img :src="file.url" style="max-width: 200px; max-height: 200px;" />
+                </div>
+                <hr />
+              </div>
+            </div>
+          </el-collapse-item>
+        </el-collapse>
       </el-form>
     </div>
+
+    <!-- 上传进度条对话框 -->
+    <el-dialog
+      v-model="showUploadProgress"
+      title="正在上传文件"
+      width="30%"
+      :close-on-click-modal="false"
+      :close-on-press-escape="false"
+      :show-close="false"
+    >
+      <div class="upload-progress">
+        <p>正在上传文件，请勿关闭页面...</p>
+        <el-progress 
+          :percentage="uploadPercentage" 
+          :format="percentageFormat"
+          :status="uploadPercentage === 100 ? 'success' : ''"
+        ></el-progress>
+        <p class="upload-status">{{ uploadStatus }}</p>
+      </div>
+    </el-dialog>
 
     <div class="footer">
       <p>&copy; 2025 危险废物管理系统</p>
@@ -171,19 +226,65 @@ export default {
     const unitName = ref('');
     const wasteTypes = ref([]);
     const units = ref([]);
-    const photoBeforeList = ref([]);
-    const photoAfterList = ref([]);
-    const photoBeforeFiles = ref([]);
-    const photoAfterFiles = ref([]);
-    const existingPhotosPathsBefore = ref([]);
-    const existingPhotosPathsAfter = ref([]);
+    const fileListBefore = ref([]);
+    const fileListAfter = ref([]);
     const previewImages = ref([]);
     const showViewer = ref(false);
     const previewIndex = ref(0);
     const createdAt = ref('');
+    const showUploadProgress = ref(false);
+    const uploadPercentage = ref(0);
+    const uploadStatus = ref('准备上传...');
+    const showLargeFileWarning = ref(false);
+    
+    // 添加解析照片路径的函数
+    const parsePhotoPath = (path) => {
+      if (!path) return [];
+      
+      console.log('解析照片路径，原始值:', path, '类型:', typeof path);
+      
+      try {
+        // 如果已经是数组，直接返回
+        if (Array.isArray(path)) {
+          console.log('照片路径已经是数组:', path);
+          return path;
+        }
+        
+        // 尝试解析为JSON
+        if (typeof path === 'string') {
+          // 检查是否是JSON数组格式
+          if (path.startsWith('[') && path.endsWith(']')) {
+            const parsed = JSON.parse(path);
+            console.log('照片路径解析为JSON数组:', parsed);
+            return parsed;
+          }
+          
+          // 检查是否是逗号分隔的字符串
+          if (path.includes(',')) {
+            const paths = path.split(',').map(p => p.trim()).filter(p => p);
+            console.log('照片路径解析为逗号分隔字符串:', paths);
+            return paths;
+          }
+          
+          // 单个路径
+          console.log('照片路径解析为单个字符串:', [path]);
+          return [path];
+        }
+        
+        // 其他情况，尝试转换为字符串后处理
+        console.log('照片路径类型未知，尝试转换为字符串:', String(path));
+        return [String(path)];
+      } catch (error) {
+        console.error('解析照片路径失败:', error);
+        // 如果解析失败，将其作为单个路径返回
+        return typeof path === 'string' ? [path] : [];
+      }
+    };
     
     // 是否为新增记录
-    const isNew = computed(() => !route.params.id);
+    const isNew = computed(() => {
+      return !route.params.id || route.params.id === 'new';
+    });
     
     // 是否为超级管理员
     const isSuperAdmin = computed(() => {
@@ -199,7 +300,10 @@ export default {
       collectionTime: '',
       quantity: 0,
       recordId: null,
-      creatorId: auth.state.user?.id || null
+      creatorId: auth.state.user?.id || null,
+      photo_path_before: '',
+      photo_path_after: '',
+      remarks: ''
     });
 
     const rules = {
@@ -235,15 +339,16 @@ export default {
           await fetchUnits();
         }
         
-        // 如果有记录ID，则获取记录详情
-        if (!isNew.value) {
-          await fetchRecordDetails();
-        } else {
+        // 如果是新增记录
+        if (isNew.value) {
           // 新增记录默认使用当前用户的单位（非超级管理员）
           if (!isSuperAdmin.value && auth.state.user) {
             form.unitId = auth.state.user.unit_id;
             await fetchUnitName(form.unitId);
           }
+        } else {
+          // 只有在编辑现有记录时才获取记录详情
+          await fetchRecordDetails();
         }
       } catch (error) {
         console.error('初始化数据失败:', error);
@@ -311,58 +416,51 @@ export default {
         
         form.quantity = record.quantity;
         
-        // 处理照片路径
-        try {
-          // 处理收集前照片
-          let photoPathsBefore = [];
-          if (record.photo_path_before) {
-            photoPathsBefore = JSON.parse(record.photo_path_before);
-            console.log('解析的收集前照片路径:', photoPathsBefore);
-          }
+        // 处理照片
+        if (record.photo_path_before) {
+          console.log('收集前照片路径:', record.photo_path_before);
+          const photoPaths = parsePhotoPath(record.photo_path_before);
+          console.log('解析后的收集前照片路径:', photoPaths);
           
-          // 处理收集后照片
-          let photoPathsAfter = [];
-          if (record.photo_path_after) {
-            photoPathsAfter = JSON.parse(record.photo_path_after);
-            console.log('解析的收集后照片路径:', photoPathsAfter);
-          }
-          
-          // 设置已有照片路径
-          existingPhotosPathsBefore.value = photoPathsBefore;
-          existingPhotosPathsAfter.value = photoPathsAfter;
-          
-          // 设置上传组件的文件列表，使现有照片能显示在上传组件中
-          photoBeforeList.value = photoPathsBefore.map((path, index) => {
-            const url = `${apiConfig.baseURL}${path}`;
-            console.log(`收集前照片${index + 1}的URL:`, url);
+          fileListBefore.value = photoPaths.map(path => {
+            // 构建完整URL
+            let fullUrl = path;
+            if (!path.startsWith('http')) {
+              // 移除开头的斜杠（如果有）
+              const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+              fullUrl = `${window.location.origin}/${cleanPath}`;
+            }
+            
+            console.log('收集前照片完整URL:', fullUrl);
+            
             return {
-              name: `收集前照片${index + 1}`,
-              url: url,
-              uid: `before-${index}`,
-              status: 'success' // 添加状态，表示已上传成功
+              name: path.split('/').pop(),
+              url: fullUrl
             };
           });
+        }
+        
+        if (record.photo_path_after) {
+          console.log('收集后照片路径:', record.photo_path_after);
+          const photoPaths = parsePhotoPath(record.photo_path_after);
+          console.log('解析后的收集后照片路径:', photoPaths);
           
-          photoAfterList.value = photoPathsAfter.map((path, index) => {
-            const url = `${apiConfig.baseURL}${path}`;
-            console.log(`收集后照片${index + 1}的URL:`, url);
+          fileListAfter.value = photoPaths.map(path => {
+            // 构建完整URL
+            let fullUrl = path;
+            if (!path.startsWith('http')) {
+              // 移除开头的斜杠（如果有）
+              const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+              fullUrl = `${window.location.origin}/${cleanPath}`;
+            }
+            
+            console.log('收集后照片完整URL:', fullUrl);
+            
             return {
-              name: `收集后照片${index + 1}`,
-              url: url,
-              uid: `after-${index}`,
-              status: 'success' // 添加状态，表示已上传成功
+              name: path.split('/').pop(),
+              url: fullUrl
             };
           });
-          
-          // 更新预览图片
-          updatePreviewImages([...photoBeforeList.value, ...photoAfterList.value]);
-        } catch (error) {
-          console.error('解析照片路径失败:', error);
-          previewImages.value = [];
-          existingPhotosPathsBefore.value = [];
-          existingPhotosPathsAfter.value = [];
-          photoBeforeList.value = [];
-          photoAfterList.value = [];
         }
         
         // 获取单位名称
@@ -370,6 +468,9 @@ export default {
         
         // 设置创建时间
         createdAt.value = record.created_at;
+        
+        // 初始化预览图片列表
+        updatePreviewImages([...fileListBefore.value, ...fileListAfter.value]);
         
       } catch (error) {
         console.error('获取记录详情失败:', error);
@@ -380,7 +481,7 @@ export default {
     };
 
     // 处理上传前的文件处理
-    const handleBeforeUpload = (file) => {
+    const handleBeforeUpload = async (file) => {
       // 检查文件类型是否为图片
       const acceptedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/bmp', 'image/webp'];
       const isImage = acceptedTypes.includes(file.type);
@@ -389,129 +490,120 @@ export default {
         ElMessage.error('只能上传图片文件!');
         return false;
       }
-      
-      // 为文件添加唯一标识符
-      if (!file.uid) {
-        file.uid = Date.now() + '-' + Math.random().toString(36).substr(2, 10);
+
+      // 检查文件大小（50MB = 50 * 1024 * 1024 bytes）
+      const maxSize = 50 * 1024 * 1024;
+      if (file.size > maxSize) {
+        ElMessage.error('图片大小不能超过50MB!');
+        return false;
       }
-      return true; // 允许上传
+      
+      // 检查是否有大文件需要显示警告
+      const largeFileThreshold = 5 * 1024 * 1024; // 5MB
+      if (file.size > largeFileThreshold) {
+        showLargeFileWarning.value = true;
+      }
+      
+      // 直接返回true，允许文件被添加到上传列表
+      return true;
     };
 
     // 处理收集前的照片变更
     const handlePhotoBeforeChange = (file, fileList) => {
-      console.log('收集前照片变更:', file, fileList);
+      console.log('收集前照片变更:', file);
       
-      // 更新photoBeforeList
-      photoBeforeList.value = fileList;
+      // 检查是否有大文件
+      checkForLargeFiles(fileList);
       
-      // 更新photoBeforeFiles，只包含新上传的文件
-      photoBeforeFiles.value = fileList
-        .filter(f => f.raw) // 只处理新上传的文件
-        .map(f => f.raw);
-      
-      // 更新existingPhotosPathsBefore，只保留仍在fileList中的现有照片
-      if (!isNew.value) {
-        const existingFileUids = fileList
-          .filter(f => f.uid && typeof f.uid === 'string' && f.uid.startsWith('before-'))
-          .map(f => f.uid);
-        
-        // 保留仍在fileList中的现有照片
-        existingPhotosPathsBefore.value = existingPhotosPathsBefore.value.filter((_, index) => {
-          return existingFileUids.includes(`before-${index}`);
-        });
+      // 确保文件有raw属性
+      if (file.raw === undefined && file.status === 'ready') {
+        file.raw = file.originFileObj || file;
+        console.log('为收集前照片添加raw属性:', file.raw);
       }
       
+      // 更新文件列表
+      fileListBefore.value = fileList;
+      
       // 更新预览图片
-      updatePreviewImages([...photoBeforeList.value, ...photoAfterList.value]);
+      updatePreviewImages([...fileListBefore.value, ...fileListAfter.value]);
       
       return false; // 阻止自动上传
     };
 
     // 处理收集前的照片移除
     const handlePhotoBeforeRemove = (file, fileList) => {
-      console.log('收集前照片移除:', file, fileList);
+      console.log('收集前照片移除:', file);
       
-      // 更新photoBeforeList
-      photoBeforeList.value = fileList;
+      // 更新fileListBefore
+      fileListBefore.value = fileList;
       
-      // 如果是现有照片，从existingPhotosPathsBefore中移除
-      if (file.uid && typeof file.uid === 'string' && file.uid.startsWith('before-')) {
-        const index = parseInt(file.uid.replace('before-', ''));
-        // 从existingPhotosPathsBefore中移除
-        existingPhotosPathsBefore.value = existingPhotosPathsBefore.value.filter((_, i) => i !== index);
+      // 如果没有大文件了，隐藏警告
+      if (!checkForLargeFiles([...fileListBefore.value, ...fileListAfter.value])) {
+        showLargeFileWarning.value = false;
       }
       
-      // 更新photoBeforeFiles，只包含新上传的文件
-      photoBeforeFiles.value = fileList
-        .filter(f => f.raw)
-        .map(f => f.raw);
-      
       // 更新预览图片
-      updatePreviewImages([...photoBeforeList.value, ...photoAfterList.value]);
+      updatePreviewImages([...fileListBefore.value, ...fileListAfter.value]);
     };
 
     // 处理收集后的照片变更
     const handlePhotoAfterChange = (file, fileList) => {
-      console.log('收集后照片变更:', file, fileList);
+      console.log('收集后照片变更:', file);
       
-      // 更新photoAfterList
-      photoAfterList.value = fileList;
+      // 检查是否有大文件
+      checkForLargeFiles(fileList);
       
-      // 更新photoAfterFiles，只包含新上传的文件
-      photoAfterFiles.value = fileList
-        .filter(f => f.raw) // 只处理新上传的文件
-        .map(f => f.raw);
-      
-      // 更新existingPhotosPathsAfter，只保留仍在fileList中的现有照片
-      if (!isNew.value) {
-        const existingFileUids = fileList
-          .filter(f => f.uid && typeof f.uid === 'string' && f.uid.startsWith('after-'))
-          .map(f => f.uid);
-        
-        // 保留仍在fileList中的现有照片
-        existingPhotosPathsAfter.value = existingPhotosPathsAfter.value.filter((_, index) => {
-          return existingFileUids.includes(`after-${index}`);
-        });
+      // 确保文件有raw属性
+      if (file.raw === undefined && file.status === 'ready') {
+        file.raw = file.originFileObj || file;
+        console.log('为收集后照片添加raw属性:', file.raw);
       }
       
+      // 更新文件列表
+      fileListAfter.value = fileList;
+      
       // 更新预览图片
-      updatePreviewImages([...photoBeforeList.value, ...photoAfterList.value]);
+      updatePreviewImages([...fileListBefore.value, ...fileListAfter.value]);
       
       return false; // 阻止自动上传
     };
 
     // 处理收集后的照片移除
     const handlePhotoAfterRemove = (file, fileList) => {
-      console.log('收集后照片移除:', file, fileList);
+      console.log('收集后照片移除:', file);
       
-      // 更新photoAfterList
-      photoAfterList.value = fileList;
+      // 更新fileListAfter
+      fileListAfter.value = fileList;
       
-      // 如果是现有照片，从existingPhotosPathsAfter中移除
-      if (file.uid && typeof file.uid === 'string' && file.uid.startsWith('after-')) {
-        const index = parseInt(file.uid.replace('after-', ''));
-        // 从existingPhotosPathsAfter中移除
-        existingPhotosPathsAfter.value = existingPhotosPathsAfter.value.filter((_, i) => i !== index);
+      // 如果没有大文件了，隐藏警告
+      if (!checkForLargeFiles([...fileListBefore.value, ...fileListAfter.value])) {
+        showLargeFileWarning.value = false;
       }
       
-      // 更新photoAfterFiles，只包含新上传的文件
-      photoAfterFiles.value = fileList
-        .filter(f => f.raw)
-        .map(f => f.raw);
-      
       // 更新预览图片
-      updatePreviewImages([...photoBeforeList.value, ...photoAfterList.value]);
+      updatePreviewImages([...fileListBefore.value, ...fileListAfter.value]);
     };
 
     // 更新预览图片
     const updatePreviewImages = (fileList) => {
       previewImages.value = fileList.map(file => {
         if (file.url) {
+          console.log('预览图片URL:', file.url);
           return file.url;
         } else if (file.raw) {
-          return URL.createObjectURL(file.raw);
+          // 检查是否已经创建了Blob URL
+          if (!file._blobUrl) {
+            file._blobUrl = URL.createObjectURL(file.raw);
+          }
+          console.log('预览图片从raw创建:', file._blobUrl);
+          return file._blobUrl;
         } else if (file instanceof File) {
-          return URL.createObjectURL(file);
+          // 检查是否已经创建了Blob URL
+          if (!file._blobUrl) {
+            file._blobUrl = URL.createObjectURL(file);
+          }
+          console.log('预览图片从File创建:', file._blobUrl);
+          return file._blobUrl;
         }
         return '';
       }).filter(url => url);
@@ -521,9 +613,24 @@ export default {
 
     // 处理图片预览
     const handlePictureCardPreview = (file) => {
+      console.log('预览图片:', file);
+      
+      // 更新预览图片列表
+      updatePreviewImages([...fileListBefore.value, ...fileListAfter.value]);
+      
       // 找到当前图片在预览列表中的索引
       const index = previewImages.value.findIndex(url => {
-        return url === file.url || (file.raw && url === URL.createObjectURL(file.raw));
+        if (file.url) {
+          return url === file.url;
+        } else if (file.raw) {
+          // 对于新上传的文件，需要比较Blob URL
+          const blobUrl = URL.createObjectURL(file.raw);
+          const result = url === blobUrl;
+          // 释放Blob URL
+          URL.revokeObjectURL(blobUrl);
+          return result;
+        }
+        return false;
       });
       
       if (index !== -1) {
@@ -541,80 +648,224 @@ export default {
       showViewer.value = false;
     };
 
+    // 检查是否有大文件
+    const checkForLargeFiles = (files) => {
+      const largeFileThreshold = 5 * 1024 * 1024; // 5MB
+      return files.some(file => file.size > largeFileThreshold);
+    };
+
+    // 处理上传进度
+    const handleUploadProgress = (progressEvent) => {
+      if (progressEvent.total) {
+        const percentage = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+        uploadPercentage.value = percentage;
+        
+        if (percentage < 33) {
+          uploadStatus.value = '正在上传文件...';
+        } else if (percentage < 66) {
+          uploadStatus.value = '正在处理文件...';
+        } else if (percentage < 100) {
+          uploadStatus.value = '即将完成...';
+        } else {
+          uploadStatus.value = '上传完成，正在保存...';
+        }
+      }
+    };
+
+    // 格式化百分比显示
+    const percentageFormat = (percentage) => {
+      return percentage === 100 ? '完成' : `${percentage}%`;
+    };
+
     // 提交表单
     const submitForm = async () => {
-      recordForm.value.validate(async (valid) => {
+      if (!recordForm.value) return;
+      
+      await recordForm.value.validate(async (valid) => {
         if (valid) {
+          // 显示上传进度对话框
+          uploadPercentage.value = 0;
+          uploadStatus.value = '正在上传文件...';
+          showUploadProgress.value = true;
+          
           try {
-            loading.value = true;
-            
-            // 创建FormData对象
             const formData = new FormData();
-            
-            // 添加基本字段
             formData.append('unitId', form.unitId);
             formData.append('wasteTypeId', form.wasteTypeId);
             formData.append('location', form.location);
+            formData.append('collectionDate', form.collectionDate);
+            formData.append('collectionTime', form.collectionTime);
             formData.append('quantity', form.quantity);
+            formData.append('remarks', form.remarks || '');
             
-            if (form.collectionDate && form.collectionTime) {
-              const combinedDateTime = `${form.collectionDate} ${form.collectionTime}:00`;
-              formData.append('collectionStartTime', combinedDateTime);
-            }
+            // 处理照片 - 根据后端逻辑，如果有新上传的照片，后端会删除所有旧照片
+            // 因此，我们需要合并现有照片和新上传的照片
             
-            // 添加收集前照片
-            if (photoBeforeFiles.value && photoBeforeFiles.value.length > 0) {
-              photoBeforeFiles.value.forEach(file => {
-                if (file) {
-                  formData.append('photosBefore', file);
+            // 处理收集前照片
+            if (fileListBefore.value.length > 0) {
+              const newFiles = fileListBefore.value.filter(file => file.raw);
+              const existingFiles = fileListBefore.value.filter(file => !file.raw);
+              
+              // 如果有新上传的照片，我们需要将现有照片的URL转换为File对象
+              if (newFiles.length > 0) {
+                console.log('有新上传的收集前照片，需要合并现有照片');
+                
+                // 将新照片添加到formData
+                newFiles.forEach(file => {
+                  if (file.raw) {
+                    console.log('添加新的收集前照片:', file.raw.name);
+                    formData.append('photo_before', file.raw);
+                  }
+                });
+                
+                // 如果有现有照片，我们需要将它们的路径保存到photo_path_before字段
+                if (existingFiles.length > 0) {
+                  const existingPaths = existingFiles.map(file => {
+                    // 确保URL是相对路径
+                    let path = file.url;
+                    const origin = window.location.origin;
+                    if (path.startsWith(origin)) {
+                      path = path.substring(origin.length);
+                      // 确保路径以/开头
+                      if (!path.startsWith('/')) {
+                        path = '/' + path;
+                      }
+                    }
+                    return path;
+                  });
+                  
+                  console.log('保存现有收集前照片路径:', existingPaths);
+                  formData.append('photo_path_before', JSON.stringify(existingPaths));
                 }
-              });
-            }
-            
-            // 添加收集后照片
-            if (photoAfterFiles.value && photoAfterFiles.value.length > 0) {
-              photoAfterFiles.value.forEach(file => {
-                if (file) {
-                  formData.append('photosAfter', file);
-                }
-              });
-            }
-            
-            // 添加现有收集前照片路径（用于更新时保留未更改的照片）
-            if (!isNew.value && existingPhotosPathsBefore.value.length > 0) {
-              formData.append('existingPhotosPathsBefore', JSON.stringify(existingPhotosPathsBefore.value));
-            }
-            
-            // 添加现有收集后照片路径（用于更新时保留未更改的照片）
-            if (!isNew.value && existingPhotosPathsAfter.value.length > 0) {
-              formData.append('existingPhotosPathsAfter', JSON.stringify(existingPhotosPathsAfter.value));
-            }
-            
-            let response;
-            
-            if (isNew.value) {
-              // 新增记录
-              response = await httpService.postForm(apiConfig.endpoints.wasteRecords, formData);
-              ElMessage.success('废物记录添加成功');
+              } else if (existingFiles.length > 0) {
+                // 如果没有新上传的照片，只有现有照片，我们需要将它们的路径保存到photo_path_before字段
+                const existingPaths = existingFiles.map(file => {
+                  // 确保URL是相对路径
+                  let path = file.url;
+                  const origin = window.location.origin;
+                  if (path.startsWith(origin)) {
+                    path = path.substring(origin.length);
+                    // 确保路径以/开头
+                    if (!path.startsWith('/')) {
+                      path = '/' + path;
+                    }
+                  }
+                  return path;
+                });
+                
+                console.log('保存现有收集前照片路径(无新照片):', existingPaths);
+                formData.append('photo_path_before', JSON.stringify(existingPaths));
+              }
             } else {
-              // 更新记录
-              response = await httpService.putForm(`${apiConfig.endpoints.wasteRecords}/${form.recordId}`, formData);
-              ElMessage.success('废物记录更新成功');
+              // 如果没有照片，设置为空数组
+              formData.append('photo_path_before', JSON.stringify([]));
             }
             
-            console.log('提交响应:', response.data);
+            // 处理收集后照片
+            if (fileListAfter.value.length > 0) {
+              const newFiles = fileListAfter.value.filter(file => file.raw);
+              const existingFiles = fileListAfter.value.filter(file => !file.raw);
+              
+              // 如果有新上传的照片，我们需要将现有照片的URL转换为File对象
+              if (newFiles.length > 0) {
+                console.log('有新上传的收集后照片，需要合并现有照片');
+                
+                // 将新照片添加到formData
+                newFiles.forEach(file => {
+                  if (file.raw) {
+                    console.log('添加新的收集后照片:', file.raw.name);
+                    formData.append('photo_after', file.raw);
+                  }
+                });
+                
+                // 如果有现有照片，我们需要将它们的路径保存到photo_path_after字段
+                if (existingFiles.length > 0) {
+                  const existingPaths = existingFiles.map(file => {
+                    // 确保URL是相对路径
+                    let path = file.url;
+                    const origin = window.location.origin;
+                    if (path.startsWith(origin)) {
+                      path = path.substring(origin.length);
+                      // 确保路径以/开头
+                      if (!path.startsWith('/')) {
+                        path = '/' + path;
+                      }
+                    }
+                    return path;
+                  });
+                  
+                  console.log('保存现有收集后照片路径:', existingPaths);
+                  formData.append('photo_path_after', JSON.stringify(existingPaths));
+                }
+              } else if (existingFiles.length > 0) {
+                // 如果没有新上传的照片，只有现有照片，我们需要将它们的路径保存到photo_path_after字段
+                const existingPaths = existingFiles.map(file => {
+                  // 确保URL是相对路径
+                  let path = file.url;
+                  const origin = window.location.origin;
+                  if (path.startsWith(origin)) {
+                    path = path.substring(origin.length);
+                    // 确保路径以/开头
+                    if (!path.startsWith('/')) {
+                      path = '/' + path;
+                    }
+                  }
+                  return path;
+                });
+                
+                console.log('保存现有收集后照片路径(无新照片):', existingPaths);
+                formData.append('photo_path_after', JSON.stringify(existingPaths));
+              }
+            } else {
+              // 如果没有照片，设置为空数组
+              formData.append('photo_path_after', JSON.stringify([]));
+            }
+            
+            // 打印FormData内容，用于调试
+            console.log('FormData内容:');
+            for (let [key, value] of formData.entries()) {
+              if (value instanceof File) {
+                console.log(`${key}: File - ${value.name} (${value.type}, ${value.size} bytes)`);
+              } else {
+                console.log(`${key}: ${value}`);
+              }
+            }
+            
+            // 根据是新增还是编辑选择不同的API
+            if (form.recordId) {
+              await httpService.putForm(
+                `${apiConfig.endpoints.wasteRecords}/${form.recordId}`, 
+                formData,
+                handleUploadProgress
+              );
+              ElMessage.success('废物记录更新成功');
+            } else {
+              await httpService.postForm(
+                apiConfig.endpoints.wasteRecords, 
+                formData,
+                handleUploadProgress
+              );
+              ElMessage.success('废物记录添加成功');
+            }
+            
+            // 关闭上传进度对话框
+            showUploadProgress.value = false;
             
             // 返回列表页
             goBack();
           } catch (error) {
             console.error('提交表单失败:', error);
-            ElMessage.error('提交表单失败');
-          } finally {
-            loading.value = false;
+            if (error.response && error.response.data) {
+              console.error('服务器返回错误:', error.response.data);
+              ElMessage.error(`提交表单失败: ${error.response.data.error || '未知错误'}`);
+            } else {
+              ElMessage.error('提交表单失败，请检查网络连接');
+            }
+            showUploadProgress.value = false;
           }
         } else {
           console.log('表单验证失败');
-          ElMessage.error('请填写必填字段');
+          ElMessage.error('请填写所有必填字段');
           return false;
         }
       });
@@ -641,13 +892,14 @@ export default {
       unitName,
       wasteTypes,
       units,
-      photoBeforeList,
-      photoAfterList,
+      fileListBefore,
+      fileListAfter,
       previewImages,
       showViewer,
       previewIndex,
       isNew,
       isSuperAdmin,
+      parsePhotoPath,
       handlePhotoBeforeChange,
       handlePhotoBeforeRemove,
       handlePhotoAfterChange,
@@ -656,7 +908,12 @@ export default {
       handleBeforeUpload,
       closeViewer,
       submitForm,
-      goBack
+      goBack,
+      showUploadProgress,
+      uploadPercentage,
+      uploadStatus,
+      percentageFormat,
+      showLargeFileWarning
     };
   }
 };
@@ -729,6 +986,21 @@ export default {
   padding: 15px;
   text-align: center;
   color: #666;
+}
+
+.upload-warning {
+  margin-bottom: 10px;
+}
+
+.upload-progress {
+  text-align: center;
+  padding: 10px;
+}
+
+.upload-status {
+  margin-top: 10px;
+  color: #606266;
+  font-size: 14px;
 }
 </style>
 

@@ -35,7 +35,8 @@ export const exportToExcel = (data, fileName, headers) => {
       
       // 处理数字
       if (header.type === 'number') {
-        return value;
+        // 对于数字类型，保留3位小数
+        return typeof value === 'number' ? value.toFixed(3) : parseFloat(value).toFixed(3);
       }
       
       // 处理字符串，确保带逗号的字符串被引号包围

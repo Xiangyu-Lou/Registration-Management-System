@@ -11,8 +11,8 @@ const axiosInstance = axios.create({
   headers: {
     'Content-Type': 'application/json'
   },
-  maxContentLength: 10 * 1024 * 1024, // 10MB
-  maxBodyLength: 10 * 1024 * 1024 // 10MB
+  maxContentLength: 50 * 1024 * 1024, // 50MB
+  maxBodyLength: 50 * 1024 * 1024 // 50MB
 });
 
 // 请求拦截器
@@ -85,14 +85,21 @@ const httpService = {
   },
   
   // 带文件上传的POST请求
-  postForm(endpoint, formData) {
-    return axiosInstance.post(endpoint, formData, {
+  postForm(endpoint, formData, onUploadProgress) {
+    const config = {
       headers: {
         'Content-Type': 'multipart/form-data'
       },
-      maxContentLength: 10 * 1024 * 1024, // 10MB
-      maxBodyLength: 10 * 1024 * 1024 // 10MB
-    });
+      maxContentLength: 50 * 1024 * 1024, // 50MB
+      maxBodyLength: 50 * 1024 * 1024 // 50MB
+    };
+    
+    // 只有当onUploadProgress是函数时才添加到配置中
+    if (typeof onUploadProgress === 'function') {
+      config.onUploadProgress = onUploadProgress;
+    }
+    
+    return axiosInstance.post(endpoint, formData, config);
   },
   
   // PUT请求
@@ -101,14 +108,21 @@ const httpService = {
   },
   
   // 带文件上传的PUT请求
-  putForm(endpoint, formData) {
-    return axiosInstance.put(endpoint, formData, {
+  putForm(endpoint, formData, onUploadProgress) {
+    const config = {
       headers: {
         'Content-Type': 'multipart/form-data'
       },
-      maxContentLength: 10 * 1024 * 1024, // 10MB
-      maxBodyLength: 10 * 1024 * 1024 // 10MB
-    });
+      maxContentLength: 50 * 1024 * 1024, // 50MB
+      maxBodyLength: 50 * 1024 * 1024 // 50MB
+    };
+    
+    // 只有当onUploadProgress是函数时才添加到配置中
+    if (typeof onUploadProgress === 'function') {
+      config.onUploadProgress = onUploadProgress;
+    }
+    
+    return axiosInstance.put(endpoint, formData, config);
   },
   
   // DELETE请求

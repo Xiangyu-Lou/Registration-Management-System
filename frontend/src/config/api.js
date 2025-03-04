@@ -15,6 +15,10 @@ export default {
     units: '/api/units',
     wasteTypes: '/api/waste-types',
     wasteRecords: '/api/waste-records',
+    wasteRecordsByUnit: '/api/waste-records',
+    wasteRecordDetail: '/api/waste-records/detail',
+    wasteRecordsByUser: '/api/waste-records/user',
+    exportWasteRecords: '/api/waste-records/export/user',
   },
   
   // 获取完整 API URL

@@ -34,6 +34,13 @@ const routes = [
     meta: { requiresAuth: true, requiresSuperAdmin: true }
   },
   {
+    path: '/record/new',
+    name: 'EditRecord',
+    component: EditRecord,
+    props: { id: null },
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/record/:id',
     name: 'EditRecord',
     component: EditRecord,

@@ -72,9 +72,10 @@ async function initializeDatabase() {
       collection_start_time DATETIME NOT NULL,
       photo_path_before VARCHAR(500),
       photo_path_after VARCHAR(500),
-      quantity DECIMAL(10, 2) NOT NULL,
+      quantity DECIMAL(10, 3) NOT NULL,
       created_at DATETIME NOT NULL,
       creator_id INT,
+      creator_name VARCHAR(100),
       FOREIGN KEY (unit_id) REFERENCES units(id),
       FOREIGN KEY (waste_type_id) REFERENCES waste_types(id),
       FOREIGN KEY (creator_id) REFERENCES users(id)

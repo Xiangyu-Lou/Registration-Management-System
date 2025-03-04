@@ -309,6 +309,12 @@ mysqldump -u waste_user -p waste_management > ~/backups/waste_management_$(date 
 - 确保 Nginx 配置中的 `client_max_body_size` 设置足够大
 - 检查后端服务器的磁盘空间是否充足
 
+### 6.4 照片显示问题
+
+- 如果从旧版本升级，确保已运行 `merge_photo_paths.js` 迁移脚本
+- 检查数据库中 `waste_records` 表是否包含 `photos` 字段
+- 确保前端代码已更新为使用新的照片字段格式
+
 ## 7. 联系支持
 
 如有任何部署问题，请联系系统管理员或开发团队获取支持。

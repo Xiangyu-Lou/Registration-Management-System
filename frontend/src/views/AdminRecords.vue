@@ -147,67 +147,45 @@
             <el-table-column prop="waste_type_name" label="废物类型" width="100" />
             <el-table-column prop="location" label="产生地点" />
             <el-table-column prop="collection_start_time" label="收集开始时间" width="160" />
-            <el-table-column prop="quantity" label="数量(kg)" width="80" />
-            <el-table-column prop="creator_name" label="汇报人" width="100" />
-            <el-table-column prop="created_at" label="记录时间" width="160" />
-            <el-table-column label="现场照片（清理前）" width="120">
+            <el-table-column label="数量(吨)" width="80">
               <template #default="scope">
-                <div v-if="scope.row.photo_path_before">
-                  <!-- 多张照片显示 -->
-                  <div 
-                    v-for="(path, index) in parsePhotoPath(scope.row.photo_path_before)" 
-                    :key="index"
-                    class="photo-thumbnail-container"
-                    @click="previewPhoto(parsePhotoPath(scope.row.photo_path_before), index)"
-                  >
-                    <el-image 
-                      :src="`${apiBaseURL}${path}`"
-                      fit="cover"
-                      class="record-image"
-                      :style="{ margin: index > 0 ? '2px 0 0 0' : '0' }"
-                    >
-                      <template #error>
-                        <div class="image-error">
-                          <el-icon><picture-failed /></el-icon>
-                        </div>
-                      </template>
-                    </el-image>
-                  </div>
-                  <div v-if="parsePhotoPath(scope.row.photo_path_before).length > 1" class="photo-count">
-                    {{ parsePhotoPath(scope.row.photo_path_before).length }}张
-                  </div>
-                </div>
-                <span v-else>无照片</span>
+                {{ parseFloat(scope.row.quantity).toFixed(3) }}
               </template>
             </el-table-column>
-            <el-table-column label="现场照片（清理后）" width="120">
+            <el-table-column prop="creator_name" label="汇报人" width="100" />
+            <el-table-column prop="created_at" label="记录时间" width="160" />
+            <el-table-column
+              label="现场照片（清理前）"
+              width="120"
+              align="center"
+            >
               <template #default="scope">
-                <div v-if="scope.row.photo_path_after">
-                  <!-- 多张照片显示 -->
-                  <div 
-                    v-for="(path, index) in parsePhotoPath(scope.row.photo_path_after)" 
-                    :key="index"
-                    class="photo-thumbnail-container"
-                    @click="previewPhoto(parsePhotoPath(scope.row.photo_path_after), index)"
-                  >
-                    <el-image 
-                      :src="`${apiBaseURL}${path}`"
-                      fit="cover"
-                      class="record-image"
-                      :style="{ margin: index > 0 ? '2px 0 0 0' : '0' }"
-                    >
-                      <template #error>
-                        <div class="image-error">
-                          <el-icon><picture-failed /></el-icon>
-                        </div>
-                      </template>
-                    </el-image>
-                  </div>
-                  <div v-if="parsePhotoPath(scope.row.photo_path_after).length > 1" class="photo-count">
-                    {{ parsePhotoPath(scope.row.photo_path_after).length }}张
-                  </div>
+                <div v-if="scope.row.photo_path_before" class="photo-preview">
+                  <el-image
+                    style="width: 50px; height: 50px"
+                    :src="`${baseUrl}/${scope.row.photo_path_before}`"
+                    :preview-src-list="[`${baseUrl}/${scope.row.photo_path_before}`]"
+                    fit="cover"
+                  ></el-image>
                 </div>
-                <span v-else>无照片</span>
+                <span v-else>无</span>
+              </template>
+            </el-table-column>
+            <el-table-column
+              label="现场照片（清理后）"
+              width="120"
+              align="center"
+            >
+              <template #default="scope">
+                <div v-if="scope.row.photo_path_after" class="photo-preview">
+                  <el-image
+                    style="width: 50px; height: 50px"
+                    :src="`${baseUrl}/${scope.row.photo_path_after}`"
+                    :preview-src-list="[`${baseUrl}/${scope.row.photo_path_after}`]"
+                    fit="cover"
+                  ></el-image>
+                </div>
+                <span v-else>无</span>
               </template>
             </el-table-column>
             <el-table-column label="操作" width="70" fixed="right">
@@ -265,20 +243,38 @@ import { ref, onMounted, computed, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox, ElImageViewer } from 'element-plus';
 import axios from 'axios';
-import { Plus, Refresh, PictureFailed, User, ArrowDown, ArrowUp, Download, Loading } from '@element-plus/icons-vue';
+import { Plus, Refresh, User, ArrowDown, ArrowUp, Download, Loading } from '@element-plus/icons-vue';
 import auth from '../store/auth';
 import { exportToExcel } from '../utils/exportUtils';
-import api from '../config/api';
+import apiConfig from '../config/api';
 
 // API基础URL
-const apiBaseURL = api.baseURL;
+const apiBaseURL = apiConfig.baseURL;
 
-// 解析JSON格式的照片路径
-const parsePhotoPath = (path) => {
+// 解析照片路径
+const parsePhotoPath = (photoPath) => {
+  if (!photoPath) return [];
   try {
-    return JSON.parse(path);
+    const paths = JSON.parse(photoPath);
+    return Array.isArray(paths) ? paths : [photoPath];
   } catch (error) {
     console.error('解析照片路径失败:', error);
+    return [photoPath]; // 如果解析失败，返回原始路径作为单个元素的数组
+  }
+};
+
+// 获取指定类型的照片
+const getPhotosByType = (record, type) => {
+  if (!record.photos) return [];
+  
+  try {
+    const photos = JSON.parse(record.photos);
+    if (Array.isArray(photos)) {
+      return photos.filter(photo => photo.type === type);
+    }
+    return [];
+  } catch (error) {
+    console.error('解析照片JSON失败:', error);
     return [];
   }
 };
@@ -288,7 +284,6 @@ export default {
   components: {
     Plus,
     Refresh,
-    PictureFailed,
     User,
     ArrowDown,
     ArrowUp,
@@ -401,7 +396,7 @@ export default {
     // 获取单位列表
     const fetchUnits = async () => {
       try {
-        const response = await axios.get(api.getUrl(api.endpoints.units));
+        const response = await axios.get(apiConfig.getUrl(apiConfig.endpoints.units));
         units.value = response.data;
       } catch (error) {
         console.error('获取单位列表失败:', error);
@@ -412,7 +407,7 @@ export default {
     // 获取废物类型列表
     const fetchWasteTypes = async () => {
       try {
-        const response = await axios.get(api.getUrl(api.endpoints.wasteTypes));
+        const response = await axios.get(apiConfig.getUrl(apiConfig.endpoints.wasteTypes));
         wasteTypes.value = response.data;
       } catch (error) {
         console.error('获取废物类型列表失败:', error);
@@ -445,7 +440,7 @@ export default {
         }
         
         const response = await axios.get(
-          `${api.getUrl(api.endpoints.wasteRecords)}/user/${auth.state.user.id}`,
+          `${apiConfig.getUrl(apiConfig.endpoints.wasteRecords)}/user/${auth.state.user.id}`,
           { params }
         );
         
@@ -493,7 +488,11 @@ export default {
     };
 
     const addNewRecord = () => {
-      router.push('/record/new');
+      if (auth.state.user.role_id === 3) {
+        router.push('/record/new');
+      } else {
+        router.push(`/unit/${auth.state.user.unit_id}`);
+      }
     };
 
     const goToUserManagement = () => {
@@ -533,7 +532,7 @@ export default {
         loading.value = true;
         // 获取所有符合当前筛选条件的记录
         const response = await axios.get(
-          `${api.getUrl(api.endpoints.wasteRecords)}/export/user/${auth.state.user.id}`,
+          `${apiConfig.getUrl(apiConfig.endpoints.wasteRecords)}/export/user/${auth.state.user.id}`,
           {
             params: {
               unitId: filterForm.unitId,
@@ -599,7 +598,7 @@ export default {
       )
         .then(async () => {
           try {
-            await axios.delete(`${api.getUrl(api.endpoints.wasteRecords)}/${record.id}`);
+            await axios.delete(`${apiConfig.getUrl(apiConfig.endpoints.wasteRecords)}/${record.id}`);
             ElMessage.success('删除成功');
             await fetchRecords();
           } catch (error) {
@@ -627,7 +626,10 @@ export default {
     // 添加滚动加载处理函数
     const handleScroll = async (e) => {
       const element = e.target;
+      // 添加安全检查，确保element存在且有必要的属性
       if (
+        element && 
+        element.scrollHeight && 
         !loadingMore.value &&
         hasMore.value &&
         element.scrollHeight - element.scrollTop - element.clientHeight < 100
@@ -648,6 +650,7 @@ export default {
       resetFilter,
       exportRecords,
       parsePhotoPath,
+      getPhotosByType,
       refreshRecords,
       addNewRecord,
       goToUserManagement,

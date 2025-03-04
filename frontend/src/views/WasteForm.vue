@@ -75,8 +75,8 @@
           <el-input-number
             v-model="form.quantity"
             :min="0"
-            :precision="2"
-            :step="0.1"
+            :precision="3"
+            :step="0.001"
             style="width: 100%"
             @focus="selectAllText($event)"
             :input-props="{
@@ -87,8 +87,16 @@
           />
         </el-form-item>
 
-        <el-form-item label="现场照片（收集前）" prop="photosBefore">
-          <div class="photo-tip">请上传废物收集前的现场照片（最多10张）</div>
+        <el-form-item label="现场照片（收集前）" prop="photo_before">
+          <div class="photo-tip">请上传废物收集前的现场照片（最多5张）</div>
+          <div class="upload-warning" v-if="showLargeFileWarning">
+            <el-alert
+              title="上传大文件可能会导致处理时间较长，请耐心等待"
+              type="warning"
+              :closable="false"
+              show-icon
+            />
+          </div>
           <el-upload
             class="waste-photo-uploader"
             action="#"
@@ -96,7 +104,7 @@
             :on-change="handlePhotoBeforeChange"
             :on-remove="handlePhotoBeforeRemove"
             :file-list="fileListBefore"
-            :limit="10"
+            :limit="5"
             multiple
             list-type="picture-card"
             :before-upload="handleBeforeUpload"
@@ -106,8 +114,8 @@
           </el-upload>
         </el-form-item>
 
-        <el-form-item label="现场照片（收集后）" prop="photosAfter">
-          <div class="photo-tip">请上传废物收集后的现场照片（最多10张）</div>
+        <el-form-item label="现场照片（收集后）" prop="photo_after">
+          <div class="photo-tip">请上传废物收集后的现场照片（最多5张）</div>
           <el-upload
             class="waste-photo-uploader"
             action="#"
@@ -115,7 +123,7 @@
             :on-change="handlePhotoAfterChange"
             :on-remove="handlePhotoAfterRemove"
             :file-list="fileListAfter"
-            :limit="10"
+            :limit="5"
             multiple
             list-type="picture-card"
             :before-upload="handleBeforeUpload"
@@ -131,6 +139,26 @@
         </div>
       </el-form>
     </div>
+
+    <!-- 上传进度条对话框 -->
+    <el-dialog
+      v-model="showUploadProgress"
+      title="正在上传文件"
+      width="30%"
+      :close-on-click-modal="false"
+      :close-on-press-escape="false"
+      :show-close="false"
+    >
+      <div class="upload-progress">
+        <p>正在上传文件，请勿关闭页面...</p>
+        <el-progress 
+          :percentage="uploadPercentage" 
+          :format="percentageFormat"
+          :status="uploadPercentage === 100 ? 'success' : ''"
+        ></el-progress>
+        <p class="upload-status">{{ uploadStatus }}</p>
+      </div>
+    </el-dialog>
 
     <div class="footer">
       <p>&copy; 2025 危险废物管理系统</p>
@@ -171,6 +199,10 @@ export default {
     const photoFilesAfter = ref([]);
     const fileListBefore = ref([]);
     const fileListAfter = ref([]);
+    const showUploadProgress = ref(false);
+    const uploadPercentage = ref(0);
+    const uploadStatus = ref('准备上传...');
+    const showLargeFileWarning = ref(false);
     
     // 检查用户是否为超级管理员
     const isAdmin = computed(() => {
@@ -184,8 +216,8 @@ export default {
       collectionDate: new Date().toISOString().slice(0, 10), // 默认为当天
       collectionTime: '08:00',
       quantity: undefined,
-      photosBefore: [],
-      photosAfter: []
+      photo_before: [],
+      photo_after: []
     });
 
     const rules = {
@@ -261,7 +293,7 @@ export default {
     };
 
     // 处理上传前的文件处理
-    const handleBeforeUpload = (file) => {
+    const handleBeforeUpload = async (file) => {
       // 检查文件类型是否为图片
       const acceptedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/bmp', 'image/webp'];
       const isImage = acceptedTypes.includes(file.type);
@@ -270,12 +302,22 @@ export default {
         ElMessage.error('只能上传图片文件!');
         return false;
       }
-      
-      // 为文件添加唯一标识符
-      if (!file.uid) {
-        file.uid = Date.now() + '-' + Math.random().toString(36).substr(2, 10);
+
+      // 检查文件大小（50MB = 50 * 1024 * 1024 bytes）
+      const maxSize = 50 * 1024 * 1024;
+      if (file.size > maxSize) {
+        ElMessage.error('图片大小不能超过50MB!');
+        return false;
       }
-      return true; // 允许上传
+      
+      // 检查是否有大文件需要显示警告
+      const largeFileThreshold = 5 * 1024 * 1024; // 5MB
+      if (file.size > largeFileThreshold) {
+        showLargeFileWarning.value = true;
+      }
+      
+      // 直接返回true，允许文件被添加到上传列表
+      return true;
     };
 
     // 处理收集前照片变更
@@ -283,9 +325,21 @@ export default {
       // 更新文件列表
       console.log('收集前照片变更:', file);
       fileListBefore.value = fileList;
-      photoFilesBefore.value = fileList
-        .filter(f => f.raw) // 只处理新上传的文件
-        .map(f => f.raw);
+      
+      // 检查是否是新上传的文件批次
+      const newFiles = fileList.filter(f => f.raw && !photoFilesBefore.value.some(pf => pf.name === f.raw.name));
+      
+      // 将新文件添加到photoFilesBefore
+      newFiles.forEach(newFile => {
+        if (newFile.raw) {
+          photoFilesBefore.value.push(newFile.raw);
+        }
+      });
+      
+      // 检查是否有大文件需要显示警告
+      const allFiles = [...photoFilesBefore.value, ...photoFilesAfter.value];
+      showLargeFileWarning.value = checkForLargeFiles(allFiles);
+      
       console.log('更新后的photoFilesBefore:', photoFilesBefore.value);
     };
 
@@ -293,9 +347,24 @@ export default {
     const handlePhotoBeforeRemove = (file, fileList) => {
       console.log('收集前照片移除:', file);
       fileListBefore.value = fileList;
-      photoFilesBefore.value = fileList
-        .filter(f => f.raw)
-        .map(f => f.raw);
+      
+      // 从photoFilesBefore中移除被删除的文件
+      if (file.raw) {
+        photoFilesBefore.value = photoFilesBefore.value.filter(f => 
+          f.name !== file.raw.name
+        );
+      } else {
+        // 如果没有raw属性，可能是已经处理过的文件，使用uid或name来匹配
+        photoFilesBefore.value = photoFilesBefore.value.filter(f => 
+          f.uid !== file.uid && f.name !== file.name
+        );
+      }
+      
+      // 如果没有大文件了，隐藏警告
+      if (!checkForLargeFiles([...photoFilesBefore.value, ...photoFilesAfter.value])) {
+        showLargeFileWarning.value = false;
+      }
+      
       console.log('更新后的photoFilesBefore:', photoFilesBefore.value);
     };
 
@@ -304,9 +373,21 @@ export default {
       // 更新文件列表
       console.log('收集后照片变更:', file);
       fileListAfter.value = fileList;
-      photoFilesAfter.value = fileList
-        .filter(f => f.raw) // 只处理新上传的文件
-        .map(f => f.raw);
+      
+      // 检查是否是新上传的文件批次
+      const newFiles = fileList.filter(f => f.raw && !photoFilesAfter.value.some(pf => pf.name === f.raw.name));
+      
+      // 将新文件添加到photoFilesAfter
+      newFiles.forEach(newFile => {
+        if (newFile.raw) {
+          photoFilesAfter.value.push(newFile.raw);
+        }
+      });
+      
+      // 检查是否有大文件需要显示警告
+      const allFiles = [...photoFilesBefore.value, ...photoFilesAfter.value];
+      showLargeFileWarning.value = checkForLargeFiles(allFiles);
+      
       console.log('更新后的photoFilesAfter:', photoFilesAfter.value);
     };
 
@@ -314,10 +395,54 @@ export default {
     const handlePhotoAfterRemove = (file, fileList) => {
       console.log('收集后照片移除:', file);
       fileListAfter.value = fileList;
-      photoFilesAfter.value = fileList
-        .filter(f => f.raw)
-        .map(f => f.raw);
+      
+      // 从photoFilesAfter中移除被删除的文件
+      if (file.raw) {
+        photoFilesAfter.value = photoFilesAfter.value.filter(f => 
+          f.name !== file.raw.name
+        );
+      } else {
+        // 如果没有raw属性，可能是已经处理过的文件，使用uid或name来匹配
+        photoFilesAfter.value = photoFilesAfter.value.filter(f => 
+          f.uid !== file.uid && f.name !== file.name
+        );
+      }
+      
+      // 如果没有大文件了，隐藏警告
+      if (!checkForLargeFiles([...photoFilesBefore.value, ...photoFilesAfter.value])) {
+        showLargeFileWarning.value = false;
+      }
+      
       console.log('更新后的photoFilesAfter:', photoFilesAfter.value);
+    };
+
+    // 检查是否有大文件
+    const checkForLargeFiles = (files) => {
+      const largeFileThreshold = 5 * 1024 * 1024; // 5MB
+      return files.some(file => file.size > largeFileThreshold);
+    };
+
+    // 处理上传进度
+    const handleUploadProgress = (progressEvent) => {
+      if (progressEvent.total) {
+        const percentage = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+        uploadPercentage.value = percentage;
+        
+        if (percentage < 33) {
+          uploadStatus.value = '正在上传文件...';
+        } else if (percentage < 66) {
+          uploadStatus.value = '正在处理文件...';
+        } else if (percentage < 100) {
+          uploadStatus.value = '即将完成...';
+        } else {
+          uploadStatus.value = '上传完成，正在保存...';
+        }
+      }
+    };
+
+    // 格式化百分比显示
+    const percentageFormat = (percentage) => {
+      return percentage === 100 ? '完成' : `${percentage}%`;
     };
 
     const submitForm = () => {
@@ -332,14 +457,24 @@ export default {
             
             // 组合日期和时间，如果有的话
             if (form.collectionDate && form.collectionTime) {
-              const combinedDateTime = `${form.collectionDate} ${form.collectionTime}:00`;
-              formData.append('collectionStartTime', combinedDateTime);
+              formData.append('collectionDate', form.collectionDate);
+              formData.append('collectionTime', form.collectionTime);
             }
             formData.append('quantity', form.quantity);
             
             // 添加创建者ID（如果用户已登录）
             if (auth.state.isLoggedIn && auth.state.user) {
-              formData.append('creatorId', auth.state.user.id);
+              formData.append('creator_id', auth.state.user.id);
+              // 添加创建者名称，优先使用username，如果没有则使用phone
+              const creatorName = auth.state.user.username || auth.state.user.phone || '未知';
+              formData.append('creator_name', creatorName);
+              console.log('添加用户信息:', {
+                creator_id: auth.state.user.id,
+                creator_name: creatorName,
+                user: auth.state.user
+              });
+            } else {
+              console.log('用户未登录或用户信息不完整');
             }
             
             console.log('提交表单数据:', {
@@ -347,8 +482,8 @@ export default {
               wasteTypeId: form.wasteTypeId,
               location: form.location,
               quantity: form.quantity,
-              photosBefore: photoFilesBefore.value ? photoFilesBefore.value.length : 0,
-              photosAfter: photoFilesAfter.value ? photoFilesAfter.value.length : 0
+              photo_before: photoFilesBefore.value ? photoFilesBefore.value.length : 0,
+              photo_after: photoFilesAfter.value ? photoFilesAfter.value.length : 0
             });
             
             // 添加收集前照片
@@ -357,7 +492,7 @@ export default {
               photoFilesBefore.value.forEach((file, index) => {
                 if (file) {
                   console.log(`收集前照片 ${index+1}:`, file.name);
-                  formData.append('photosBefore', file);
+                  formData.append('photo_before', file);
                 }
               });
             }
@@ -368,12 +503,28 @@ export default {
               photoFilesAfter.value.forEach((file, index) => {
                 if (file) {
                   console.log(`收集后照片 ${index+1}:`, file.name);
-                  formData.append('photosAfter', file);
+                  formData.append('photo_after', file);
                 }
               });
             }
 
-            const response = await httpService.postForm(apiConfig.endpoints.wasteRecords, formData);
+            // 检查是否有大文件需要显示警告
+            const allFiles = [...(photoFilesBefore.value || []), ...(photoFilesAfter.value || [])];
+            showLargeFileWarning.value = checkForLargeFiles(allFiles);
+            
+            // 如果有文件要上传，显示进度条
+            if (allFiles.length > 0) {
+              showUploadProgress.value = true;
+              uploadPercentage.value = 0;
+              uploadStatus.value = '准备上传...';
+            }
+
+            const response = await httpService.postForm(
+              apiConfig.endpoints.wasteRecords, 
+              formData,
+              handleUploadProgress
+            );
+            
             console.log('提交响应:', response.data);
 
             ElMessage.success('废物记录提交成功');
@@ -387,6 +538,7 @@ export default {
             ElMessage.error('提交失败，请稍后再试');
           } finally {
             loading.value = false;
+            showUploadProgress.value = false;
           }
         } else {
           ElMessage.warning('请完成必填项');
@@ -450,7 +602,12 @@ export default {
       resetForm,
       goBack,
       viewRecords,
-      selectAllText
+      selectAllText,
+      showUploadProgress,
+      uploadPercentage,
+      uploadStatus,
+      percentageFormat,
+      showLargeFileWarning
     };
   }
 };
@@ -646,5 +803,20 @@ export default {
 :deep(.el-input__inner) {
   -webkit-tap-highlight-color: transparent;
   user-select: none;
+}
+
+.upload-warning {
+  margin-bottom: 10px;
+}
+
+.upload-progress {
+  text-align: center;
+  padding: 10px;
+}
+
+.upload-status {
+  margin-top: 10px;
+  color: #606266;
+  font-size: 14px;
 }
 </style>

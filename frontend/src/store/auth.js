@@ -111,11 +111,35 @@ const logout = () => {
   sessionStorage.removeItem('token');
 };
 
+// 判断是否为超级管理员
+const isAdmin = () => {
+  return state.isLoggedIn && state.user && state.user.role_id === 3;
+};
+
+// 判断是否为单位管理员
+const isUnitAdmin = () => {
+  return state.isLoggedIn && state.user && state.user.role_id === 2;
+};
+
+// 获取当前用户ID
+const getUserId = () => {
+  return state.user ? state.user.id : null;
+};
+
+// 获取当前用户单位ID
+const getUnitId = () => {
+  return state.user ? state.user.unit_id : null;
+};
+
 // 初始化认证状态
 init();
 
 export default {
   state,
   login,
-  logout
+  logout,
+  isAdmin,
+  isUnitAdmin,
+  getUserId,
+  getUnitId
 };
