@@ -340,8 +340,8 @@ app.get('/api/units/:unitId/users', async (req, res) => {
        FROM users u 
        JOIN user_roles r ON u.role_id = r.id 
        LEFT JOIN units un ON u.unit_id = un.id 
-       WHERE u.unit_id = ? AND u.role_id = 1 
-       ORDER BY u.username`, 
+       WHERE u.unit_id = ? 
+       ORDER BY u.role_id, u.username`, 
       [unitId]
     );
     

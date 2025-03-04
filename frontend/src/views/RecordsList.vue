@@ -422,12 +422,12 @@ export default {
     
     // 前往人员管理
     const goToUserManagement = () => {
-      router.push(`/unit-users/${props.unitId}`);
+      router.push(`/user-management`);
     };
     
     // 添加新记录
     const addNewRecord = () => {
-      router.push(`/waste-form?unitId=${props.unitId}`);
+      router.push(`/unit/${props.unitId}`);
     };
     
     // 编辑记录
@@ -531,18 +531,27 @@ export default {
         }
         
         // 使用前端导出工具
-        const dataToExport = filteredRecords.value.map(record => {
-          return {
-            '废物类型': record.waste_type_name,
-            '产生地点': record.location,
-            '收集开始时间': parseFormattedDateTime(record.collection_start_time),
-            '数量(吨)': parseFloat(record.quantity).toFixed(3),
-            '记录时间': parseFormattedDateTime(record.created_at),
-            '汇报人': record.creator_name || '未知'
-          };
-        });
+        const dataToExport = filteredRecords.value.map(record => ({
+          '单位': unitName.value,
+          '废物类型': record.waste_type_name,
+          '收集地点': record.location,
+          '收集时间': parseFormattedDateTime(record.collection_start_time),
+          '数量(kg)': record.quantity,
+          '记录时间': parseFormattedDateTime(record.created_at),
+          '汇报人': record.creator_name || '未知'
+        }));
         
-        exportToExcel(dataToExport, `${unitName.value}危险废物记录`);
+        const headers = [
+          { title: '单位', field: '单位' },
+          { title: '废物类型', field: '废物类型' },
+          { title: '收集地点', field: '收集地点' },
+          { title: '收集时间', field: '收集时间' },
+          { title: '数量(kg)', field: '数量(kg)', type: 'number' },
+          { title: '记录时间', field: '记录时间' },
+          { title: '汇报人', field: '汇报人' }
+        ];
+        
+        exportToExcel(dataToExport, `${unitName.value}危险废物记录`, headers);
         ElMessage.success('导出成功');
       } catch (error) {
         console.error('导出记录失败:', error);
