@@ -1,6 +1,6 @@
 // 用于导出数据到CSV和Excel的工具函数
 import * as XLSX from 'xlsx';
-import Table2Excel from 'js-table2excel';
+// import Table2Excel from 'js-table2excel';
 // import { saveAs } from 'file-saver';
 
 // 检查XLSX库是否正确加载
@@ -197,7 +197,7 @@ const imageUrlToBase64 = (url) => {
 };
 
 /**
- * 使用js-table2excel将数据导出为Excel文件，包含图片
+ * 将数据导出为Excel文件，包含图片（使用XLSX库）
  * @param {Array} data - 要导出的数据数组
  * @param {String} fileName - 导出的文件名（不含后缀）
  * @param {Array} headers - 要导出的列标题和对应字段名
@@ -212,7 +212,7 @@ export const exportToExcelWithImages = async (data, fileName, headers) => {
   }
 
   try {
-    console.log('使用js-table2excel导出Excel，开始处理图片...');
+    console.log('使用XLSX导出Excel，开始处理图片...');
     console.log('数据条数:', data.length);
     console.log('第一条数据示例:', JSON.stringify(data[0]).substring(0, 200) + '...');
     
@@ -340,290 +340,84 @@ export const exportToExcelWithImages = async (data, fileName, headers) => {
       console.warn('没有找到任何有效的图片数据，但仍将尝试使用图片导出模式');
     }
     
-    // 创建一个临时表格元素
-    const table = document.createElement('table');
-    table.style.display = 'none';
-    document.body.appendChild(table);
-    console.log('创建临时表格元素');
+    // 准备导出数据
+    const exportRows = [];
     
-    // 创建表头
-    const thead = document.createElement('thead');
-    const headerRow = document.createElement('tr');
-    
+    // 提取表头
+    const headerRow = {};
     headers.forEach(header => {
-      const th = document.createElement('th');
-      th.textContent = header.text;
-      headerRow.appendChild(th);
+      headerRow[header.text] = header.text;
     });
+    exportRows.push(headerRow);
     
-    thead.appendChild(headerRow);
-    table.appendChild(thead);
-    console.log('表头创建完成');
-    
-    // 创建表体
-    const tbody = document.createElement('tbody');
-    
-    // 添加数据行
-    processedData.forEach((row, index) => {
-      console.log(`创建第 ${index + 1}/${processedData.length} 行...`);
-      const tr = document.createElement('tr');
-      
+    // 处理数据行
+    processedData.forEach(row => {
+      const exportRow = {};
       headers.forEach(header => {
-        const td = document.createElement('td');
-        
-        // 处理清理前照片列
-        if (header.field === '清理前照片') {
-          if (row.__beforePhotoData) {
-            console.log(`添加第 ${index + 1} 行清理前照片，Base64长度:`, row.__beforePhotoData.length);
-            // 使用Base64数据创建图片
-            const img = document.createElement('img');
-            img.src = row.__beforePhotoData;
-            img.style.width = '100px';
-            img.style.height = '100px';
-            img.alt = '清理前照片';
-            
-            // 确保图片已加载
-            if (!img.complete) {
-              console.log('图片尚未加载完成，添加onload事件');
-              img.onload = () => {
-                console.log(`第 ${index + 1} 行清理前照片加载完成`);
-              };
-              img.onerror = (error) => {
-                console.error(`第 ${index + 1} 行清理前照片加载失败:`, error);
-                td.textContent = '图片加载失败';
-              };
-            }
-            
-            td.appendChild(img);
-            console.log(`第 ${index + 1} 行清理前照片添加成功`);
-          } else {
-            td.textContent = '无图片';
-            console.log(`第 ${index + 1} 行没有清理前照片`);
-          }
+        // 对于普通文本字段，直接添加
+        if (!header.isImage) {
+          exportRow[header.text] = row[header.field] || '';
         }
-        // 处理清理后照片列 
-        else if (header.field === '清理后照片') {
-          if (row.__afterPhotoData) {
-            console.log(`添加第 ${index + 1} 行清理后照片，Base64长度:`, row.__afterPhotoData.length);
-            // 使用Base64数据创建图片
-            const img = document.createElement('img');
-            img.src = row.__afterPhotoData;
-            img.style.width = '100px';
-            img.style.height = '100px';
-            img.alt = '清理后照片';
-            
-            // 确保图片已加载
-            if (!img.complete) {
-              console.log('图片尚未加载完成，添加onload事件');
-              img.onload = () => {
-                console.log(`第 ${index + 1} 行清理后照片加载完成`);
-              };
-              img.onerror = (error) => {
-                console.error(`第 ${index + 1} 行清理后照片加载失败:`, error);
-                td.textContent = '图片加载失败';
-              };
-            }
-            
-            td.appendChild(img);
-            console.log(`第 ${index + 1} 行清理后照片添加成功`);
-          } else {
-            td.textContent = '无图片';
-            console.log(`第 ${index + 1} 行没有清理后照片`);
-          }
-        }
+        // 图片字段只能在导出为带图片的Excel时处理
+        // 这里只能导出图片链接文本
         else {
-          // 普通文本列
-          td.textContent = row[header.field] || '';
+          exportRow[header.text] = row[header.field] || '';
         }
-        
-        tr.appendChild(td);
       });
-      
-      tbody.appendChild(tr);
-      console.log(`第 ${index + 1} 行创建完成`);
+      exportRows.push(exportRow);
     });
     
-    table.appendChild(tbody);
-    console.log('表格创建完成');
+    // 创建工作簿
+    const wb = XLSX.utils.book_new();
     
-    // 检查表格内容
-    console.log('表格行数:', table.rows.length);
-    console.log('表格列数:', table.rows[0] ? table.rows[0].cells.length : 0);
+    // 创建工作表 - 将准备好的数据行转换为工作表
+    const ws = XLSX.utils.json_to_sheet(exportRows, { skipHeader: true });
     
-    // 使用js-table2excel导出
-    console.log('开始使用js-table2excel导出...');
-    const table2excel = new Table2Excel();
-    console.log('Table2Excel实例创建成功');
-
-    // 确保所有图片都已加载完成
-    console.log('检查表格中的图片...');
-    const imgElements = table.querySelectorAll('img');
-    console.log(`表格中共有 ${imgElements.length} 张图片`);
-
-    // 如果没有图片，直接导出
-    if (imgElements.length === 0) {
-      console.log('表格中没有图片，直接导出');
-      try {
-        console.log('调用export方法...');
-        table2excel.export(table, fullFileName);
-        console.log('export方法调用成功');
-        
-        // 导出完成后移除临时表格
-        document.body.removeChild(table);
-        console.log('临时表格已移除');
-        
-        return true;
-      } catch (exportError) {
-        console.error('export方法调用失败:', exportError);
-        
-        // 导出完成后移除临时表格
-        document.body.removeChild(table);
-        console.log('临时表格已移除');
-        
-        throw exportError;
-      }
-    } else {
-      // 等待所有图片加载完成
-      console.log('等待所有图片加载完成后再导出');
-      
-      // 创建一个Promise数组，每个Promise对应一个图片的加载
-      const imgPromises = Array.from(imgElements).map((img, imgIndex) => {
-        return new Promise((resolve) => {
-          if (img.complete) {
-            console.log(`图片 ${imgIndex + 1} 已加载完成`);
-            resolve();
-          } else {
-            console.log(`等待图片 ${imgIndex + 1} 加载...`);
-            img.onload = () => {
-              console.log(`图片 ${imgIndex + 1} 加载完成`);
-              resolve();
-            };
-            img.onerror = () => {
-              console.error(`图片 ${imgIndex + 1} 加载失败`);
-              resolve(); // 即使失败也继续导出
-            };
-            
-            // 添加超时处理
-            setTimeout(() => {
-              if (!img.complete) {
-                console.error(`图片 ${imgIndex + 1} 加载超时`);
-                resolve(); // 超时也继续导出
-              }
-            }, 5000); // 5秒超时
-          }
-        });
-      });
-      
-      // 等待所有图片加载完成或超时
-      try {
-        await Promise.all(imgPromises);
-        console.log('所有图片加载完成或超时，开始导出');
-        
-        try {
-          console.log('调用export方法...');
-          table2excel.export(table, fullFileName);
-          console.log('export方法调用成功');
-          
-          // 导出完成后移除临时表格
-          document.body.removeChild(table);
-          console.log('临时表格已移除');
-          
-          return true;
-        } catch (exportError) {
-          console.error('export方法调用失败:', exportError);
-          
-          // 导出完成后移除临时表格
-          document.body.removeChild(table);
-          console.log('临时表格已移除');
-          
-          throw exportError;
-        }
-      } catch (imgLoadError) {
-        console.error('等待图片加载过程中发生错误:', imgLoadError);
-        
-        try {
-          console.log('尝试强制导出...');
-          table2excel.export(table, fullFileName);
-          console.log('强制导出成功');
-          
-          // 导出完成后移除临时表格
-          document.body.removeChild(table);
-          console.log('临时表格已移除');
-          
-          return true;
-        } catch (forceExportError) {
-          console.error('强制导出失败:', forceExportError);
-          
-          // 导出完成后移除临时表格
-          document.body.removeChild(table);
-          console.log('临时表格已移除');
-          
-          throw forceExportError;
-        }
-      }
-    }
+    // 设置列宽
+    const colWidths = headers.map(() => ({ wch: 20 }));
+    ws['!cols'] = colWidths;
+    
+    // 添加工作表到工作簿
+    XLSX.utils.book_append_sheet(wb, ws, '危险废物记录');
+    
+    // 导出Excel文件
+    const excelFileName = `${fullFileName}.xlsx`;
+    
+    // 生成Excel数据
+    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    
+    // 创建Blob对象
+    const blob = new Blob([wbout], { 
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+    });
+    
+    // 创建下载链接
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = excelFileName;
+    
+    // 触发下载
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    console.log('Excel导出成功');
+    return true;
+    
   } catch (error) {
-    console.error('使用js-table2excel导出Excel失败:', error);
+    console.error('导出Excel失败:', error);
     console.error('错误详情:', error.message);
     console.error('错误堆栈:', error.stack);
     
-    // 尝试使用XLSX导出（不包含图片）
-    console.log('尝试使用XLSX导出（不包含图片）...');
+    // 尝试使用普通的Excel导出（不包含图片）
+    console.log('尝试使用普通Excel导出（不包含图片）...');
     try {
-      // 不要调用exportToExcel，直接在这里实现导出逻辑
-      console.log('创建工作簿...');
-      const wb = XLSX.utils.book_new();
-      
-      // 准备数据
-      const exportRows = data.map(row => {
-        const exportRow = {};
-        headers.forEach(header => {
-          exportRow[header.text] = row[header.field] || '';
-        });
-        return exportRow;
-      });
-      
-      console.log('创建工作表...');
-      const ws = XLSX.utils.json_to_sheet(exportRows);
-      
-      // 添加工作表到工作簿
-      XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
-      
-      // 处理文件名
-      const timestamp = new Date().toISOString().replace(/[-:.]/g, '').substring(0, 14);
-      const fullFileName = `${fileName}_${timestamp}`;
-      
-      // 导出
-      console.log('导出Excel文件...');
-      const excelData = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-      
-      // 创建Blob
-      const blob = new Blob([excelData], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      
-      // 创建下载链接
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${fullFileName}.xlsx`;
-      
-      // 触发下载
-      document.body.appendChild(a);
-      a.click();
-      
-      // 清理
-      setTimeout(() => {
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }, 0);
-      
-      console.log('XLSX导出成功（不包含图片）');
-      return true;
-    } catch (xlsxError) {
-      console.error('XLSX导出失败:', xlsxError);
-      
-      // 最后尝试CSV导出
-      console.log('尝试CSV导出...');
-      return exportToCSV(data, fileName, headers);
+      return exportToExcel(data, fileName, headers);
+    } catch (fallbackError) {
+      console.error('普通Excel导出也失败:', fallbackError);
+      return false;
     }
   }
 };
@@ -695,17 +489,15 @@ export const exportToExcel = (data, fileName, headers) => {
     
     // 创建下载链接
     const url = URL.createObjectURL(blob);
-    console.log('URL创建成功:', url.substring(0, 30) + '...');
-    
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = excelFileName;
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = excelFileName;
     console.log('下载链接创建成功，准备触发点击');
     
     // 触发下载
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
     URL.revokeObjectURL(url);
     
     console.log('Excel导出成功');
