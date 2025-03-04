@@ -499,7 +499,7 @@ export default {
       }
       
       // 检查是否有大文件需要显示警告
-      const largeFileThreshold = 5 * 1024 * 1024; // 5MB
+      const largeFileThreshold = 2 * 1024 * 1024; // 2MB
       if (file.size > largeFileThreshold) {
         showLargeFileWarning.value = true;
       }
@@ -650,7 +650,7 @@ export default {
 
     // 检查是否有大文件
     const checkForLargeFiles = (files) => {
-      const largeFileThreshold = 5 * 1024 * 1024; // 5MB
+      const largeFileThreshold = 2 * 1024 * 1024; // 2MB
       return files.some(file => file.size > largeFileThreshold);
     };
 
