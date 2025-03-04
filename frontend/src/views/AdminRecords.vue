@@ -552,63 +552,76 @@ export default {
     
     // 导出筛选后的记录为Excel
     const exportRecords = async () => {
-      if (filteredRecords.value.length === 0) {
-        ElMessage.warning('没有可导出的记录');
-        return;
-      }
-      
       try {
         loading.value = true;
-        // 获取所有符合当前筛选条件的记录
-        const response = await axios.get(
-          `${apiConfig.getUrl(apiConfig.endpoints.wasteRecords)}/export/user/${auth.state.user.id}`,
-          {
-            params: {
-              unitId: filterForm.unitId,
-              wasteTypeId: filterForm.wasteTypeId,
-              minQuantity: filterForm.minQuantity,
-              maxQuantity: filterForm.maxQuantity,
-              location: filterForm.location,
-              dateRange: filterForm.dateRange
-            }
-          }
+        
+        // 准备筛选条件
+        const queryParams = {
+          wasteTypeId: filterForm.wasteTypeId ? filterForm.wasteTypeId : undefined,
+          minQuantity: filterForm.minQuantity ? filterForm.minQuantity : undefined,
+          maxQuantity: filterForm.maxQuantity ? filterForm.maxQuantity : undefined,
+          location: filterForm.location || undefined,
+          dateRange: filterForm.dateRange ? JSON.stringify(filterForm.dateRange) : undefined,
+          unitId: filterForm.unitId ? filterForm.unitId : undefined
+        };
+        
+        console.log('导出记录的筛选条件:', queryParams);
+        
+        // 调用后端API获取完整的记录数据
+        const { data } = await axios.get(
+          `${apiConfig.getUrl(apiConfig.endpoints.exportWasteRecords)}/${auth.state.user.id}`,
+          { params: queryParams }
         );
         
-        const allRecords = response.data.map(record => ({
-          ...record,
-          created_at: formatDateTime(record.created_at),
-          collection_start_time: formatDateTime(record.collection_start_time)
+        console.log(`从后端获取到 ${data.length} 条记录用于导出`);
+        
+        if (data.length === 0) {
+          ElMessage.warning('没有符合条件的记录可导出');
+          loading.value = false;
+          return;
+        }
+        
+        // 准备导出数据
+        const exportData = data.map(record => ({
+          '单位': record.unit_name,
+          '废物类型': record.waste_type_name,
+          '产生地点': record.location,
+          '数量(kg)': record.quantity,
+          '收集开始时间': formatDateTime(record.collection_start_time),
+          '填报人': record.creator_name || '系统',
+          '清理前照片': '查看原始记录',
+          '清理后照片': '查看原始记录'
         }));
         
-        // 定义导出列
+        // 设置文件名
+        const unitName = filterForm.unitId 
+          ? units.value.find(u => u.id === filterForm.unitId)?.name || '未知单位'
+          : '全部单位';
+        const fileName = `危险废物记录_${unitName}`;
+        
+        // 设置表头
         const exportHeaders = [
-          { title: '单位', field: 'unit_name', width: 15 },
-          { title: '废物类型', field: 'waste_type_name', width: 15 },
-          { title: '产生地点', field: 'location', width: 20 },
-          { title: '收集开始时间', field: 'collection_start_time', width: 20, type: 'datetime' },
-          { title: '数量(吨)', field: 'quantity', width: 12, type: 'number' },
-          { title: '记录时间', field: 'created_at', width: 20, type: 'datetime' }
+          { text: '单位', field: '单位' },
+          { text: '废物类型', field: '废物类型' },
+          { text: '产生地点', field: '产生地点' },
+          { text: '数量(kg)', field: '数量(kg)' },
+          { text: '收集开始时间', field: '收集开始时间' },
+          { text: '填报人', field: '填报人' },
+          { text: '清理前照片', field: '清理前照片' },
+          { text: '清理后照片', field: '清理后照片' }
         ];
         
-        let fileName = '全部废物记录';
-        if (filterForm.unitId) {
-          const unit = units.value.find(u => u.id === filterForm.unitId);
-          if (unit) {
-            fileName = `${unit.name}_废物记录`;
-          }
-        }
-        if (filterForm.wasteTypeId) {
-          const wasteType = wasteTypes.value.find(type => type.id === filterForm.wasteTypeId);
-          if (wasteType) {
-            fileName += `_${wasteType.name}`;
-          }
-        }
+        // 执行导出
+        const result = exportToExcel(exportData, fileName, exportHeaders);
         
-        exportToExcel(allRecords, fileName, exportHeaders);
-        ElMessage.success('导出成功');
+        if (result) {
+          ElMessage.success('导出成功');
+        } else {
+          ElMessage.error('导出失败，请重试');
+        }
       } catch (error) {
         console.error('导出记录失败:', error);
-        ElMessage.error('导出记录失败');
+        ElMessage.error('导出失败: ' + (error.message || '未知错误'));
       } finally {
         loading.value = false;
       }

@@ -278,8 +278,9 @@ import { ElMessage, ElMessageBox, ElImageViewer } from 'element-plus';
 import httpService from '../config/httpService';
 import apiConfig from '../config/api';
 import { ArrowLeft, Home, Refresh, Plus, User, ArrowDown, ArrowUp, Download, Loading } from '@element-plus/icons-vue';
-import { exportToExcel, prepareImageExportData } from '../utils/exportUtils';
+import { exportToExcel } from '../utils/exportUtils';
 import auth from '../store/auth';
+import axios from 'axios';
 
 export default {
   name: 'RecordsList',
@@ -519,71 +520,73 @@ export default {
     // 导出记录
     const exportRecords = async () => {
       try {
+        // 显示加载状态
         loading.value = true;
-        console.log('开始导出记录...');
         
-        // 获取要导出的记录
-        const recordsToExport = filteredRecords.value;
+        // 准备筛选条件
+        const queryParams = {
+          wasteTypeId: filterForm.wasteTypeId ? filterForm.wasteTypeId : undefined,
+          minQuantity: filterForm.minQuantity ? filterForm.minQuantity : undefined,
+          maxQuantity: filterForm.maxQuantity ? filterForm.maxQuantity : undefined,
+          location: filterForm.location || undefined,
+          dateRange: filterForm.dateRange ? JSON.stringify(filterForm.dateRange) : undefined,
+          unitId: props.unitId ? parseInt(props.unitId) : undefined
+        };
         
-        console.log(`导出记录数量: ${recordsToExport.length}`);
+        console.log('导出记录的筛选条件:', queryParams);
         
-        if (recordsToExport.length === 0) {
-          ElMessage.warning('没有可导出的记录');
+        // 调用后端API获取完整的记录数据
+        const { data } = await axios.get(
+          `${apiConfig.getUrl(apiConfig.endpoints.exportWasteRecords)}/${auth.state.user.id}`,
+          { params: queryParams }
+        );
+        
+        console.log(`从后端获取到 ${data.length} 条记录用于导出`);
+        
+        if (data.length === 0) {
+          ElMessage.warning('没有符合条件的记录可导出');
           loading.value = false;
           return;
         }
         
-        // 设置导出基础URL
-        const exportBaseUrl = window.location.origin;
-        console.log('导出基础URL:', exportBaseUrl);
-        
         // 准备导出数据
-        const exportData = recordsToExport.map(record => ({
-          '单位': record.unit_name || '',
-          '废物类型': record.waste_type_name || '',
-          '收集地点': record.location || '',
-          '收集时间': record.collection_start_time ? new Date(record.collection_start_time).toLocaleString() : '',
-          '数量(kg)': record.quantity || 0,
-          '记录时间': record.created_at ? new Date(record.created_at).toLocaleString() : '',
-          '汇报人': record.creator_name || '未知',
-          '清理前照片': '',
-          '清理后照片': ''
+        const exportData = data.map(record => ({
+          '单位': record.unit_name,
+          '废物类型': record.waste_type_name,
+          '产生地点': record.location,
+          '数量(kg)': record.quantity,
+          '收集开始时间': parseFormattedDateTime(record.collection_start_time),
+          '填报人': record.creator_name || '系统',
+          '清理前照片': '查看原始记录',
+          '清理后照片': '查看原始记录'
         }));
         
-        console.log('导出数据准备完成');
+        // 设置文件名
+        const fileName = `危险废物记录_${unitName.value ? unitName.value : '全部单位'}`;
         
-        // 准备图片数据
-        console.log('准备图片数据...');
-        const imageData = await prepareImageExportData(recordsToExport, exportBaseUrl);
-        console.log('图片数据准备完成，数量:', Object.keys(imageData).length);
-        
-        // 导出文件
-        const fileName = `${unitName.value}危险废物记录`;
+        // 设置表头
         const headers = [
           { text: '单位', field: '单位' },
           { text: '废物类型', field: '废物类型' },
-          { text: '收集地点', field: '收集地点' },
-          { text: '收集时间', field: '收集时间' },
+          { text: '产生地点', field: '产生地点' },
           { text: '数量(kg)', field: '数量(kg)' },
-          { text: '记录时间', field: '记录时间' },
-          { text: '汇报人', field: '汇报人' },
+          { text: '收集开始时间', field: '收集开始时间' },
+          { text: '填报人', field: '填报人' },
           { text: '清理前照片', field: '清理前照片' },
           { text: '清理后照片', field: '清理后照片' }
         ];
         
-        console.log('开始导出Excel文件...');
-        const result = exportToExcel(exportData, fileName, headers, imageData);
+        // 执行导出
+        const result = exportToExcel(exportData, fileName, headers);
         
         if (result) {
-          console.log('导出成功');
           ElMessage.success('导出成功');
         } else {
-          console.log('导出失败，已回退到CSV导出');
-          ElMessage.warning('Excel导出失败，已回退到CSV导出');
+          ElMessage.error('导出失败，请重试');
         }
       } catch (error) {
-        console.error('导出过程中发生错误:', error);
-        ElMessage.error('导出失败: ' + error.message);
+        console.error('导出记录失败:', error);
+        ElMessage.error('导出失败: ' + (error.message || '未知错误'));
       } finally {
         loading.value = false;
       }

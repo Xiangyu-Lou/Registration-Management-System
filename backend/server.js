@@ -881,9 +881,11 @@ app.get('/api/waste-records/user/:userId', async (req, res) => {
 // 导出用户的废物记录（获取所有符合条件的记录）
 app.get('/api/waste-records/export/user/:userId', async (req, res) => {
   const { userId } = req.params;
-  const { wasteTypeId, minQuantity, maxQuantity, location, dateRange } = req.query;
+  const { wasteTypeId, minQuantity, maxQuantity, location, dateRange, unitId } = req.query;
   
   try {
+    console.log('导出记录API被调用，参数:', req.query);
+    
     // 获取用户信息以确定其权限
     const [users] = await pool.query('SELECT * FROM users WHERE id = ?', [userId]);
     
@@ -916,17 +918,22 @@ app.get('/api/waste-records/export/user/:userId', async (req, res) => {
     }
     
     // 添加筛选条件
+    if (unitId && user.role_id === 3) { // 只有超级管理员可以按单位筛选
+      sql += ' AND wr.unit_id = ?';
+      params.push(unitId);
+    }
+    
     if (wasteTypeId) {
       sql += ' AND wr.waste_type_id = ?';
       params.push(wasteTypeId);
     }
     
-    if (minQuantity !== undefined) {
+    if (minQuantity !== undefined && minQuantity !== '') {
       sql += ' AND wr.quantity >= ?';
       params.push(minQuantity);
     }
     
-    if (maxQuantity !== undefined) {
+    if (maxQuantity !== undefined && maxQuantity !== '') {
       sql += ' AND wr.quantity <= ?';
       params.push(maxQuantity);
     }
@@ -937,21 +944,30 @@ app.get('/api/waste-records/export/user/:userId', async (req, res) => {
     }
     
     if (dateRange) {
-      const [startDate, endDate] = JSON.parse(dateRange);
-      if (startDate && endDate) {
-        sql += ' AND DATE(wr.collection_start_time) BETWEEN ? AND ?';
-        params.push(startDate, endDate);
+      try {
+        const [startDate, endDate] = JSON.parse(dateRange);
+        if (startDate && endDate) {
+          sql += ' AND DATE(wr.collection_start_time) BETWEEN ? AND ?';
+          params.push(startDate, endDate);
+        }
+      } catch (error) {
+        console.error('解析日期范围失败:', error);
       }
     }
     
     // 添加排序
     sql += ' ORDER BY wr.created_at DESC';
     
+    console.log('执行SQL:', sql);
+    console.log('SQL参数:', params);
+    
     const [records] = await pool.query(sql, params);
+    console.log(`查询到 ${records.length} 条记录用于导出`);
+    
     res.json(records);
   } catch (error) {
     console.error('导出废物记录错误:', error);
-    res.status(500).json({ error: '服务器错误' });
+    res.status(500).json({ error: '服务器错误', details: error.message });
   }
 });
 
