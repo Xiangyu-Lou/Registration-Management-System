@@ -1,0 +1,58 @@
+server {
+    listen 80;
+    server_name 47.104.215.111;  # 使用你的实际IP或域名
+     
+    # 前端代理
+    location / {
+        proxy_pass http://localhost:8080;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+    
+    # 后端API代理
+    location /api {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+    
+    # 上传文件目录
+    location /uploads/ {
+    	alias /home/ecs-user/Hazardous-waste-management-system/uploads/;
+    	autoindex off;
+
+    	# 禁用所有访问限制
+    	allow all;
+
+    	# 设置正确的MIME类型
+    	types {
+        	image/jpeg jpg jpeg;
+        	image/png png;
+        	image/gif gif;
+        	image/webp webp;
+        	application/pdf pdf;
+        	text/plain txt;
+        	application/octet-stream *;  # 添加通用MIME类型
+    	}
+
+    	# 添加调试头信息
+    	add_header X-Debug-Path $request_filename;
+    }
+    
+    # 日志配置
+    access_log /var/log/nginx/waste-management-access.log;
+    error_log /var/log/nginx/waste-management-error.log;
+    
+    # 增加上传文件大小限制
+    client_max_body_size 50M;
+}
