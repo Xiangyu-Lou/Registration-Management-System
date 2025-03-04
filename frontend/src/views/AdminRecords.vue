@@ -161,12 +161,22 @@
             >
               <template #default="scope">
                 <div v-if="scope.row.photo_path_before" class="photo-preview">
-                  <el-image
-                    style="width: 50px; height: 50px"
-                    :src="`${baseUrl}/${scope.row.photo_path_before}`"
-                    :preview-src-list="[`${baseUrl}/${scope.row.photo_path_before}`]"
-                    fit="cover"
-                  ></el-image>
+                  <!-- 多张照片显示 -->
+                  <div 
+                    v-for="(path, index) in parsePhotoPath(scope.row.photo_path_before)" 
+                    :key="index"
+                    class="photo-thumbnail-container"
+                    @click="previewPhoto(parsePhotoPath(scope.row.photo_path_before), index)"
+                  >
+                    <el-image
+                      style="width: 50px; height: 50px"
+                      :src="`${baseUrl}${path}`"
+                      fit="cover"
+                    ></el-image>
+                  </div>
+                  <div v-if="parsePhotoPath(scope.row.photo_path_before).length > 1" class="photo-count">
+                    {{ parsePhotoPath(scope.row.photo_path_before).length }}张
+                  </div>
                 </div>
                 <span v-else>无</span>
               </template>
@@ -178,12 +188,22 @@
             >
               <template #default="scope">
                 <div v-if="scope.row.photo_path_after" class="photo-preview">
-                  <el-image
-                    style="width: 50px; height: 50px"
-                    :src="`${baseUrl}/${scope.row.photo_path_after}`"
-                    :preview-src-list="[`${baseUrl}/${scope.row.photo_path_after}`]"
-                    fit="cover"
-                  ></el-image>
+                  <!-- 多张照片显示 -->
+                  <div 
+                    v-for="(path, index) in parsePhotoPath(scope.row.photo_path_after)" 
+                    :key="index"
+                    class="photo-thumbnail-container"
+                    @click="previewPhoto(parsePhotoPath(scope.row.photo_path_after), index)"
+                  >
+                    <el-image
+                      style="width: 50px; height: 50px"
+                      :src="`${baseUrl}${path}`"
+                      fit="cover"
+                    ></el-image>
+                  </div>
+                  <div v-if="parsePhotoPath(scope.row.photo_path_after).length > 1" class="photo-count">
+                    {{ parsePhotoPath(scope.row.photo_path_after).length }}张
+                  </div>
                 </div>
                 <span v-else>无</span>
               </template>
@@ -249,17 +269,23 @@ import { exportToExcel } from '../utils/exportUtils';
 import apiConfig from '../config/api';
 
 // API基础URL
-const apiBaseURL = apiConfig.baseURL;
+// const apiBaseURL = apiConfig.baseURL;
 
 // 解析照片路径
-const parsePhotoPath = (photoPath) => {
-  if (!photoPath) return [];
+const parsePhotoPath = (path) => {
+  if (!path) return [];
+  
   try {
-    const paths = JSON.parse(photoPath);
-    return Array.isArray(paths) ? paths : [photoPath];
+    // 尝试解析为JSON
+    if (path.startsWith('[') && path.endsWith(']')) {
+      return JSON.parse(path);
+    }
+    // 如果不是JSON格式，则将其作为单个路径返回
+    return [path];
   } catch (error) {
     console.error('解析照片路径失败:', error);
-    return [photoPath]; // 如果解析失败，返回原始路径作为单个元素的数组
+    // 如果解析失败，将其作为单个路径返回
+    return [path];
   }
 };
 
@@ -298,6 +324,9 @@ export default {
     const units = ref([]);
     const wasteTypes = ref([]);
     const showFilterPanel = ref(true);
+    
+    // 添加baseUrl定义
+    const baseUrl = apiConfig.baseURL;
     
     // 图片预览相关
     const showViewer = ref(false);
@@ -613,8 +642,10 @@ export default {
 
     // 预览照片
     const previewPhoto = (paths, index) => {
-      previewImages.value = paths.map(path => `${apiBaseURL}${path}`);
-      previewIndex.value = index;
+      // 确保paths是数组
+      const photoArray = Array.isArray(paths) ? paths : [paths];
+      previewImages.value = photoArray.map(path => `${baseUrl}${path}`);
+      previewIndex.value = index || 0;
       showViewer.value = true;
     };
     
@@ -662,7 +693,7 @@ export default {
       previewIndex,
       previewPhoto,
       closeViewer,
-      apiBaseURL,
+      baseUrl,
       page,
       pageSize,
       hasMore,
@@ -798,7 +829,20 @@ export default {
 
 .photo-thumbnail-container {
   cursor: pointer;
-  display: inline-block;
+  margin-bottom: 2px;
+}
+
+.photo-count {
+  font-size: 12px;
+  color: #909399;
+  text-align: center;
+  margin-top: 2px;
+}
+
+.photo-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .operation-buttons {

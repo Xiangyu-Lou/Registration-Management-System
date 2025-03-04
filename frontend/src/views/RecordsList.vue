@@ -16,6 +16,18 @@
         <h2>{{ unitName }} - 危险废物记录</h2>
       </div>
       
+      <div class="actions">
+        <el-button type="primary" @click="addNewRecord">
+          <el-icon><plus /></el-icon> 新增填报
+        </el-button>
+        <el-button type="success" @click="goToUserManagement" v-if="isAdmin || isUnitAdmin">
+          <el-icon><user /></el-icon> 人员管理
+        </el-button>
+        <el-button @click="refreshRecords">
+          <el-icon><refresh /></el-icon> 刷新
+        </el-button>
+      </div>
+      
       <!-- 筛选面板 -->
       <el-card class="filter-card">
         <div class="filter-header">
@@ -110,22 +122,13 @@
       <div class="records-wrapper">
         <el-card class="records-card">
           <div class="card-header">
-          <h3>废物记录列表</h3>
-          <div class="card-actions">
-          <el-button type="primary" @click="addNewRecord">
-              <el-icon><plus /></el-icon> 新增填报
-          </el-button>
-          <el-button type="success" @click="goToUserManagement" v-if="isAdmin || isUnitAdmin">
-              <el-icon><user /></el-icon> 人员管理
-          </el-button>
-          <el-button type="warning" @click="exportRecords">
-              <el-icon><download /></el-icon> 导出记录
-          </el-button>
-          <el-button @click="refreshRecords">
-            <el-icon><refresh /></el-icon> 刷新
-          </el-button>
-        </div>
-      </div>
+            <h3>废物记录列表</h3>
+            <div class="card-actions">
+              <el-button type="warning" @click="exportRecords">
+                <el-icon><download /></el-icon> 导出记录
+              </el-button>
+            </div>
+          </div>
           
           <el-table 
             :data="filteredRecords" 
@@ -171,7 +174,7 @@
                     v-for="(path, index) in parsePhotoPath(scope.row.photo_path_before)" 
                     :key="index"
                     class="photo-thumbnail-container"
-                    @click="previewPhoto(path, 0)"
+                    @click="previewPhoto(parsePhotoPath(scope.row.photo_path_before), index)"
                   >
                     <el-image
                       style="width: 50px; height: 50px"
@@ -198,7 +201,7 @@
                     v-for="(path, index) in parsePhotoPath(scope.row.photo_path_after)" 
                     :key="index"
                     class="photo-thumbnail-container"
-                    @click="previewPhoto(path, 0)"
+                    @click="previewPhoto(parsePhotoPath(scope.row.photo_path_after), index)"
                   >
                     <el-image
                       style="width: 50px; height: 50px"
@@ -772,6 +775,13 @@ export default {
   margin: 0;
 }
 
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 20px;
+  gap: 10px;
+}
+
 .filter-card {
   margin-bottom: 20px;
 }
@@ -832,7 +842,6 @@ export default {
 .card-actions {
   display: flex;
   gap: 10px;
-  flex-wrap: wrap;
 }
 
 .record-image {
@@ -951,6 +960,36 @@ export default {
   
   .operation-buttons {
     flex-direction: column;
+    justify-content: center;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  
+  .action-buttons .el-button {
+    flex: 1;
+    justify-content: center;
+  }
+  
+  .filter-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  
+  .header-left {
+    width: 100%;
+  }
+  
+  .action-buttons {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .action-buttons .el-button {
+    flex: 1;
     justify-content: center;
   }
 }
