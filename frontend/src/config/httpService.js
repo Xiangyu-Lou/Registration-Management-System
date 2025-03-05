@@ -100,6 +100,12 @@ const httpService = {
       config.onUploadProgress = onUploadProgress;
     }
     
+    // 手动添加授权头部，确保不会被覆盖
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    
     return axiosInstance.post(endpoint, formData, config);
   },
   
@@ -122,6 +128,12 @@ const httpService = {
     // 只有当onUploadProgress是函数时才添加到配置中
     if (typeof onUploadProgress === 'function') {
       config.onUploadProgress = onUploadProgress;
+    }
+    
+    // 手动添加授权头部，确保不会被覆盖
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
     
     return axiosInstance.put(endpoint, formData, config);

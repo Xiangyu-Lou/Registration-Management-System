@@ -249,6 +249,7 @@ app.post('/api/login', async (req, res) => {
     const token = jwt.sign(
       { 
         id: user.id,
+        username: user.username,
         phone: user.phone,
         role_id: user.role_id,
         unit_id: user.unit_id
@@ -536,7 +537,7 @@ app.get('/api/waste-types', async (req, res) => {
 });
 
 // 添加废物记录
-app.post('/api/waste-records', upload.fields([
+app.post('/api/waste-records', verifyToken, upload.fields([
   { name: 'photo_before', maxCount: 5 },
   { name: 'photo_after', maxCount: 5 }
 ]), async (req, res) => {
@@ -581,7 +582,7 @@ app.post('/api/waste-records', upload.fields([
     
     // 获取当前用户信息
     const userId = req.body.creator_id || (req.user ? req.user.id : null);
-    const userName = req.body.creator_name || (req.user ? req.user.name : null);
+    const userName = req.body.creator_name || (req.user ? req.user.username : null);
     
     console.log('处理废物记录提交:', {
       body: req.body,
@@ -633,7 +634,7 @@ app.get('/api/waste-records/:unitId', async (req, res) => {
 });
 
 // 修改废物记录
-app.put('/api/waste-records/:id', upload.fields([
+app.put('/api/waste-records/:id', verifyToken, upload.fields([
   { name: 'photo_before', maxCount: 5 },
   { name: 'photo_after', maxCount: 5 }
 ]), async (req, res) => {
@@ -802,11 +803,6 @@ app.get('/api/waste-records/user/:userId', async (req, res) => {
     if (user.role_id !== 3) { // 不是超级管理员
       baseSql += ' AND wr.unit_id = ?';
       params.push(user.unit_id);
-      
-      if (user.role_id !== 2) { // 不是单位管理员
-        baseSql += ' AND (wr.creator_id = ? OR wr.creator_id IS NULL)';
-        params.push(userId);
-      }
     }
     
     // 添加筛选条件
@@ -911,10 +907,12 @@ app.get('/api/waste-records/export/user/:userId', async (req, res) => {
       sql += ' AND wr.unit_id = ?';
       params.push(user.unit_id);
       
-      if (user.role_id !== 2) { // 不是单位管理员
-        sql += ' AND (wr.creator_id = ? OR wr.creator_id IS NULL)';
-        params.push(userId);
-      }
+      // 移除限制普通员工只能看到自己创建的记录的条件
+      // 所有用户都可以看到自己单位的所有记录
+      // if (user.role_id !== 2) { // 不是单位管理员
+      //   sql += ' AND (wr.creator_id = ? OR wr.creator_id IS NULL)';
+      //   params.push(userId);
+      // }
     }
     
     // 添加筛选条件
