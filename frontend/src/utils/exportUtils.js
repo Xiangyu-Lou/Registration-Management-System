@@ -79,13 +79,14 @@ const parsePhotoPath = (path) => {
 };
 
 /**
- * 将数据导出为Excel文件，包含图片
+ * 导出数据到Excel（支持图片），使用ExcelJS库
  * @param {Array} data - 要导出的数据数组
- * @param {String} fileName - 导出的文件名（不含后缀）
+ * @param {String} fileName - 导出的文件名（不含扩展名）
  * @param {Array} headers - 要导出的列标题和对应字段名
  * @param {String} baseUrl - 基础URL，用于构建完整的图片路径
+ * @param {Function} onProgress - 进度回调函数，参数为(当前进度, 总数)
  */
-export const exportToExcelWithImages = async (data, fileName, headers, baseUrl = window.location.origin) => {
+export const exportToExcelWithImages = async (data, fileName, headers, baseUrl = window.location.origin, onProgress = null) => {
   console.log('=== exportToExcelWithImages 函数被调用 ===');
   console.log('数据条数:', data.length);
   
@@ -125,6 +126,10 @@ export const exportToExcelWithImages = async (data, fileName, headers, baseUrl =
     // 添加数据行并处理图片
     console.log('开始处理数据行...');
     
+    // 计算总处理项数（每行加一个基本数据项和可能的图片项）
+    const totalItems = data.length * (1 + headers.filter(h => h.isImage).length);
+    let currentItem = 0;
+    
     for (let rowIndex = 0; rowIndex < data.length; rowIndex++) {
       const row = data[rowIndex];
       
@@ -143,6 +148,12 @@ export const exportToExcelWithImages = async (data, fileName, headers, baseUrl =
       
       // 设置行高
       excelRow.height = 80; // 设置足够的高度显示图片
+      
+      // 更新进度
+      currentItem++;
+      if (onProgress && typeof onProgress === 'function') {
+        onProgress(currentItem, totalItems);
+      }
       
       // 处理图片字段
       for (const header of headers) {
@@ -187,46 +198,36 @@ export const exportToExcelWithImages = async (data, fileName, headers, baseUrl =
           } else {
             console.log(`记录 ${rowIndex + 1} 的 ${fieldName} 没有照片路径`);
           }
+          
+          // 更新进度
+          currentItem++;
+          if (onProgress && typeof onProgress === 'function') {
+            onProgress(currentItem, totalItems);
+          }
         }
       }
     }
     
-    // 导出工作簿
-    console.log('生成Excel数据...');
+    console.log('数据行处理完成，准备生成Excel文件...');
+    
+    // 生成Excel文件并下载
     const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = window.URL.createObjectURL(blob);
     
-    // 创建Blob对象并下载
-    const blob = new Blob([buffer], { 
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
-    });
-    
-    // 创建下载链接
-    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
     link.download = fullFileName;
-    
-    // 触发下载
-    document.body.appendChild(link);
     link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
     
-    console.log('Excel导出成功');
+    // 清理
+    window.URL.revokeObjectURL(url);
+    
+    console.log('Excel文件生成并下载成功');
     return true;
   } catch (error) {
-    console.error('导出Excel失败:', error);
-    console.error('错误详情:', error.message);
-    console.error('错误堆栈:', error.stack);
-    
-    // 尝试使用普通的Excel导出（不包含图片）
-    console.log('尝试使用普通Excel导出（不包含图片）...');
-    try {
-      return exportToExcel(data, fileName, headers);
-    } catch (fallbackError) {
-      console.error('普通Excel导出也失败:', fallbackError);
-      return false;
-    }
+    console.error('导出Excel文件失败:', error);
+    return false;
   }
 };
 

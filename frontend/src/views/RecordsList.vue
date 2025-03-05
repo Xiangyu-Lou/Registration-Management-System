@@ -274,7 +274,7 @@
 <script>
 import { ref, onMounted, computed, reactive } from 'vue';
 import { useRouter } from 'vue-router';
-import { ElMessage, ElMessageBox, ElImageViewer } from 'element-plus';
+import { ElMessage, ElMessageBox, ElImageViewer, ElLoading } from 'element-plus';
 import httpService from '../config/httpService';
 import apiConfig from '../config/api';
 import { ArrowLeft, Home, Refresh, Plus, User, ArrowDown, ArrowUp, Download, Loading } from '@element-plus/icons-vue';
@@ -520,7 +520,21 @@ export default {
     // 导出记录
     const exportRecords = async () => {
       try {
-        // 显示加载状态
+        // 先显示提示消息
+        ElMessage({
+          message: '导出大量包含图片的记录所需时间较长，请耐心等待',
+          type: 'info',
+          duration: 5000
+        });
+        
+        // 创建全屏加载
+        const loadingInstance = ElLoading.service({
+          lock: true,
+          text: '正在导出记录，请稍候...',
+          background: 'rgba(0, 0, 0, 0.7)'
+        });
+        
+        // 设置加载状态
         loading.value = true;
         
         // 准备筛选条件
@@ -544,10 +558,14 @@ export default {
         console.log(`从后端获取到 ${data.length} 条记录用于导出`);
         
         if (data.length === 0) {
+          loadingInstance.close();
           ElMessage.warning('没有符合条件的记录可导出');
           loading.value = false;
           return;
         }
+        
+        // 更新加载文本
+        loadingInstance.setText(`准备导出 ${data.length} 条记录...`);
         
         // 准备导出数据
         const exportData = data.map(record => {
@@ -585,8 +603,17 @@ export default {
         // 获取服务器的基础URL
         const baseUrl = window.location.origin;
         
+        // 设置进度回调函数
+        const onProgress = (current, total) => {
+          const percent = Math.round((current / total) * 100);
+          loadingInstance.setText(`正在导出：${percent}% (${current}/${total})`);
+        };
+        
         // 执行带图片的导出
-        const result = await exportToExcelWithImages(exportData, fileName, headers, baseUrl);
+        const result = await exportToExcelWithImages(exportData, fileName, headers, baseUrl, onProgress);
+        
+        // 关闭加载提示
+        loadingInstance.close();
         
         if (result) {
           ElMessage.success('导出成功');
@@ -598,6 +625,8 @@ export default {
         ElMessage.error('导出失败: ' + (error.message || '未知错误'));
       } finally {
         loading.value = false;
+        // 确保加载提示被关闭
+        ElLoading.service().close();
       }
     };
     
