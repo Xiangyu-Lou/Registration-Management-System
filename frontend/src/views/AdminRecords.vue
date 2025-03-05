@@ -265,7 +265,7 @@ import { ElMessage, ElMessageBox, ElImageViewer, ElLoading } from 'element-plus'
 import axios from 'axios';
 import { Plus, Refresh, User, ArrowDown, ArrowUp, Download, Loading } from '@element-plus/icons-vue';
 import auth from '../store/auth';
-import { exportToExcelWithImages } from '../utils/exportUtils';
+import { exportToExcelWithImages, exportToExcel } from '../utils/exportUtils';
 import apiConfig from '../config/api';
 
 // API基础URL
@@ -553,6 +553,34 @@ export default {
     // 导出筛选后的记录为Excel
     const exportRecords = async () => {
       try {
+        // 先弹出选择对话框
+        await ElMessageBox.confirm(
+          '请选择导出格式',
+          '导出选项',
+          {
+            confirmButtonText: '带图片导出',
+            cancelButtonText: '不带图片导出',
+            distinguishCancelAndClose: true,
+            type: 'info'
+          }
+        ).then(async () => {
+          // 用户选择带图片导出
+          await exportWithImages();
+        }).catch(action => {
+          if (action === 'cancel') {
+            // 用户选择不带图片导出
+            exportWithoutImages();
+          }
+        });
+      } catch (error) {
+        console.error('导出过程发生错误:', error);
+        ElMessage.error('导出失败: ' + (error.message || '未知错误'));
+      }
+    };
+    
+    // 带图片导出
+    const exportWithImages = async () => {
+      try {
         // 先显示提示消息
         ElMessage({
           message: '导出大量包含图片的记录所需时间较长，请耐心等待',
@@ -596,7 +624,7 @@ export default {
           return;
         }
         
-        // a加载文本
+        // 更新加载文本
         loadingInstance.setText(`准备导出 ${data.length} 条记录...`);
         
         // 准备导出数据
@@ -646,6 +674,95 @@ export default {
         
         // 执行带图片的导出
         const result = await exportToExcelWithImages(exportData, fileName, exportHeaders, baseUrl, onProgress);
+        
+        // 关闭加载提示
+        loadingInstance.close();
+        
+        if (result) {
+          ElMessage.success('导出成功');
+        } else {
+          ElMessage.error('导出失败，请重试');
+        }
+      } catch (error) {
+        console.error('导出记录失败:', error);
+        ElMessage.error('导出失败: ' + (error.message || '未知错误'));
+      } finally {
+        loading.value = false;
+        // 确保加载提示被关闭
+        ElLoading.service().close();
+      }
+    };
+    
+    // 不带图片导出
+    const exportWithoutImages = async () => {
+      try {
+        // 创建加载遮罩
+        const loadingInstance = ElLoading.service({
+          lock: true,
+          text: '正在导出记录，请稍候...',
+          background: 'rgba(0, 0, 0, 0.7)'
+        });
+        
+        loading.value = true;
+        
+        // 准备筛选条件
+        const queryParams = {
+          wasteTypeId: filterForm.wasteTypeId ? filterForm.wasteTypeId : undefined,
+          minQuantity: filterForm.minQuantity ? filterForm.minQuantity : undefined,
+          maxQuantity: filterForm.maxQuantity ? filterForm.maxQuantity : undefined,
+          location: filterForm.location || undefined,
+          dateRange: filterForm.dateRange ? JSON.stringify(filterForm.dateRange) : undefined,
+          unitId: filterForm.unitId ? filterForm.unitId : undefined
+        };
+        
+        // 调用后端API获取完整的记录数据
+        const { data } = await axios.get(
+          `${apiConfig.getUrl(apiConfig.endpoints.exportWasteRecords)}/${auth.state.user.id}`,
+          { params: queryParams }
+        );
+        
+        if (data.length === 0) {
+          loadingInstance.close();
+          ElMessage.warning('没有符合条件的记录可导出');
+          loading.value = false;
+          return;
+        }
+        
+        // 更新加载文本
+        loadingInstance.setText(`准备导出 ${data.length} 条记录...`);
+        
+        // 准备导出数据
+        const exportData = data.map(record => ({
+          '单位': record.unit_name,
+          '废物类型': record.waste_type_name,
+          '产生地点': record.location,
+          '数量(kg)': record.quantity,
+          '收集开始时间': formatDateTime(record.collection_start_time),
+          '填报人': record.creator_name || '系统',
+          '清理前照片': record.photo_path_before ? '有' : '无',
+          '清理后照片': record.photo_path_after ? '有' : '无'
+        }));
+        
+        // 设置文件名
+        const unitName = filterForm.unitId 
+          ? units.value.find(u => u.id === filterForm.unitId)?.name || '未知单位'
+          : '全部单位';
+        const fileName = `危险废物记录_${unitName}`;
+        
+        // 设置表头
+        const exportHeaders = [
+          { text: '单位', field: '单位' },
+          { text: '废物类型', field: '废物类型' },
+          { text: '产生地点', field: '产生地点' },
+          { text: '数量(kg)', field: '数量(kg)' },
+          { text: '收集开始时间', field: '收集开始时间' },
+          { text: '填报人', field: '填报人' },
+          { text: '清理前照片', field: '清理前照片' },
+          { text: '清理后照片', field: '清理后照片' }
+        ];
+        
+        // 执行不带图片的导出
+        const result = await exportToExcel(exportData, fileName, exportHeaders);
         
         // 关闭加载提示
         loadingInstance.close();
