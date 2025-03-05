@@ -390,11 +390,14 @@ export default {
     const handlePhotoBeforeChange = async (file, fileList) => {
       // 更新文件列表（暂时）
       console.log('收集前照片变更:', file);
+      console.log('当前文件列表:', fileList);
+      
+      // 先更新文件列表，确保UI显示所有文件
+      fileListBefore.value = [...fileList];
       
       // 如果文件已经处理过，直接返回
       if (file.processed) {
         console.log('文件已处理过，跳过压缩:', file.name);
-        fileListBefore.value = fileList;
         return;
       }
       
@@ -480,6 +483,13 @@ export default {
             photoFilesBefore.value.push(processedFile);
           }
           
+          // 更新文件列表中对应的文件
+          const fileIndex = fileListBefore.value.findIndex(f => f.uid === file.uid);
+          if (fileIndex >= 0) {
+            // 标记为已处理，避免重复处理
+            fileListBefore.value[fileIndex].processed = true;
+          }
+          
           // 延迟关闭进度条
           setTimeout(() => {
             showUploadProgress.value = false;
@@ -506,14 +516,12 @@ export default {
         console.log('已有文件，不需要处理:', file.name);
       }
       
-      // 更新文件列表
-      fileListBefore.value = fileList;
-      
       // 检查是否有大文件需要显示警告
       const allFiles = [...photoFilesBefore.value, ...photoFilesAfter.value];
       showLargeFileWarning.value = checkForLargeFiles(allFiles);
       
       console.log('更新后的photoFilesBefore:', photoFilesBefore.value);
+      console.log('更新后的fileListBefore:', fileListBefore.value);
     };
 
     // 处理收集前照片移除
@@ -545,11 +553,14 @@ export default {
     const handlePhotoAfterChange = async (file, fileList) => {
       // 更新文件列表（暂时）
       console.log('收集后照片变更:', file);
+      console.log('当前文件列表:', fileList);
+      
+      // 先更新文件列表，确保UI显示所有文件
+      fileListAfter.value = [...fileList];
       
       // 如果文件已经处理过，直接返回
       if (file.processed) {
         console.log('文件已处理过，跳过压缩:', file.name);
-        fileListAfter.value = fileList;
         return;
       }
       
@@ -635,6 +646,13 @@ export default {
             photoFilesAfter.value.push(processedFile);
           }
           
+          // 更新文件列表中对应的文件
+          const fileIndex = fileListAfter.value.findIndex(f => f.uid === file.uid);
+          if (fileIndex >= 0) {
+            // 标记为已处理，避免重复处理
+            fileListAfter.value[fileIndex].processed = true;
+          }
+          
           // 延迟关闭进度条
           setTimeout(() => {
             showUploadProgress.value = false;
@@ -661,14 +679,12 @@ export default {
         console.log('已有文件，不需要处理:', file.name);
       }
       
-      // 更新文件列表
-      fileListAfter.value = fileList;
-      
       // 检查是否有大文件需要显示警告
       const allFiles = [...photoFilesBefore.value, ...photoFilesAfter.value];
       showLargeFileWarning.value = checkForLargeFiles(allFiles);
       
       console.log('更新后的photoFilesAfter:', photoFilesAfter.value);
+      console.log('更新后的fileListAfter:', fileListAfter.value);
     };
 
     // 处理收集后照片移除

@@ -229,6 +229,8 @@ export default {
     const units = ref([]);
     const fileListBefore = ref([]);
     const fileListAfter = ref([]);
+    const photoFilesBefore = ref([]);
+    const photoFilesAfter = ref([]);
     const previewImages = ref([]);
     const showViewer = ref(false);
     const previewIndex = ref(0);
@@ -576,13 +578,17 @@ export default {
 
     // 处理收集前的照片变更
     const handlePhotoBeforeChange = async (file, fileList) => {
+      // 更新文件列表（暂时）
       console.log('收集前照片变更:', file);
+      console.log('当前文件列表:', fileList);
+      
+      // 先更新文件列表，确保UI显示所有文件
+      fileListBefore.value = [...fileList];
       
       // 如果文件已经处理过，直接返回
       if (file.processed) {
         console.log('文件已处理过，跳过压缩:', file.name);
-        fileListBefore.value = fileList;
-        return false; // 阻止自动上传
+        return;
       }
       
       // 如果是新上传的文件，需要先处理
@@ -657,6 +663,23 @@ export default {
           file.processed = true;
           file.raw = processedFile;
           
+          // 将处理后的文件添加到photoFilesBefore数组
+          const existingIndex = photoFilesBefore.value.findIndex(f => f.uid === file.uid || f.name === file.name);
+          if (existingIndex >= 0) {
+            // 替换现有文件
+            photoFilesBefore.value[existingIndex] = processedFile;
+          } else {
+            // 添加新文件
+            photoFilesBefore.value.push(processedFile);
+          }
+          
+          // 更新文件列表中对应的文件
+          const fileIndex = fileListBefore.value.findIndex(f => f.uid === file.uid);
+          if (fileIndex >= 0) {
+            // 标记为已处理，避免重复处理
+            fileListBefore.value[fileIndex].processed = true;
+          }
+          
           // 延迟关闭进度条
           setTimeout(() => {
             showUploadProgress.value = false;
@@ -665,6 +688,17 @@ export default {
         } catch (error) {
           console.error('处理图片时出错:', error);
           ElMessage.warning('图片处理失败，将使用原始图片');
+          
+          // 添加原始文件到photoFilesBefore数组
+          const existingIndex = photoFilesBefore.value.findIndex(f => f.uid === file.uid || f.name === file.name);
+          if (existingIndex >= 0) {
+            // 替换现有文件
+            photoFilesBefore.value[existingIndex] = file.raw;
+          } else {
+            // 添加新文件
+            photoFilesBefore.value.push(file.raw);
+          }
+          
           showUploadProgress.value = false;
         }
       } else if (!file.raw && file.url) {
@@ -681,11 +715,11 @@ export default {
         console.log('为收集前照片添加raw属性:', file.raw);
       }
       
-      // 更新文件列表
-      fileListBefore.value = fileList;
-      
       // 更新预览图片
       updatePreviewImages([...fileListBefore.value, ...fileListAfter.value]);
+      
+      console.log('更新后的fileListBefore:', fileListBefore.value);
+      console.log('更新后的photoFilesBefore:', photoFilesBefore.value);
       
       return false; // 阻止自动上传
     };
@@ -708,13 +742,17 @@ export default {
 
     // 处理收集后的照片变更
     const handlePhotoAfterChange = async (file, fileList) => {
+      // 更新文件列表（暂时）
       console.log('收集后照片变更:', file);
+      console.log('当前文件列表:', fileList);
+      
+      // 先更新文件列表，确保UI显示所有文件
+      fileListAfter.value = [...fileList];
       
       // 如果文件已经处理过，直接返回
       if (file.processed) {
         console.log('文件已处理过，跳过压缩:', file.name);
-        fileListAfter.value = fileList;
-        return false; // 阻止自动上传
+        return;
       }
       
       // 如果是新上传的文件，需要先处理
@@ -789,6 +827,23 @@ export default {
           file.processed = true;
           file.raw = processedFile;
           
+          // 将处理后的文件添加到photoFilesAfter数组
+          const existingIndex = photoFilesAfter.value.findIndex(f => f.uid === file.uid || f.name === file.name);
+          if (existingIndex >= 0) {
+            // 替换现有文件
+            photoFilesAfter.value[existingIndex] = processedFile;
+          } else {
+            // 添加新文件
+            photoFilesAfter.value.push(processedFile);
+          }
+          
+          // 更新文件列表中对应的文件
+          const fileIndex = fileListAfter.value.findIndex(f => f.uid === file.uid);
+          if (fileIndex >= 0) {
+            // 标记为已处理，避免重复处理
+            fileListAfter.value[fileIndex].processed = true;
+          }
+          
           // 延迟关闭进度条
           setTimeout(() => {
             showUploadProgress.value = false;
@@ -797,6 +852,17 @@ export default {
         } catch (error) {
           console.error('处理图片时出错:', error);
           ElMessage.warning('图片处理失败，将使用原始图片');
+          
+          // 添加原始文件到photoFilesAfter数组
+          const existingIndex = photoFilesAfter.value.findIndex(f => f.uid === file.uid || f.name === file.name);
+          if (existingIndex >= 0) {
+            // 替换现有文件
+            photoFilesAfter.value[existingIndex] = file.raw;
+          } else {
+            // 添加新文件
+            photoFilesAfter.value.push(file.raw);
+          }
+          
           showUploadProgress.value = false;
         }
       } else if (!file.raw && file.url) {
@@ -813,11 +879,11 @@ export default {
         console.log('为收集后照片添加raw属性:', file.raw);
       }
       
-      // 更新文件列表
-      fileListAfter.value = fileList;
-      
       // 更新预览图片
       updatePreviewImages([...fileListBefore.value, ...fileListAfter.value]);
+      
+      console.log('更新后的fileListAfter:', fileListAfter.value);
+      console.log('更新后的photoFilesAfter:', photoFilesAfter.value);
       
       return false; // 阻止自动上传
     };
@@ -1148,6 +1214,8 @@ export default {
       units,
       fileListBefore,
       fileListAfter,
+      photoFilesBefore,
+      photoFilesAfter,
       previewImages,
       showViewer,
       previewIndex,
