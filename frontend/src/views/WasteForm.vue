@@ -174,6 +174,7 @@ import httpService from '../config/httpService';
 import apiConfig from '../config/api';
 import { ArrowLeft, Document, Plus, Clock } from '@element-plus/icons-vue';
 import auth from '../store/auth';
+import Compressor from 'compressorjs';
 
 export default {
   name: 'WasteForm',
@@ -293,7 +294,7 @@ export default {
     };
 
     // 处理上传前的文件处理
-    const handleBeforeUpload = async (file) => {
+    const handleBeforeUpload = (file) => {
       // 检查文件类型是否为图片
       const acceptedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/bmp', 'image/webp'];
       const isImage = acceptedTypes.includes(file.type);
@@ -310,31 +311,203 @@ export default {
         return false;
       }
       
-      // 检查是否有大文件需要显示警告
-      const largeFileThreshold = 5 * 1024 * 1024; // 5MB
-      if (file.size > largeFileThreshold) {
-        showLargeFileWarning.value = true;
-      }
-      
-      // 直接返回true，允许文件被添加到上传列表
-      return true;
+      // 返回一个Promise
+      return new Promise((resolve) => {
+        // 显示处理进度提示
+        showUploadProgress.value = true;
+        uploadStatus.value = '正在处理图片...';
+        uploadPercentage.value = 0;
+        
+        console.log('开始处理图片:', file.name, '类型:', file.type, '大小:', (file.size / 1024).toFixed(2), 'KB');
+        
+        // 使用Compressor直接处理图片
+        new Compressor(file, {
+          quality: 0.6,           // 中等压缩 (0-1)
+          maxWidth: 1920,         // 最大宽度
+          maxHeight: 1920,        // 最大高度
+          mimeType: 'image/jpeg', // 强制转换为JPEG
+          convertSize: 0,         // 所有图片都转换格式
+          // 报告进度
+          beforeDraw() {
+            uploadPercentage.value = 30;
+            uploadStatus.value = '正在处理图片...';
+            console.log('图片处理中...');
+          },
+          // 报告进度
+          drew() {
+            uploadPercentage.value = 60;
+            uploadStatus.value = '正在压缩图片...';
+            console.log('图片绘制完成');
+          },
+          success(result) {
+            // 创建新的文件名（确保扩展名为.jpg）
+            const fileName = file.name.replace(/\.[^/.]+$/, "") + '.jpg';
+            
+            // 创建新的File对象
+            const processedFile = new File([result], fileName, {
+              type: 'image/jpeg',
+              lastModified: new Date().getTime()
+            });
+            
+            // 输出处理结果日志
+            console.log('图片处理完成:');
+            console.log('- 原始大小:', (file.size / 1024).toFixed(2), 'KB');
+            console.log('- 处理后大小:', (processedFile.size / 1024).toFixed(2), 'KB');
+            console.log('- 压缩率:', Math.round((1 - processedFile.size / file.size) * 100), '%');
+            console.log('- 处理后文件类型:', processedFile.type);
+            console.log('- 处理后文件名:', processedFile.name);
+            
+            // 处理完成
+            uploadStatus.value = '图片处理完成';
+            uploadPercentage.value = 100;
+            
+            // 延迟关闭进度条
+            setTimeout(() => {
+              showUploadProgress.value = false;
+            }, 500);
+            
+            // 解析Promise，返回处理后的文件
+            resolve(processedFile);
+          },
+          error(err) {
+            console.error('图片压缩失败:', err);
+            // 如果处理失败，返回原始文件
+            uploadStatus.value = '处理失败，使用原始图片';
+            uploadPercentage.value = 100;
+            
+            // 延迟关闭进度条
+            setTimeout(() => {
+              showUploadProgress.value = false;
+            }, 500);
+            
+            resolve(file);
+          }
+        });
+      });
     };
 
     // 处理收集前照片变更
-    const handlePhotoBeforeChange = (file, fileList) => {
-      // 更新文件列表
+    const handlePhotoBeforeChange = async (file, fileList) => {
+      // 更新文件列表（暂时）
       console.log('收集前照片变更:', file);
-      fileListBefore.value = fileList;
       
-      // 检查是否是新上传的文件批次
-      const newFiles = fileList.filter(f => f.raw && !photoFilesBefore.value.some(pf => pf.name === f.raw.name));
+      // 如果文件已经处理过，直接返回
+      if (file.processed) {
+        console.log('文件已处理过，跳过压缩:', file.name);
+        fileListBefore.value = fileList;
+        return;
+      }
       
-      // 将新文件添加到photoFilesBefore
-      newFiles.forEach(newFile => {
-        if (newFile.raw) {
-          photoFilesBefore.value.push(newFile.raw);
+      // 如果是新上传的文件，需要先处理
+      if (file.raw && file.status === 'ready') {
+        // 显示处理进度提示
+        showUploadProgress.value = true;
+        uploadStatus.value = '正在处理图片...';
+        uploadPercentage.value = 0;
+        
+        console.log('开始处理收集前照片:', file.name, '类型:', file.raw.type, '大小:', (file.raw.size / 1024).toFixed(2), 'KB');
+        
+        try {
+          // 使用Compressor直接处理图片
+          const processedFile = await new Promise((resolve) => {
+            new Compressor(file.raw, {
+              quality: 0.6,           // 中等压缩 (0-1)
+              maxWidth: 1920,         // 最大宽度
+              maxHeight: 1920,        // 最大高度
+              mimeType: 'image/jpeg', // 强制转换为JPEG
+              convertSize: 0,         // 所有图片都转换格式
+              // 报告进度
+              beforeDraw() {
+                uploadPercentage.value = 30;
+                uploadStatus.value = '正在处理图片...';
+                console.log('图片处理中...');
+              },
+              // 报告进度
+              drew() {
+                uploadPercentage.value = 60;
+                uploadStatus.value = '正在压缩图片...';
+                console.log('图片绘制完成');
+              },
+              success(result) {
+                // 创建新的文件名（确保扩展名为.jpg）
+                const fileName = file.raw.name.replace(/\.[^/.]+$/, "") + '.jpg';
+                
+                // 创建新的File对象
+                const processedFile = new File([result], fileName, {
+                  type: 'image/jpeg',
+                  lastModified: new Date().getTime()
+                });
+                
+                // 输出处理结果日志
+                console.log('图片处理完成:');
+                console.log('- 原始大小:', (file.raw.size / 1024).toFixed(2), 'KB');
+                console.log('- 处理后大小:', (processedFile.size / 1024).toFixed(2), 'KB');
+                console.log('- 压缩率:', Math.round((1 - processedFile.size / file.raw.size) * 100), '%');
+                console.log('- 处理后文件类型:', processedFile.type);
+                console.log('- 处理后文件名:', processedFile.name);
+                
+                // 处理完成
+                uploadStatus.value = '图片处理完成';
+                uploadPercentage.value = 100;
+                
+                resolve(processedFile);
+              },
+              error(err) {
+                console.error('图片压缩失败:', err);
+                // 如果处理失败，返回原始文件
+                uploadStatus.value = '处理失败，使用原始图片';
+                uploadPercentage.value = 100;
+                
+                resolve(file.raw);
+              }
+            });
+          });
+          
+          // 替换原始文件
+          console.log('替换原始文件为处理后的文件:', processedFile.name);
+          
+          // 标记文件为已处理
+          file.processed = true;
+          file.raw = processedFile;
+          
+          // 将处理后的文件添加到photoFilesBefore
+          const existingIndex = photoFilesBefore.value.findIndex(f => f.uid === file.uid || f.name === file.name);
+          if (existingIndex >= 0) {
+            // 替换现有文件
+            photoFilesBefore.value[existingIndex] = processedFile;
+          } else {
+            // 添加新文件
+            photoFilesBefore.value.push(processedFile);
+          }
+          
+          // 延迟关闭进度条
+          setTimeout(() => {
+            showUploadProgress.value = false;
+          }, 500);
+          
+        } catch (error) {
+          console.error('处理图片时出错:', error);
+          ElMessage.warning('图片处理失败，将使用原始图片');
+          
+          // 添加原始文件
+          const existingIndex = photoFilesBefore.value.findIndex(f => f.uid === file.uid || f.name === file.name);
+          if (existingIndex >= 0) {
+            // 替换现有文件
+            photoFilesBefore.value[existingIndex] = file.raw;
+          } else {
+            // 添加新文件
+            photoFilesBefore.value.push(file.raw);
+          }
+          
+          showUploadProgress.value = false;
         }
-      });
+      } else if (!file.raw && file.url) {
+        // 如果是已有的文件（有URL），不需要处理
+        console.log('已有文件，不需要处理:', file.name);
+      }
+      
+      // 更新文件列表
+      fileListBefore.value = fileList;
       
       // 检查是否有大文件需要显示警告
       const allFiles = [...photoFilesBefore.value, ...photoFilesAfter.value];
@@ -369,20 +542,127 @@ export default {
     };
 
     // 处理收集后照片变更
-    const handlePhotoAfterChange = (file, fileList) => {
-      // 更新文件列表
+    const handlePhotoAfterChange = async (file, fileList) => {
+      // 更新文件列表（暂时）
       console.log('收集后照片变更:', file);
-      fileListAfter.value = fileList;
       
-      // 检查是否是新上传的文件批次
-      const newFiles = fileList.filter(f => f.raw && !photoFilesAfter.value.some(pf => pf.name === f.raw.name));
+      // 如果文件已经处理过，直接返回
+      if (file.processed) {
+        console.log('文件已处理过，跳过压缩:', file.name);
+        fileListAfter.value = fileList;
+        return;
+      }
       
-      // 将新文件添加到photoFilesAfter
-      newFiles.forEach(newFile => {
-        if (newFile.raw) {
-          photoFilesAfter.value.push(newFile.raw);
+      // 如果是新上传的文件，需要先处理
+      if (file.raw && file.status === 'ready') {
+        // 显示处理进度提示
+        showUploadProgress.value = true;
+        uploadStatus.value = '正在处理图片...';
+        uploadPercentage.value = 0;
+        
+        console.log('开始处理收集后照片:', file.name, '类型:', file.raw.type, '大小:', (file.raw.size / 1024).toFixed(2), 'KB');
+        
+        try {
+          // 使用Compressor直接处理图片
+          const processedFile = await new Promise((resolve) => {
+            new Compressor(file.raw, {
+              quality: 0.6,           // 中等压缩 (0-1)
+              maxWidth: 1920,         // 最大宽度
+              maxHeight: 1920,        // 最大高度
+              mimeType: 'image/jpeg', // 强制转换为JPEG
+              convertSize: 0,         // 所有图片都转换格式
+              // 报告进度
+              beforeDraw() {
+                uploadPercentage.value = 30;
+                uploadStatus.value = '正在处理图片...';
+                console.log('图片处理中...');
+              },
+              // 报告进度
+              drew() {
+                uploadPercentage.value = 60;
+                uploadStatus.value = '正在压缩图片...';
+                console.log('图片绘制完成');
+              },
+              success(result) {
+                // 创建新的文件名（确保扩展名为.jpg）
+                const fileName = file.raw.name.replace(/\.[^/.]+$/, "") + '.jpg';
+                
+                // 创建新的File对象
+                const processedFile = new File([result], fileName, {
+                  type: 'image/jpeg',
+                  lastModified: new Date().getTime()
+                });
+                
+                // 输出处理结果日志
+                console.log('图片处理完成:');
+                console.log('- 原始大小:', (file.raw.size / 1024).toFixed(2), 'KB');
+                console.log('- 处理后大小:', (processedFile.size / 1024).toFixed(2), 'KB');
+                console.log('- 压缩率:', Math.round((1 - processedFile.size / file.raw.size) * 100), '%');
+                console.log('- 处理后文件类型:', processedFile.type);
+                console.log('- 处理后文件名:', processedFile.name);
+                
+                // 处理完成
+                uploadStatus.value = '图片处理完成';
+                uploadPercentage.value = 100;
+                
+                resolve(processedFile);
+              },
+              error(err) {
+                console.error('图片压缩失败:', err);
+                // 如果处理失败，返回原始文件
+                uploadStatus.value = '处理失败，使用原始图片';
+                uploadPercentage.value = 100;
+                
+                resolve(file.raw);
+              }
+            });
+          });
+          
+          // 替换原始文件
+          console.log('替换原始文件为处理后的文件:', processedFile.name);
+          
+          // 标记文件为已处理
+          file.processed = true;
+          file.raw = processedFile;
+          
+          // 将处理后的文件添加到photoFilesAfter
+          const existingIndex = photoFilesAfter.value.findIndex(f => f.uid === file.uid || f.name === file.name);
+          if (existingIndex >= 0) {
+            // 替换现有文件
+            photoFilesAfter.value[existingIndex] = processedFile;
+          } else {
+            // 添加新文件
+            photoFilesAfter.value.push(processedFile);
+          }
+          
+          // 延迟关闭进度条
+          setTimeout(() => {
+            showUploadProgress.value = false;
+          }, 500);
+          
+        } catch (error) {
+          console.error('处理图片时出错:', error);
+          ElMessage.warning('图片处理失败，将使用原始图片');
+          
+          // 添加原始文件
+          const existingIndex = photoFilesAfter.value.findIndex(f => f.uid === file.uid || f.name === file.name);
+          if (existingIndex >= 0) {
+            // 替换现有文件
+            photoFilesAfter.value[existingIndex] = file.raw;
+          } else {
+            // 添加新文件
+            photoFilesAfter.value.push(file.raw);
+          }
+          
+          showUploadProgress.value = false;
         }
-      });
+      } else if (!file.raw && file.url) {
+        // 如果是已有的文件（有URL），不需要处理
+        console.log('已有文件，不需要处理:', file.name);
+      }
+      
+      // 更新文件列表
+      fileListAfter.value = fileList;
       
       // 检查是否有大文件需要显示警告
       const allFiles = [...photoFilesBefore.value, ...photoFilesAfter.value];
