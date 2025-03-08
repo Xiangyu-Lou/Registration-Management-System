@@ -1235,12 +1235,38 @@ export default {
 }
 
 .header {
-  background-color: #409EFF;
+  background: linear-gradient(135deg, #42a5f5, #1976d2);
   color: white;
   padding: 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  border-radius: 0 0 20px 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 100%);
+  z-index: 1;
+}
+
+.header h1 {
+  position: relative;
+  z-index: 2;
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  letter-spacing: 1px;
 }
 
 .back-button {
@@ -1249,6 +1275,17 @@ export default {
   align-items: center;
   gap: 5px;
   font-size: 14px;
+  position: relative;
+  z-index: 2;
+  background-color: rgba(255, 255, 255, 0.15);
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.back-button:hover {
+  background-color: rgba(255, 255, 255, 0.25);
+  transform: translateY(-2px);
 }
 
 .content {

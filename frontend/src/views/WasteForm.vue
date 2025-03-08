@@ -924,22 +924,41 @@ export default {
 }
 
 .header {
-  background-color: #409EFF;
+  background: linear-gradient(135deg, #42a5f5, #1976d2);
   color: white;
-  padding: 12px 16px;
+  padding: 16px 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   position: sticky;
   top: 0;
   z-index: 10;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-radius: 0 0 20px 20px;
+  margin-bottom: 10px;
+  position: relative;
+  overflow: hidden;
+}
+
+.header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 100%);
+  z-index: 1;
 }
 
 .header h1 {
-  font-size: 18px;
+  position: relative;
+  z-index: 2;
+  font-size: 20px;
   margin: 0;
-  font-weight: 500;
+  font-weight: 600;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  letter-spacing: 0.5px;
 }
 
 .back-button, .view-records {
@@ -949,6 +968,17 @@ export default {
   gap: 5px;
   font-size: 14px;
   white-space: nowrap;
+  position: relative;
+  z-index: 2;
+  background-color: rgba(255, 255, 255, 0.15);
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.back-button:hover, .view-records:hover {
+  background-color: rgba(255, 255, 255, 0.25);
+  transform: translateY(-2px);
 }
 
 .content {
