@@ -125,7 +125,7 @@
       <div class="records-wrapper">
         <el-card class="records-card">
           <div class="card-header">
-            <h3>所有废物记录</h3>
+            <h3 class="table-title">所有废物记录</h3>
             <div class="card-actions">
               <el-button type="warning" @click="exportRecords">
                 <el-icon><download /></el-icon> 导出记录
@@ -140,7 +140,7 @@
             v-loading="loading"
             stripe
             class="responsive-table"
-            height="500"
+            :height="tableHeight"
             @scroll="handleScroll"
           >
             <el-table-column 
@@ -271,7 +271,7 @@
 </template>
 
 <script>
-import { ref, onMounted, computed, reactive } from 'vue';
+import { ref, onMounted, computed, reactive, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox, ElImageViewer, ElLoading } from 'element-plus';
 import axios from 'axios';
@@ -339,6 +339,22 @@ export default {
     
     // 添加baseUrl定义
     const baseUrl = apiConfig.baseURL;
+    
+    // 添加表格高度动态计算
+    const tableHeight = ref(750); // 增加默认高度
+
+    // 计算表格高度的函数
+    const calculateTableHeight = () => {
+      // 窗口高度的85%，但最小为700px
+      const windowHeight = window.innerHeight;
+      const calculatedHeight = Math.max(windowHeight * 0.85, 700);
+      tableHeight.value = calculatedHeight;
+    };
+
+    // 窗口大小变化时重新计算表格高度
+    const handleResize = () => {
+      calculateTableHeight();
+    };
     
     // 图片预览相关
     const showViewer = ref(false);
@@ -427,11 +443,21 @@ export default {
         return;
       }
       
+      // 计算初始表格高度
+      calculateTableHeight();
+      // 添加窗口大小变化事件监听
+      window.addEventListener('resize', handleResize);
+      
       await Promise.all([
         fetchUnits(),
         fetchWasteTypes(),
         fetchRecords()
       ]);
+    });
+    
+    onUnmounted(() => {
+      // 组件卸载时移除事件监听
+      window.removeEventListener('resize', handleResize);
     });
     
     // 获取单位列表
@@ -890,7 +916,8 @@ export default {
       hasMore,
       loadingMore,
       handleScroll,
-      indexMethod
+      indexMethod,
+      tableHeight
     };
   }
 };
@@ -912,8 +939,8 @@ export default {
 
 .content {
   flex: 1;
-  padding: 30px;
-  max-width: 1200px;
+  padding: 20px 30px; /* 减少上下内边距 */
+  max-width: 90%; /* 从固定的1200px改为相对宽度 */
   margin: 0 auto;
   width: 100%;
   box-sizing: border-box;
@@ -922,12 +949,12 @@ export default {
 .actions {
   display: flex;
   justify-content: flex-end;
-  margin-bottom: 20px;
+  margin-bottom: 15px; /* 减少下边距 */
   gap: 10px;
 }
 
 .filter-card {
-  margin-bottom: 20px;
+  margin-bottom: 15px; /* 减少下边距 */
 }
 
 .filter-header {
@@ -958,24 +985,31 @@ export default {
 
 .filter-actions {
   display: flex;
-  justify-content: center;
+  justify-content: flex-end;
   margin-top: 20px;
   gap: 10px;
 }
 
 .records-wrapper {
-  margin-top: 20px;
+  margin-top: 15px; /* 减少上边距 */
 }
 
 .records-card {
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  margin-top: 15px; /* 减少上边距 */
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s;
+}
+
+.records-card:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 15px; /* 减小下边距 */
 }
 
 .card-header h3 {
@@ -983,42 +1017,25 @@ export default {
   color: #333;
 }
 
-.record-image {
-  width: 50px;
-  height: 50px;
-  border-radius: 4px;
-  cursor: pointer;
-  display: block;
-}
-
-.photo-count {
-  font-size: 12px;
-  color: #409EFF;
-  text-align: center;
-  margin-top: 2px;
-}
-
-.image-error {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 50px;
-  height: 50px;
-  background-color: #f5f7fa;
-  color: #909399;
-}
-
-.empty-block {
-  margin: 20px 0;
-}
-
 .footer {
-  background-color: #f5f5f5;
-  padding: 15px;
+  background-color: #f5f7fa;
+  padding: 10px; /* 减小内边距 */
   text-align: center;
-  color: #666;
+  color: #606266;
 }
 
+/* 表格标题样式 */
+.table-title {
+  font-size: 18px;
+  font-weight: bold;
+  color: #409EFF;
+  margin: 0;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #409EFF;
+  display: inline-block;
+}
+
+/* 照片缩略图相关样式 */
 .photo-thumbnail-container {
   cursor: pointer;
   margin-bottom: 2px;
@@ -1037,27 +1054,81 @@ export default {
   align-items: center;
 }
 
-.operation-buttons {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  align-items: center;
+/* Element Plus 表格样式覆盖 */
+:deep(.el-table) {
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  margin-top: 15px;
 }
 
-.operation-buttons .el-button {
-  margin-left: 0;
-  padding: 4px 8px;
+:deep(.el-table__header) {
+  background: linear-gradient(to bottom, #409EFF, #1E88E5) !important;
+}
+
+:deep(.el-table__header th.el-table__cell) {
+  background: linear-gradient(to bottom, #409EFF, #1E88E5) !important;
+  color: white !important;
+  font-weight: bold !important;
+  font-size: 15px !important;
+  height: 50px !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-bottom: none !important;
+}
+
+:deep(.el-table__header th.el-table__cell .cell) {
+  color: white !important;
+  font-weight: bold !important;
+  text-align: center !important;
+  padding: 12px 0 !important;
+}
+
+:deep(.el-table__row) {
+  transition: all 0.3s;
+  height: 60px; /* 添加默认表格行高 */
+}
+
+:deep(.el-table__row:hover) {
+  background-color: #f0f9ff !important;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+:deep(.el-table__row td) {
+  padding: 14px 0;
+  border-bottom: 1px solid #ebeef5;
+}
+
+/* 表格行交替颜色 */
+:deep(.el-table__row:nth-child(odd)) {
+  background-color: #fafafa;
+}
+
+:deep(.el-table__row:nth-child(even)) {
+  background-color: #ffffff;
+}
+
+/* 确保表格内容居中对齐 */
+:deep(.el-table .cell) {
+  text-align: center;
+  padding-left: 10px;
+  padding-right: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .loading-more {
-  text-align: center;
-  padding: 10px 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 10px;
   color: #909399;
 }
 
-.loading-more .loading {
-  margin-right: 5px;
+.loading {
   animation: rotating 2s linear infinite;
+  margin-right: 5px;
 }
 
 @keyframes rotating {
@@ -1067,6 +1138,97 @@ export default {
   to {
     transform: rotate(360deg);
   }
+}
+
+.empty-block {
+  padding: 30px;
+  text-align: center;
+}
+
+.operation-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+.operation-buttons .el-button {
+  width: 80%;
+  margin-left: 0;
+  margin-right: 0;
+  text-align: center;
+  justify-content: center;
+}
+
+/* 响应式调整 */
+@media (max-width: 1600px) {
+  .content {
+    max-width: 95%;
+  }
+}
+
+@media (max-width: 1200px) {
+  .content {
+    max-width: 100%;
+    padding: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .header {
+    padding: 15px;
+  }
+  
+  .content {
+    padding: 15px;
+  }
+  
+  /* 在移动设备上调整表格的高度 */
+  .responsive-table {
+    max-height: 80vh !important; /* 增加移动设备上的高度 */
+  }
+  
+  /* 表格行在移动设备上高度稍小 */
+  :deep(.el-table__row) {
+    height: 50px;
+  }
+  
+  :deep(.el-table__row td) {
+    padding: 10px 0;
+  }
+  
+  /* 让某些列在移动设备上自动调整宽度 */
+  :deep(.el-table__cell.is-hidden-mobile) {
+    display: none !important;
+  }
+}
+
+/* 添加大屏幕适配 */
+@media (min-width: 1920px) {
+  .content {
+    max-width: 85%;
+  }
+  
+  /* 大屏幕上行高更高 */
+  :deep(.el-table__row) {
+    height: 70px; /* 增加大屏幕上的行高 */
+  }
+}
+
+:deep(.el-table--scrollable-x .el-table__body-wrapper) {
+  overflow-x: auto !important;
+}
+
+/* 表格分割线样式 */
+:deep(.el-table--border .el-table__cell) {
+  border-right: 1px solid #EBEEF5;
+}
+
+:deep(.el-table--border) {
+  border: 1px solid #EBEEF5;
+  border-radius: 8px;
 }
 </style>
 

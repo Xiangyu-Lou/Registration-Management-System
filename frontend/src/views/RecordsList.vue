@@ -141,7 +141,7 @@
             v-loading="loading"
             stripe
             class="responsive-table"
-            height="500"
+            :height="tableHeight"
             @scroll="handleScroll"
           >
             <el-table-column 
@@ -295,7 +295,7 @@
 </template>
 
 <script>
-import { ref, onMounted, computed, reactive } from 'vue';
+import { ref, onMounted, computed, reactive, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox, ElImageViewer, ElLoading } from 'element-plus';
 import httpService from '../config/httpService';
@@ -806,10 +806,35 @@ export default {
       showViewer.value = false;
     };
 
+    const tableHeight = ref(750); // 增加默认高度
+
+    // 计算表格高度的函数
+    const calculateTableHeight = () => {
+      // 窗口高度的85%，但最小为700px (增加比例和最小高度)
+      const windowHeight = window.innerHeight;
+      const calculatedHeight = Math.max(windowHeight * 0.85, 700);
+      tableHeight.value = calculatedHeight;
+    };
+
+    // 窗口大小变化时重新计算表格高度
+    const handleResize = () => {
+      calculateTableHeight();
+    };
+
     onMounted(async () => {
+      // 计算初始表格高度
+      calculateTableHeight();
+      // 添加窗口大小变化事件监听
+      window.addEventListener('resize', handleResize);
+      
       await fetchUnitName();
       await fetchWasteTypes();
       await fetchRecords();
+    });
+
+    onUnmounted(() => {
+      // 组件卸载时移除事件监听
+      window.removeEventListener('resize', handleResize);
     });
 
     // 获取废物类型列表
@@ -967,7 +992,8 @@ export default {
       // 计算序号方法
       indexMethod,
       // 添加disabledDate函数
-      disabledDate
+      disabledDate,
+      tableHeight,  // 添加到返回值中
     };
   }
 };
@@ -1012,15 +1038,15 @@ export default {
 
 .content {
   flex: 1;
-  padding: 30px;
-  max-width: 1200px;
+  padding: 20px 30px; /* 减少上下内边距 */
+  max-width: 90%; /* 从固定的1200px改为相对宽度 */
   margin: 0 auto;
   width: 100%;
   box-sizing: border-box;
 }
 
 .unit-info {
-  margin-bottom: 20px;
+  margin-bottom: 15px; /* 减少下边距 */
   text-align: center;
 }
 
@@ -1032,19 +1058,19 @@ export default {
 .actions {
   display: flex;
   justify-content: flex-end;
-  margin-bottom: 20px;
+  margin-bottom: 15px; /* 减少下边距 */
   gap: 10px;
 }
 
 .filter-card {
-  margin-bottom: 20px;
+  margin-bottom: 15px; /* 减少下边距 */
 }
 
 .filter-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
+  margin-bottom: 15px; /* 减小下边距 */
 }
 
 .filter-header h3 {
@@ -1078,7 +1104,7 @@ export default {
 }
 
 .records-card {
-  margin-top: 20px;
+  margin-top: 15px; /* 减少上边距 */
   border-radius: 8px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
   transition: all 0.3s;
@@ -1092,7 +1118,7 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 15px; /* 减小下边距 */
 }
 
 .card-header h3 {
@@ -1160,7 +1186,7 @@ export default {
 
 .footer {
   background-color: #f5f7fa;
-  padding: 15px;
+  padding: 10px; /* 减小内边距 */
   text-align: center;
   color: #606266;
 }
@@ -1205,7 +1231,7 @@ export default {
 
 /* 表格卡片样式 */
 .records-card {
-  margin-top: 20px;
+  margin-top: 15px; /* 减少上边距 */
   border-radius: 8px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
   transition: all 0.3s;
@@ -1246,6 +1272,7 @@ export default {
 
 :deep(.el-table__row) {
   transition: all 0.3s;
+  height: 60px; /* 添加默认表格行高 */
 }
 
 :deep(.el-table__row:hover) {
@@ -1255,7 +1282,7 @@ export default {
 }
 
 :deep(.el-table__row td) {
-  padding: 12px 0;
+  padding: 14px 0;
   border-bottom: 1px solid #ebeef5;
 }
 
@@ -1285,6 +1312,19 @@ export default {
 }
 
 /* 响应式调整 */
+@media (max-width: 1600px) {
+  .content {
+    max-width: 95%;
+  }
+}
+
+@media (max-width: 1200px) {
+  .content {
+    max-width: 100%;
+    padding: 20px;
+  }
+}
+
 @media (max-width: 768px) {
   .header {
     flex-direction: column;
@@ -1357,5 +1397,59 @@ export default {
     font-size: 16px;
     padding-bottom: 8px;
   }
+  
+  /* 在移动设备上调整表格的高度 */
+  .responsive-table {
+    max-height: 80vh !important; /* 增加移动设备上的高度 */
+  }
+  
+  /* 表格行在移动设备上高度稍小 */
+  :deep(.el-table__row) {
+    height: 50px;
+  }
+  
+  :deep(.el-table__row td) {
+    padding: 10px 0;
+  }
+  
+  /* 让某些列在移动设备上自动调整宽度 */
+  :deep(.el-table__cell.is-hidden-mobile) {
+    display: none !important;
+  }
+}
+
+/* 添加大屏幕适配 */
+@media (min-width: 1920px) {
+  .content {
+    max-width: 85%;
+  }
+  
+  /* 大屏幕上行高更高 */
+  :deep(.el-table__row) {
+    height: 70px; /* 增加大屏幕上的行高 */
+  }
+}
+
+/* 为了更好地显示数据，调整最小宽度列的样式 */
+:deep(.el-table .cell) {
+  padding-left: 10px;
+  padding-right: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+:deep(.el-table--scrollable-x .el-table__body-wrapper) {
+  overflow-x: auto !important;
+}
+
+/* 表格分割线样式 */
+:deep(.el-table--border .el-table__cell) {
+  border-right: 1px solid #EBEEF5;
+}
+
+:deep(.el-table--border) {
+  border: 1px solid #EBEEF5;
+  border-radius: 8px;
 }
 </style> 
