@@ -39,19 +39,18 @@ const init = () => {
 };
 
 // 登录方法
-const login = async (phone, password, rememberMe = false, userType = 1) => {
+const login = async (phone, password, rememberMe = false) => {
   // 设置加载状态
   state.loading = true;
   state.error = null;
   
-  console.log('auth.login 开始执行，手机号:', phone, '用户类型:', userType);
+  console.log('auth.login 开始执行，手机号:', phone);
 
   try {
     // 构建登录请求数据
     const postData = { 
       phone, 
-      rememberMe,
-      userType // 添加用户类型
+      rememberMe
     };
     
     // 只有在密码存在且非空时才添加到请求中

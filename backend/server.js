@@ -192,7 +192,7 @@ app.get('/api/test', (req, res) => {
 // 用户登录
 app.post('/api/login', async (req, res) => {
   console.log('登录请求数据:', req.body);
-  const { phone, password, rememberMe, userType } = req.body;
+  const { phone, password, rememberMe } = req.body;
   
   if (!phone) {
     console.log('登录失败: 缺少手机号');
@@ -225,13 +225,6 @@ app.post('/api/login', async (req, res) => {
     const user = rows[0];
     console.log('查询到用户信息:', { id: user.id, role_id: user.role_id, username: user.username });
 
-    // 验证用户角色与选择的登录类型是否匹配
-    if (user.role_id !== userType) {
-      console.log('登录失败: 用户角色与登录类型不匹配', { role_id: user.role_id, userType });
-      return res.status(401).json({ error: '请选择正确的登录类型' });
-    }
-
-    // 所有用户类型都需要密码验证
     // 检查用户是否有密码
     if (!user.password) {
       console.log('登录失败: 用户没有设置密码');

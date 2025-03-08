@@ -31,14 +31,6 @@
         </el-form-item>
         
         <el-form-item>
-          <el-radio-group v-model="form.userType" @change="handleUserTypeChange">
-            <el-radio :label="1">员工</el-radio>
-            <el-radio :label="2">单位管理员</el-radio>
-            <el-radio :label="3">超级管理员</el-radio>
-          </el-radio-group>
-        </el-form-item>
-        
-        <el-form-item>
           <el-checkbox v-model="form.rememberMe">记住登录</el-checkbox>
         </el-form-item>
         
@@ -78,14 +70,10 @@ export default {
     const form = reactive({
       phone: '',
       password: '',
-      userType: 1, // 默认为员工
       rememberMe: false // 添加记住登录选项
     });
     
-    // 所有用户类型都需要密码
-    const showPassword = computed(() => true);
-    
-    // 根据用户类型动态设置验证规则
+    // 验证规则
     const rules = computed(() => {
       const phoneRules = [
         { required: true, message: '请输入手机号', trigger: 'submit' },
@@ -102,13 +90,6 @@ export default {
       };
     });
     
-    // 切换用户类型时重置表单
-    const handleUserTypeChange = () => {
-      if (loginForm.value) {
-        loginForm.value.clearValidate();
-      }
-    };
-    
     // 提交表单
     const submitForm = async () => {
       console.log('提交表单被触发');
@@ -123,8 +104,6 @@ export default {
         return;
       }
       
-      // 所有用户类型都需要验证整个表单
-      console.log('登录模式');
       loginForm.value.validate(async (valid) => {
         if (valid) {
           console.log('表单验证通过');
@@ -137,17 +116,15 @@ export default {
     
     // 执行登录
     const doLogin = async () => {
-      console.log('开始登录，账号:', form.phone, '用户类型:', form.userType);
+      console.log('开始登录，账号:', form.phone);
       try {
         // 添加调试信息
         console.log('开始处理登录操作...');
         
-        // 所有用户类型都需要密码
         const result = await auth.login(
           form.phone,
           form.password,
-          form.rememberMe,
-          form.userType
+          form.rememberMe
         );
         
         console.log('登录响应:', result);
@@ -196,8 +173,6 @@ export default {
       form,
       rules,
       loginForm,
-      showPassword,
-      handleUserTypeChange,
       submitForm,
       auth
     };
