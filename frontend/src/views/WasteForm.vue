@@ -34,6 +34,15 @@
           </el-select>
         </el-form-item>
 
+        <el-form-item label="备注" prop="remarks">
+          <el-input 
+            v-model="form.remarks" 
+            type="textarea" 
+            :rows="3"
+            placeholder="请输入备注信息（选填）" 
+          />
+        </el-form-item>
+
         <el-form-item label="产生地点" prop="location">
           <el-input v-model="form.location" placeholder="请输入废物产生地点" />
         </el-form-item>
@@ -218,7 +227,8 @@ export default {
       collectionTime: '08:00',
       quantity: undefined,
       photo_before: [],
-      photo_after: []
+      photo_after: [],
+      remarks: ''
     });
 
     const rules = {

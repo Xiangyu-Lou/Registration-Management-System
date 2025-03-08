@@ -535,7 +535,7 @@ app.post('/api/waste-records', verifyToken, upload.fields([
   { name: 'photo_after', maxCount: 5 }
 ]), async (req, res) => {
   try {
-    const { unitId, wasteTypeId, location, collectionDate, collectionTime, quantity } = req.body;
+    const { unitId, wasteTypeId, location, collectionDate, collectionTime, quantity, remarks } = req.body;
     
     // 验证必填字段
     if (!unitId || !wasteTypeId || !location || !collectionDate || !collectionTime || !quantity) {
@@ -587,9 +587,9 @@ app.post('/api/waste-records', verifyToken, upload.fields([
     // 插入记录
     const [result] = await pool.query(
       `INSERT INTO waste_records 
-      (unit_id, waste_type_id, location, collection_start_time, photo_path_before, photo_path_after, quantity, created_at, creator_id, creator_name)
-      VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)`,
-      [unitId, wasteTypeId, location, collectionStartTime, photo_path_before, photo_path_after, quantity, userId, userName]
+      (unit_id, waste_type_id, location, collection_start_time, photo_path_before, photo_path_after, quantity, created_at, creator_id, creator_name, remarks)
+      VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?)`,
+      [unitId, wasteTypeId, location, collectionStartTime, photo_path_before, photo_path_after, quantity, userId, userName, remarks]
     );
     
     res.status(201).json({
@@ -632,7 +632,7 @@ app.put('/api/waste-records/:id', verifyToken, upload.fields([
   { name: 'photo_after', maxCount: 5 }
 ]), async (req, res) => {
   const { id } = req.params;
-  const { unitId, wasteTypeId, location, collectionDate, collectionTime, quantity, photo_path_before, photo_path_after } = req.body;
+  const { unitId, wasteTypeId, location, collectionDate, collectionTime, quantity, photo_path_before, photo_path_after, remarks } = req.body;
   
   try {
     // 验证记录是否存在
@@ -719,16 +719,11 @@ app.put('/api/waste-records/:id', verifyToken, upload.fields([
     
     // 更新记录
     await pool.query(
-      `UPDATE waste_records SET 
-      unit_id = ?, 
-      waste_type_id = ?, 
-      location = ?, 
-      collection_start_time = ?, 
-      photo_path_before = ?,
-      photo_path_after = ?,
-      quantity = ? 
-      WHERE id = ?`,
-      [unitId, wasteTypeId, location, collectionStartTime, newPhotoPathBefore, newPhotoPathAfter, quantity, id]
+      `UPDATE waste_records 
+       SET unit_id = ?, waste_type_id = ?, location = ?, collection_start_time = ?, 
+       photo_path_before = ?, photo_path_after = ?, quantity = ?, remarks = ?
+       WHERE id = ?`,
+      [unitId, wasteTypeId, location, collectionStartTime, newPhotoPathBefore, newPhotoPathAfter, quantity, remarks, id]
     );
     
     res.json({

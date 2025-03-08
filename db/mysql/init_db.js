@@ -185,6 +185,7 @@ async function initializeDatabase() {
         INSERT INTO waste_types (name) VALUES 
         ('油泥沙'),
         ('含油包装物'),
+        ('一般固废物'),
         ('其他')
       `);
       console.log('已插入废物类型数据');

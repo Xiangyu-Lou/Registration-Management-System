@@ -152,6 +152,11 @@
             />
             <el-table-column prop="unit_name" label="单位" width="100" />
             <el-table-column prop="waste_type_name" label="废物类型" width="100" />
+            <el-table-column prop="remarks" label="备注" width="150">
+              <template #default="scope">
+                {{ scope.row.remarks || '无' }}
+              </template>
+            </el-table-column>
             <el-table-column prop="location" label="产生地点" />
             <el-table-column prop="collection_start_time" label="收集开始时间" width="160" />
             <el-table-column label="数量(吨)" width="80">
@@ -644,6 +649,7 @@ export default {
           return {
             '单位': record.unit_name,
             '废物类型': record.waste_type_name,
+            '备注': record.remarks || '无',
             '产生地点': record.location,
             '数量(kg)': record.quantity,
             '收集开始时间': formatDateTime(record.collection_start_time),
@@ -663,6 +669,7 @@ export default {
         const exportHeaders = [
           { text: '单位', field: '单位' },
           { text: '废物类型', field: '废物类型' },
+          { text: '备注', field: '备注' },
           { text: '产生地点', field: '产生地点' },
           { text: '数量(kg)', field: '数量(kg)' },
           { text: '收集开始时间', field: '收集开始时间' },
@@ -743,6 +750,7 @@ export default {
         const exportData = data.map(record => ({
           '单位': record.unit_name,
           '废物类型': record.waste_type_name,
+          '备注': record.remarks || '无',
           '产生地点': record.location,
           '数量(kg)': record.quantity,
           '收集开始时间': formatDateTime(record.collection_start_time),
@@ -761,6 +769,7 @@ export default {
         const exportHeaders = [
           { text: '单位', field: '单位' },
           { text: '废物类型', field: '废物类型' },
+          { text: '备注', field: '备注' },
           { text: '产生地点', field: '产生地点' },
           { text: '数量(kg)', field: '数量(kg)' },
           { text: '收集开始时间', field: '收集开始时间' },
