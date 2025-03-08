@@ -469,15 +469,24 @@ export default {
   font-size: 14px;
   position: relative;
   z-index: 2;
-  background-color: rgba(255, 255, 255, 0.15);
-  padding: 8px 12px;
+  background-color: rgba(255, 255, 255, 0.25);
+  padding: 8px 14px;
   border-radius: 8px;
   transition: all 0.3s ease;
+  border: 1.5px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  letter-spacing: 0.3px;
 }
 
 .back-button:hover {
-  background-color: rgba(255, 255, 255, 0.25);
+  background-color: rgba(255, 255, 255, 0.35);
   transform: translateY(-2px);
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.25);
+  border-color: rgba(255, 255, 255, 0.8);
 }
 
 .content {

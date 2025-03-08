@@ -924,7 +924,8 @@ export default {
 }
 
 .header {
-  background: linear-gradient(135deg, #42a5f5, #1976d2);
+  /* 修改背景渐变，实现两端深中间浅的效果 */
+  background: linear-gradient(to right, #1976d2, #42a5f5, #1976d2);
   color: white;
   padding: 16px 20px;
   display: flex;
@@ -947,18 +948,19 @@ export default {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(45deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 100%);
+  /* 调整覆盖层渐变，增强立体感 */
+  background: linear-gradient(45deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 50%, rgba(255, 255, 255, 0) 100%);
   z-index: 1;
 }
 
 .header h1 {
   position: relative;
   z-index: 2;
-  font-size: 20px;
   margin: 0;
+  font-size: 24px;
   font-weight: 600;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  letter-spacing: 0.5px;
+  letter-spacing: 1px;
 }
 
 .back-button, .view-records {
@@ -970,15 +972,24 @@ export default {
   white-space: nowrap;
   position: relative;
   z-index: 2;
-  background-color: rgba(255, 255, 255, 0.15);
-  padding: 8px 12px;
+  background-color: rgba(255, 255, 255, 0.25);
+  padding: 8px 14px;
   border-radius: 8px;
   transition: all 0.3s ease;
+  border: 1.5px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  letter-spacing: 0.3px;
 }
 
 .back-button:hover, .view-records:hover {
-  background-color: rgba(255, 255, 255, 0.25);
+  background-color: rgba(255, 255, 255, 0.35);
   transform: translateY(-2px);
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.25);
+  border-color: rgba(255, 255, 255, 0.8);
 }
 
 .content {
