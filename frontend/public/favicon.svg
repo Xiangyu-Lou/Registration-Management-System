@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景圆形 -->
+  <circle cx="32" cy="32" r="30" fill="#409EFF"/>
+  
+  <!-- 回收符号 -->
+  <path d="M32 14L22 30H42L32 14Z" fill="white"/>
+  <path d="M22 34L12 50H32L22 34Z" fill="white"/>
+  <path d="M42 34L32 50H52L42 34Z" fill="white"/>
+  
+  <!-- 外圈 -->
+  <circle cx="32" cy="32" r="30" stroke="white" stroke-width="2" fill="none"/>
+</svg> 

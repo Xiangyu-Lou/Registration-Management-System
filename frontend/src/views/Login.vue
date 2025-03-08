@@ -2,7 +2,7 @@
   <div class="login-container">
     <div class="login-card">
       <div class="login-header">
-        <h1>危险废物管理系统</h1>
+        <h1>固体废物管理系统</h1>
         <h2>用户登录</h2>
       </div>
       

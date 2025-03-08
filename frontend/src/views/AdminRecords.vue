@@ -1,7 +1,7 @@
 <template>
   <div class="admin-records-container">
     <div class="header">
-      <h1>危险废物管理系统 - 全部记录</h1>
+      <h1>固体废物管理系统历史记录</h1>
     </div>
 
     <div class="content">
@@ -143,6 +143,13 @@
             height="500"
             @scroll="handleScroll"
           >
+            <el-table-column 
+              type="index" 
+              label="序号" 
+              width="70" 
+              align="center"
+              :index="indexMethod"
+            />
             <el-table-column prop="unit_name" label="单位" width="100" />
             <el-table-column prop="waste_type_name" label="废物类型" width="100" />
             <el-table-column prop="location" label="产生地点" />
@@ -152,7 +159,7 @@
                 {{ parseFloat(scope.row.quantity).toFixed(3) }}
               </template>
             </el-table-column>
-            <el-table-column prop="creator_name" label="汇报人" width="100" />
+            <el-table-column prop="creator_name" label="填报人" width="100" />
             <el-table-column prop="created_at" label="记录时间" width="160" />
             <el-table-column
               label="现场照片（清理前）"
@@ -245,7 +252,7 @@
     </div>
 
     <div class="footer">
-      <p>&copy; 2025 危险废物管理系统</p>
+      <p>&copy; 2025 固体废物管理系统</p>
     </div>
 
     <!-- 添加独立的图片预览组件 -->
@@ -516,6 +523,7 @@ export default {
       fetchRecords();
     };
 
+    // 添加新记录
     const addNewRecord = () => {
       if (auth.state.user.role_id === 3) {
         router.push('/record/new');
@@ -649,7 +657,7 @@ export default {
         const unitName = filterForm.unitId 
           ? units.value.find(u => u.id === filterForm.unitId)?.name || '未知单位'
           : '全部单位';
-        const fileName = `危险废物记录_${unitName}`;
+        const fileName = `固体废物记录_${unitName}`;
         
         // 设置表头
         const exportHeaders = [
@@ -747,7 +755,7 @@ export default {
         const unitName = filterForm.unitId 
           ? units.value.find(u => u.id === filterForm.unitId)?.name || '未知单位'
           : '全部单位';
-        const fileName = `危险废物记录_${unitName}`;
+        const fileName = `固体废物记录_${unitName}`;
         
         // 设置表头
         const exportHeaders = [
@@ -837,6 +845,12 @@ export default {
       }
     };
 
+    // 计算序号方法
+    const indexMethod = (index) => {
+      // 考虑当前页码和每页记录数，计算实际序号
+      return (page.value - 1) * pageSize.value + index + 1;
+    };
+
     return {
       records,
       filteredRecords,
@@ -866,7 +880,8 @@ export default {
       pageSize,
       hasMore,
       loadingMore,
-      handleScroll
+      handleScroll,
+      indexMethod
     };
   }
 };
@@ -1087,5 +1102,87 @@ export default {
 .el-image-viewer__actions__inner {
   z-index: 2147483647 !important;
   position: relative !important;
+}
+
+/* 全局样式，确保表头样式能够正确显示 */
+.el-table__header th {
+  background: linear-gradient(to bottom, #409EFF, #1E88E5) !important;
+  color: white !important;
+}
+
+.el-table__header th .cell {
+  color: white !important;
+  font-weight: bold !important;
+}
+</style>
+
+<style scoped>
+/* 表格标题样式 */
+.card-header h3 {
+  font-size: 18px;
+  font-weight: bold;
+  color: #409EFF;
+  margin: 0;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #409EFF;
+  display: inline-block;
+}
+
+/* Element Plus 表格样式覆盖 */
+:deep(.el-table) {
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  margin-top: 15px;
+}
+
+:deep(.el-table__header) {
+  background: linear-gradient(to bottom, #409EFF, #1E88E5) !important;
+}
+
+:deep(.el-table__header th.el-table__cell) {
+  background: linear-gradient(to bottom, #409EFF, #1E88E5) !important;
+  color: white !important;
+  font-weight: bold !important;
+  font-size: 15px !important;
+  height: 50px !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-bottom: none !important;
+}
+
+:deep(.el-table__header th.el-table__cell .cell) {
+  color: white !important;
+  font-weight: bold !important;
+  text-align: center !important;
+  padding: 12px 0 !important;
+}
+
+:deep(.el-table__row) {
+  transition: all 0.3s;
+}
+
+:deep(.el-table__row:hover) {
+  background-color: #f0f9ff !important;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+:deep(.el-table__row td) {
+  padding: 12px 0;
+  border-bottom: 1px solid #ebeef5;
+}
+
+/* 表格行交替颜色 */
+:deep(.el-table__row:nth-child(odd)) {
+  background-color: #fafafa;
+}
+
+:deep(.el-table__row:nth-child(even)) {
+  background-color: #ffffff;
+}
+
+/* 确保表格内容居中对齐 */
+:deep(.el-table .cell) {
+  text-align: center;
 }
 </style>

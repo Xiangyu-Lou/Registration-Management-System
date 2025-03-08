@@ -22,7 +22,12 @@
         stripe
         style="width: 100%; margin-top: 20px;"
       >
-        <el-table-column prop="id" label="ID" width="60" />
+        <el-table-column 
+          type="index" 
+          label="序号" 
+          width="70" 
+          align="center"
+        />
         <el-table-column prop="username" label="姓名" width="120" />
         <el-table-column prop="phone" label="手机号" width="140" />
         <el-table-column prop="role_name" label="角色" width="120" />
@@ -115,7 +120,7 @@
     </el-dialog>
 
     <div class="footer">
-      <p>&copy; 2025 危险废物管理系统</p>
+      <p>&copy; 2025 固体废物管理系统</p>
     </div>
   </div>
 </template>

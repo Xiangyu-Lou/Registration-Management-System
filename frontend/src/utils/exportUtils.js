@@ -103,13 +103,13 @@ export const exportToExcelWithImages = async (data, fileName, headers, baseUrl =
     
     // 创建新工作簿
     const workbook = new ExcelJS.Workbook();
-    workbook.creator = '危险废物管理系统';
-    workbook.lastModifiedBy = '危险废物管理系统';
+    workbook.creator = '固体废物管理系统';
+    workbook.lastModifiedBy = '固体废物管理系统';
     workbook.created = new Date();
     workbook.modified = new Date();
     
     // 添加工作表
-    const worksheet = workbook.addWorksheet('危险废物记录');
+    const worksheet = workbook.addWorksheet('固体废物记录');
     
     // 设置列
     const columns = headers.map(header => ({
@@ -255,13 +255,13 @@ export const exportToExcel = async (data, fileName, headers) => {
     
     // 创建工作簿
     const workbook = new ExcelJS.Workbook();
-    workbook.creator = '危险废物管理系统';
-    workbook.lastModifiedBy = '危险废物管理系统';
+    workbook.creator = '固体废物管理系统';
+    workbook.lastModifiedBy = '固体废物管理系统';
     workbook.created = new Date();
     workbook.modified = new Date();
     
     // 添加工作表
-    const worksheet = workbook.addWorksheet('危险废物记录');
+    const worksheet = workbook.addWorksheet('固体废物记录');
     
     // 设置列
     const columns = headers.map(header => ({

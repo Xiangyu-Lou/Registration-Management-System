@@ -1,7 +1,7 @@
 <template>
   <div class="unit-selection-container">
     <div class="header">
-      <h1>危险废物管理系统</h1>
+      <h1>固体废物管理系统</h1>
     </div>
     <div class="content">
       <h2>请选择您的单位</h2>
@@ -18,7 +18,7 @@
       </div>
     </div>
     <div class="footer">
-      <p>&copy; 2025 危险废物管理系统</p>
+      <p>&copy; 2025 固体废物管理系统</p>
     </div>
   </div>
 </template>

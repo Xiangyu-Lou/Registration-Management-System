@@ -13,7 +13,7 @@
 
     <div class="content">
       <div class="unit-info">
-        <h2>{{ unitName }} - 危险废物记录</h2>
+        <h2>{{ unitName }} - 固体废物记录</h2>
       </div>
       
       <div class="actions">
@@ -57,6 +57,7 @@
                     format="YYYY-MM-DD"
                     value-format="YYYY-MM-DD"
                     style="width: 100%"
+                    :disabled-date="disabledDate"
                   />
                 </el-form-item>
               </el-col>
@@ -125,7 +126,7 @@
       <div class="records-wrapper">
         <el-card class="records-card">
           <div class="card-header">
-            <h3>废物记录列表</h3>
+            <h3 class="table-title">废物记录列表</h3>
             <div class="card-actions">
               <el-button type="warning" @click="exportRecords">
                 <el-icon><download /></el-icon> 导出记录
@@ -143,6 +144,13 @@
             height="500"
             @scroll="handleScroll"
           >
+            <el-table-column 
+              type="index" 
+              label="序号" 
+              width="70" 
+              align="center"
+              :index="indexMethod"
+            />
             <el-table-column prop="waste_type_name" label="废物类型" min-width="110" />
             <el-table-column prop="location" label="产生地点" min-width="120" />
             <el-table-column label="收集开始时间" min-width="160">
@@ -236,7 +244,7 @@
                     size="small" 
                     @click="confirmDelete(scope.row)"
                     text
-                    v-if="canEdit(scope.row)"
+                    v-if="canEdit(scope.row) && (isAdmin || isUnitAdmin)"
                   >
                     删除
                   </el-button>
@@ -252,6 +260,16 @@
           
           <div class="empty-block" v-if="records.length === 0 && !loading">
             <el-empty description="暂无废物记录" />
+          </div>
+          
+          <!-- 添加员工权限提示 -->
+          <div class="record-limit-tip" v-if="!isAdmin && !isUnitAdmin">
+            <el-alert
+              title="提示：只能查看过去7天内的废物记录"
+              type="info"
+              :closable="false"
+              show-icon
+            />
           </div>
         </el-card>
       </div>
@@ -383,6 +401,18 @@ export default {
           }
         }
         
+        // 如果是普通员工，确保只显示过去7天的记录（前端备份过滤）
+        if (!isAdmin.value && !isUnitAdmin.value) {
+          const sevenDaysAgo = new Date();
+          sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+          sevenDaysAgo.setHours(0, 0, 0, 0); // 设置为当天开始时间
+          
+          const recordDate = new Date(record.created_at);
+          if (recordDate < sevenDaysAgo) {
+            return false;
+          }
+        }
+        
         return true;
       });
     });
@@ -458,8 +488,20 @@ export default {
       return userId && record.creator_id === parseInt(userId);
     };
     
+    // 计算序号方法
+    const indexMethod = (index) => {
+      // 考虑当前页码和每页记录数，计算实际序号
+      return (page.value - 1) * pageSize.value + index + 1;
+    };
+    
     // 确认删除
     const confirmDelete = (record) => {
+      // 添加权限检查，确保只有管理员和单位管理员才能删除记录
+      if (!isAdmin.value && !isUnitAdmin.value) {
+        ElMessage.error('您没有删除记录的权限');
+        return;
+      }
+      
       ElMessageBox.confirm(
         `确定要删除这条废物记录吗？此操作不可逆。`,
         '删除确认',
@@ -614,7 +656,7 @@ export default {
         });
         
         // 设置文件名
-        const fileName = `危险废物记录_${unitName.value ? unitName.value : '全部单位'}`;
+        const fileName = `固体废物记录_${unitName.value ? unitName.value : '全部单位'}`;
         
         // 设置表头，添加isImage标志
         const headers = [
@@ -710,7 +752,7 @@ export default {
         }));
         
         // 设置文件名
-        const fileName = `危险废物记录_${unitName.value ? unitName.value : '全部单位'}`;
+        const fileName = `固体废物记录_${unitName.value ? unitName.value : '全部单位'}`;
         
         // 设置表头
         const headers = [
@@ -825,6 +867,19 @@ export default {
           throw new Error('用户未登录');
         }
         
+        // 如果是普通员工，添加7天时间限制
+        if (!isAdmin.value && !isUnitAdmin.value) {
+          // 计算7天前的日期
+          const sevenDaysAgo = new Date();
+          sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+          
+          // 格式化为YYYY-MM-DD格式
+          const formattedDate = `${sevenDaysAgo.getFullYear()}-${String(sevenDaysAgo.getMonth() + 1).padStart(2, '0')}-${String(sevenDaysAgo.getDate()).padStart(2, '0')}`;
+          
+          // 设置日期范围参数
+          params.minDate = formattedDate;
+        }
+        
         // 使用用户ID获取记录
         const response = await httpService.get(`${apiConfig.endpoints.wasteRecordsByUser}/${userId}`, { params });
         
@@ -870,6 +925,17 @@ export default {
       }
     };
 
+    // 添加disabledDate函数
+    const disabledDate = (date) => {
+      if (!isAdmin.value && !isUnitAdmin.value) {
+        const today = new Date();
+        const sevenDaysAgo = new Date(today);
+        sevenDaysAgo.setDate(today.getDate() - 7);
+        return date < sevenDaysAgo || date > today;
+      }
+      return false;
+    };
+
     return {
       records,
       filteredRecords,
@@ -909,11 +975,28 @@ export default {
       page,
       pageSize,
       hasMore,
-      loadingMore
+      loadingMore,
+      // 计算序号方法
+      indexMethod,
+      // 添加disabledDate函数
+      disabledDate
     };
   }
 };
 </script>
+
+<style>
+/* 全局样式，确保表头样式能够正确显示 */
+.el-table__header th {
+  background: linear-gradient(to bottom, #409EFF, #1E88E5) !important;
+  color: white !important;
+}
+
+.el-table__header th .cell {
+  color: white !important;
+  font-weight: bold !important;
+}
+</style>
 
 <style scoped>
 .records-container {
@@ -1007,7 +1090,14 @@ export default {
 }
 
 .records-card {
-  margin-bottom: 20px;
+  margin-top: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s;
+}
+
+.records-card:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
 }
 
 .card-header {
@@ -1114,6 +1204,98 @@ export default {
   text-align: center;
 }
 
+/* 表格标题样式 */
+.table-title {
+  font-size: 18px;
+  font-weight: bold;
+  color: #409EFF;
+  margin: 0;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #409EFF;
+  display: inline-block;
+}
+
+/* 表格卡片样式 */
+.records-card {
+  margin-top: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s;
+}
+
+.records-card:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Element Plus 表格样式覆盖 */
+:deep(.el-table) {
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  margin-top: 15px;
+}
+
+:deep(.el-table__header) {
+  background: linear-gradient(to bottom, #409EFF, #1E88E5) !important;
+}
+
+:deep(.el-table__header th.el-table__cell) {
+  background: linear-gradient(to bottom, #409EFF, #1E88E5) !important;
+  color: white !important;
+  font-weight: bold !important;
+  font-size: 15px !important;
+  height: 50px !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-bottom: none !important;
+}
+
+:deep(.el-table__header th.el-table__cell .cell) {
+  color: white !important;
+  font-weight: bold !important;
+  text-align: center !important;
+  padding: 12px 0 !important;
+}
+
+:deep(.el-table__row) {
+  transition: all 0.3s;
+}
+
+:deep(.el-table__row:hover) {
+  background-color: #f0f9ff !important;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+:deep(.el-table__row td) {
+  padding: 12px 0;
+  border-bottom: 1px solid #ebeef5;
+}
+
+/* 表格行交替颜色 */
+:deep(.el-table__row:nth-child(odd)) {
+  background-color: #fafafa;
+}
+
+:deep(.el-table__row:nth-child(even)) {
+  background-color: #ffffff;
+}
+
+/* 确保表格内容居中对齐 */
+:deep(.el-table .cell) {
+  text-align: center;
+}
+
+/* 记录限制提示样式 */
+.record-limit-tip {
+  margin-top: 15px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.record-limit-tip .el-alert {
+  margin: 0;
+}
+
 /* 响应式调整 */
 @media (max-width: 768px) {
   .header {
@@ -1174,6 +1356,18 @@ export default {
   .action-buttons .el-button {
     flex: 1;
     justify-content: center;
+  }
+  
+  /* 表头在移动端的样式调整 */
+  :deep(.el-table__header th.el-table__cell) {
+    font-size: 14px !important;
+    padding: 8px 0 !important;
+  }
+  
+  /* 表格标题在移动端的样式 */
+  .table-title {
+    font-size: 16px;
+    padding-bottom: 8px;
   }
 }
 </style> 

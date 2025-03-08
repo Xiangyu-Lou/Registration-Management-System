@@ -53,9 +53,11 @@
       ></el-date-picker>
     </el-form-item>
 
-    <el-form-item label="汇报人" prop="creator_name">
-      <el-input v-model="form.creator_name" placeholder="请输入汇报人姓名"></el-input>
-    </el-form-item>
+    <el-col :span="12">
+      <el-form-item label="填报人" prop="creator_name">
+        <el-input v-model="form.creator_name" placeholder="请输入填报人姓名"></el-input>
+      </el-form-item>
+    </el-col>
 
     <el-form-item label="现场照片（收集前）" prop="photo_path_before">
       <div class="photo-tip">请上传废物收集前的现场照片</div>
@@ -174,7 +176,7 @@ export default {
         { required: true, message: '请选择记录时间', trigger: 'change' }
       ],
       creator_name: [
-        { required: true, message: '请输入汇报人姓名', trigger: 'blur' }
+        { required: true, message: '请输入填报人姓名', trigger: 'blur' }
       ]
     };
 

@@ -1,7 +1,7 @@
 <template>
   <div class="app-header">
-    <div class="header-title">
-      <h1>危险废物管理系统</h1>
+    <div class="logo">
+      <h1>固体废物管理系统</h1>
     </div>
     <div class="user-info" v-if="auth.state.isLoggedIn">
       <span class="welcome-text">
@@ -62,7 +62,7 @@ export default {
   align-items: center;
 }
 
-.header-title h1 {
+.logo h1 {
   margin: 0;
   font-size: 20px;
 }
@@ -111,7 +111,7 @@ export default {
     flex-wrap: wrap;
   }
   
-  .header-title h1 {
+  .logo h1 {
     font-size: 16px;
   }
   
@@ -146,7 +146,7 @@ export default {
     padding: 10px;
   }
   
-  .header-title {
+  .logo {
     margin-bottom: 5px;
   }
   

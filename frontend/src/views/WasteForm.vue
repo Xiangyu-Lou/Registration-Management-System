@@ -5,7 +5,7 @@
         <el-icon><arrow-left /></el-icon> 返回
       </div>
       <div v-else></div>
-      <h1>危险废物填报</h1>
+      <h1>固体废物填报</h1>
       <div class="view-records" @click="viewRecords">
         查看记录 <el-icon><document /></el-icon>
       </div>
@@ -161,7 +161,7 @@
     </el-dialog>
 
     <div class="footer">
-      <p>&copy; 2025 危险废物管理系统</p>
+      <p>&copy; 2025 固体废物管理系统</p>
     </div>
   </div>
 </template>
