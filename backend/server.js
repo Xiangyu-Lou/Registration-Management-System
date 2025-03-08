@@ -191,51 +191,34 @@ app.get('/api/test', (req, res) => {
 
 // 用户登录
 app.post('/api/login', async (req, res) => {
-  console.log('登录请求数据:', req.body);
   const { phone, password, rememberMe } = req.body;
   
-  if (!phone) {
-    console.log('登录失败: 缺少手机号');
-    return res.status(400).json({ error: '手机号是必填项' });
-  }
-
-  if (!password) {
-    console.log('登录失败: 缺少密码');
-    return res.status(400).json({ error: '密码是必填项' });
-  }
-
   try {
-    console.log('开始查询用户:', phone);
-    // 查询用户
-    const [rows] = await pool.query(
-      `SELECT u.*, r.name as role_name, un.name as unit_name 
-       FROM users u 
-       JOIN user_roles r ON u.role_id = r.id 
-       LEFT JOIN units un ON u.unit_id = un.id 
-       WHERE u.phone = ?`, 
-      [phone]
-    );
-
-    // 用户不存在
-    if (rows.length === 0) {
-      console.log('登录失败: 用户不存在', phone);
+    // 验证用户是否存在
+    const [users] = await pool.query('SELECT * FROM users WHERE phone = ?', [phone]);
+    if (users.length === 0) {
       return res.status(401).json({ error: '用户不存在' });
     }
-
-    const user = rows[0];
-    console.log('查询到用户信息:', { id: user.id, role_id: user.role_id, username: user.username });
-
-    // 检查用户是否有密码
-    if (!user.password) {
-      console.log('登录失败: 用户没有设置密码');
-      return res.status(401).json({ error: '该账户尚未设置密码，请联系管理员设置密码' });
+    
+    const user = users[0];
+    
+    // 检查用户状态，如果用户已停用则拒绝登录
+    if (user.status === 0) {
+      return res.status(403).json({ error: '账号已停用，请联系管理员' });
     }
-
-    // 使用bcrypt比较密码
-    const passwordMatch = await comparePassword(password, user.password);
-    if (!passwordMatch) {
-      console.log('登录失败: 密码错误');
-      return res.status(401).json({ error: '密码错误' });
+    
+    // 验证密码 - 支持空密码用户(主要是兼容历史数据)
+    if (user.password) {
+      // 如果用户有密码，则必须提供密码
+      if (!password) {
+        return res.status(401).json({ error: '请输入密码' });
+      }
+      
+      // 验证密码
+      const passwordMatch = await comparePassword(password, user.password);
+      if (!passwordMatch) {
+        return res.status(401).json({ error: '密码错误' });
+      }
     }
 
     // 生成 token
@@ -289,11 +272,11 @@ app.get('/api/users', async (req, res) => {
   try {
     // 获取用户的角色和单位信息
     const [rows] = await pool.query(
-      `SELECT u.id, u.username, u.phone, u.role_id, r.name as role_name, u.unit_id, un.name as unit_name 
+      `SELECT u.id, u.username, u.phone, u.role_id, r.name as role_name, u.unit_id, un.name as unit_name, u.status
        FROM users u 
        JOIN user_roles r ON u.role_id = r.id 
        LEFT JOIN units un ON u.unit_id = un.id 
-       ORDER BY u.role_id, u.username`
+       ORDER BY u.status DESC, u.role_id, u.username`
     );
     
     res.json(rows);
@@ -309,12 +292,12 @@ app.get('/api/units/:unitId/users', async (req, res) => {
   
   try {
     const [rows] = await pool.query(
-      `SELECT u.id, u.username, u.phone, u.role_id, r.name as role_name, u.unit_id, un.name as unit_name 
+      `SELECT u.id, u.username, u.phone, u.role_id, r.name as role_name, u.unit_id, un.name as unit_name, u.status 
        FROM users u 
        JOIN user_roles r ON u.role_id = r.id 
        LEFT JOIN units un ON u.unit_id = un.id 
        WHERE u.unit_id = ? 
-       ORDER BY u.role_id, u.username`, 
+       ORDER BY u.status DESC, u.role_id, u.username`, 
       [unitId]
     );
     
@@ -463,13 +446,43 @@ app.delete('/api/users/:id', async (req, res) => {
   }
 });
 
+// 修改用户状态（停用/恢复）
+app.put('/api/users/:id/status', async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+  
+  if (status !== 0 && status !== 1) {
+    return res.status(400).json({ error: '无效的状态值' });
+  }
+  
+  try {
+    // 验证用户是否存在
+    const [existingUsers] = await pool.query('SELECT * FROM users WHERE id = ?', [id]);
+    if (existingUsers.length === 0) {
+      return res.status(404).json({ error: '用户不存在' });
+    }
+    
+    // 更新用户状态
+    await pool.query('UPDATE users SET status = ? WHERE id = ?', [status, id]);
+    
+    res.json({
+      id: parseInt(id),
+      status,
+      message: status === 1 ? '账号已恢复' : '账号已停用'
+    });
+  } catch (error) {
+    console.error('修改用户状态错误:', error);
+    res.status(500).json({ error: '服务器错误' });
+  }
+});
+
 // 获取用户详情
 app.get('/api/users/:id', async (req, res) => {
   const { id } = req.params;
   
   try {
     const [rows] = await pool.query(
-      `SELECT u.id, u.username, u.phone, u.role_id, u.unit_id, r.name as role_name, un.name as unit_name 
+      `SELECT u.id, u.username, u.phone, u.role_id, u.unit_id, r.name as role_name, un.name as unit_name, u.status 
        FROM users u 
        JOIN user_roles r ON u.role_id = r.id 
        LEFT JOIN units un ON u.unit_id = un.id 
@@ -489,7 +502,8 @@ app.get('/api/users/:id', async (req, res) => {
       role: user.role_name,
       role_id: user.role_id,
       unit_id: user.unit_id,
-      unit_name: user.unit_name
+      unit_name: user.unit_name,
+      status: user.status
     });
   } catch (error) {
     console.error('获取用户信息错误:', error);

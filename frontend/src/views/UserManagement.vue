@@ -32,9 +32,25 @@
         <el-table-column prop="phone" label="手机号" width="140" />
         <el-table-column prop="role_name" label="角色" width="120" />
         <el-table-column prop="unit_name" label="单位" min-width="120" />
-        <el-table-column label="操作" width="180" fixed="right">
+        
+        <el-table-column label="状态" width="100" align="center">
+          <template #default="scope">
+            <el-tag :type="scope.row.status === 1 ? 'success' : 'danger'">
+              {{ scope.row.status === 1 ? '正常' : '已停用' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        
+        <el-table-column label="操作" width="240" fixed="right">
           <template #default="scope">
             <el-button size="small" @click="handleEdit(scope.row)">编辑</el-button>
+            <el-button 
+              size="small" 
+              :type="scope.row.status === 1 ? 'warning' : 'success'"
+              @click="handleStatusChange(scope.row)"
+            >
+              {{ scope.row.status === 1 ? '停用' : '恢复' }}
+            </el-button>
             <el-popconfirm
               title="确定要删除此用户吗？"
               @confirm="handleDelete(scope.row)"
@@ -290,6 +306,25 @@ export default {
       }
     };
     
+    // 处理用户状态变更（停用/恢复）
+    const handleStatusChange = async (row) => {
+      const newStatus = row.status === 1 ? 0 : 1;
+      const statusText = newStatus === 1 ? '恢复' : '停用';
+      
+      try {
+        await httpService.put(`${apiConfig.endpoints.users}/${row.id}/status`, { status: newStatus });
+        ElMessage.success(`用户${statusText}成功`);
+        fetchUsers();
+      } catch (error) {
+        console.error('状态变更失败:', error);
+        let errorMsg = `${statusText}用户失败`;
+        if (error.response && error.response.data && error.response.data.error) {
+          errorMsg = error.response.data.error;
+        }
+        ElMessage.error(errorMsg);
+      }
+    };
+    
     // 重置表单
     const resetForm = () => {
       if (userForm.value) {
@@ -374,6 +409,7 @@ export default {
       openAddDialog,
       handleEdit,
       handleDelete,
+      handleStatusChange,
       submitForm,
       goBack
     };

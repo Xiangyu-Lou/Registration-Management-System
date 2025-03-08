@@ -12,6 +12,7 @@ export default {
   endpoints: {
     login: '/api/login',
     users: '/api/users',
+    userStatus: '/api/users/:id/status',  // 用户状态变更API
     units: '/api/units',
     wasteTypes: '/api/waste-types',
     wasteRecords: '/api/waste-records',
