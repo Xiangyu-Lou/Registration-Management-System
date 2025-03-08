@@ -369,34 +369,35 @@ export default {
       location: ''
     });
     
-    // 过滤后的记录
+    // 筛选记录
     const filteredRecords = computed(() => {
-      if (!records.value || !Array.isArray(records.value)) {
-        return [];
-      }
-      
       return records.value.filter(record => {
-        // 检查废物类型
+        // 筛选废物类型
         if (filterForm.wasteTypeId && record.waste_type_id !== filterForm.wasteTypeId) {
           return false;
         }
         
-        // 检查数量范围
-        if (filterForm.minQuantity !== null && parseFloat(record.quantity) < filterForm.minQuantity) {
-          return false;
-        }
-        if (filterForm.maxQuantity !== null && parseFloat(record.quantity) > filterForm.maxQuantity) {
-          return false;
-        }
-        
-        // 检查地点关键词
-        if (filterForm.location && !record.location.toLowerCase().includes(filterForm.location.toLowerCase())) {
+        // 筛选数量范围
+        if (filterForm.minQuantity !== null && filterForm.minQuantity !== undefined && 
+            parseFloat(record.quantity) < filterForm.minQuantity) {
           return false;
         }
         
-        // 检查日期范围
+        if (filterForm.maxQuantity !== null && filterForm.maxQuantity !== undefined && 
+            parseFloat(record.quantity) > filterForm.maxQuantity) {
+          return false;
+        }
+        
+        // 筛选地点
+        if (filterForm.location && !record.location.includes(filterForm.location)) {
+          return false;
+        }
+        
+        // 筛选日期范围
         if (filterForm.dateRange && filterForm.dateRange.length === 2) {
           const startDate = new Date(filterForm.dateRange[0]);
+          startDate.setHours(0, 0, 0); // 设置为当天开始时间
+          
           const endDate = new Date(filterForm.dateRange[1]);
           endDate.setHours(23, 59, 59); // 设置为当天结束时间
           
@@ -406,17 +407,7 @@ export default {
           }
         }
         
-        // 如果是普通员工，确保只显示过去7天的记录（前端备份过滤）
-        if (!isAdmin.value && !isUnitAdmin.value) {
-          const sevenDaysAgo = new Date();
-          sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-          sevenDaysAgo.setHours(0, 0, 0, 0); // 设置为当天开始时间
-          
-          const recordDate = new Date(record.created_at);
-          if (recordDate < sevenDaysAgo) {
-            return false;
-          }
-        }
+        // 注意：移除了普通员工只能看到7天内记录的前端限制，因为这已经在后端实现
         
         return true;
       });
@@ -845,6 +836,7 @@ export default {
       }
     };
 
+    // 获取记录数据
     const fetchRecords = async (isLoadMore = false) => {
       if (!isLoadMore) {
         loading.value = true;
@@ -855,63 +847,50 @@ export default {
       }
       
       try {
-        // 基本参数
+        // 验证用户是否登录
+        if (!auth.state.isLoggedIn || !auth.state.user) {
+          throw new Error('用户未登录');
+        }
+        
+        // 使用用户ID获取记录
         const params = {
           page: page.value,
-          pageSize: pageSize.value
+          pageSize: pageSize.value,
+          wasteTypeId: filterForm.wasteTypeId,
+          minQuantity: filterForm.minQuantity,
+          maxQuantity: filterForm.maxQuantity,
+          location: filterForm.location,
         };
         
-        // 添加筛选参数
-        if (filterForm.wasteTypeId) params.wasteTypeId = filterForm.wasteTypeId;
-        if (filterForm.minQuantity !== null) params.minQuantity = filterForm.minQuantity;
-        if (filterForm.maxQuantity !== null) params.maxQuantity = filterForm.maxQuantity;
-        if (filterForm.location) params.location = filterForm.location;
+        // 如果有日期范围筛选，添加到参数
         if (filterForm.dateRange && filterForm.dateRange.length === 2) {
           params.dateRange = JSON.stringify(filterForm.dateRange);
         }
         
-        // 获取当前用户ID
-        const userId = auth.getUserId();
-        if (!userId) {
-          throw new Error('用户未登录');
-        }
+        console.log('请求废物记录，参数:', params);
+        const response = await httpService.get(`${apiConfig.endpoints.wasteRecords}/user/${auth.state.user.id}`, { params });
+        console.log('获取到废物记录响应:', response.data);
         
-        // 如果是普通员工，添加7天时间限制
-        if (!isAdmin.value && !isUnitAdmin.value) {
-          // 计算7天前的日期
-          const sevenDaysAgo = new Date();
-          sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-          
-          // 格式化为YYYY-MM-DD格式
-          const formattedDate = `${sevenDaysAgo.getFullYear()}-${String(sevenDaysAgo.getMonth() + 1).padStart(2, '0')}-${String(sevenDaysAgo.getDate()).padStart(2, '0')}`;
-          
-          // 设置日期范围参数
-          params.minDate = formattedDate;
-        }
+        // 使用已有的parseFormattedDateTime函数格式化日期
+        const formattedRecords = response.data.records.map(record => ({
+          ...record,
+          created_at: parseFormattedDateTime(record.created_at),
+          collection_start_time: parseFormattedDateTime(record.collection_start_time)
+        }));
         
-        // 使用用户ID获取记录
-        const response = await httpService.get(`${apiConfig.endpoints.wasteRecordsByUser}/${userId}`, { params });
-        
-        // 确保响应数据包含records字段，并且是一个数组
-        if (response.data && Array.isArray(response.data.records)) {
-          if (isLoadMore) {
-            records.value = [...records.value, ...response.data.records];
-          } else {
-            records.value = response.data.records;
-          }
-          
-          hasMore.value = !!response.data.hasMore;
+        if (isLoadMore) {
+          records.value = [...records.value, ...formattedRecords];
         } else {
-          console.error('Invalid response format:', response.data);
-          records.value = [];
-          hasMore.value = false;
-          ElMessage.error('获取废物记录失败：数据格式错误');
+          records.value = formattedRecords;
+        }
+        
+        hasMore.value = response.data.hasMore;
+        if (hasMore.value) {
+          page.value++;
         }
       } catch (error) {
-        console.error('Error fetching records:', error);
-        records.value = [];
-        hasMore.value = false;
-        ElMessage.error('获取废物记录失败');
+        console.error('获取废物记录失败:', error);
+        ElMessage.error('获取废物记录失败: ' + (error.message || '未知错误'));
       } finally {
         loading.value = false;
         loadingMore.value = false;

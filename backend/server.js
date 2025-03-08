@@ -795,6 +795,16 @@ app.get('/api/waste-records/user/:userId', async (req, res) => {
       params.push(user.unit_id);
     }
     
+    // 为普通员工（role_id=1）添加7天时间限制
+    if (user.role_id === 1) {
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      const formattedDate = sevenDaysAgo.toISOString().split('T')[0]; // 格式如 YYYY-MM-DD
+      
+      baseSql += ' AND DATE(wr.created_at) >= ?';
+      params.push(formattedDate);
+    }
+    
     // 添加筛选条件
     if (wasteTypeId) {
       baseSql += ' AND wr.waste_type_id = ?';
@@ -896,13 +906,16 @@ app.get('/api/waste-records/export/user/:userId', async (req, res) => {
     if (user.role_id !== 3) { // 不是超级管理员
       sql += ' AND wr.unit_id = ?';
       params.push(user.unit_id);
+    }
+    
+    // 为普通员工（role_id=1）添加7天时间限制
+    if (user.role_id === 1) {
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      const formattedDate = sevenDaysAgo.toISOString().split('T')[0]; // 格式如 YYYY-MM-DD
       
-      // 移除限制普通员工只能看到自己创建的记录的条件
-      // 所有用户都可以看到自己单位的所有记录
-      // if (user.role_id !== 2) { // 不是单位管理员
-      //   sql += ' AND (wr.creator_id = ? OR wr.creator_id IS NULL)';
-      //   params.push(userId);
-      // }
+      sql += ' AND DATE(wr.created_at) >= ?';
+      params.push(formattedDate);
     }
     
     // 添加筛选条件
