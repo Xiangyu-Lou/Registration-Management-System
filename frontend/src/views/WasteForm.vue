@@ -771,12 +771,8 @@ export default {
             // 添加创建者ID（如果用户已登录）
             if (auth.state.isLoggedIn && auth.state.user) {
               formData.append('creator_id', auth.state.user.id);
-              // 添加创建者名称，优先使用username，如果没有则使用phone
-              const creatorName = auth.state.user.username || auth.state.user.phone || '未知';
-              formData.append('creator_name', creatorName);
               console.log('添加用户信息:', {
                 creator_id: auth.state.user.id,
-                creator_name: creatorName,
                 user: auth.state.user
               });
             } else {

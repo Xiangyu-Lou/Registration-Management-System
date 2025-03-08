@@ -103,7 +103,7 @@ async function initializeDatabase() {
         quantity DECIMAL(10, 3) NOT NULL,
         created_at DATETIME NOT NULL,
         creator_id INT,
-        creator_name VARCHAR(100),
+        remarks TEXT,
         FOREIGN KEY (unit_id) REFERENCES units(id),
         FOREIGN KEY (waste_type_id) REFERENCES waste_types(id),
         FOREIGN KEY (creator_id) REFERENCES users(id)
@@ -169,8 +169,8 @@ async function initializeDatabase() {
       // 插入测试用户
       await connection.execute(`
         INSERT INTO users (username, phone, password, role_id, unit_id) VALUES 
-        ('超级管理员', '13800000001', ?, 3, NULL),
-        ('牛庄管理员', '13800000002', ?, 2, ?),
+        ('超级管理员', '13800000001', ?, 1, NULL),
+        ('牛庄管理员', '13800000002', ?, 1, ?),
         ('牛庄员工', '13800000003', NULL, 1, ?)
       `, [adminPassword, managerPassword, niuzhuangId, niuzhuangId]);
       console.log('已插入用户测试数据');

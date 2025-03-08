@@ -54,8 +54,8 @@
     </el-form-item>
 
     <el-col :span="12">
-      <el-form-item label="填报人" prop="creator_name">
-        <el-input v-model="form.creator_name" placeholder="请输入填报人姓名"></el-input>
+      <el-form-item label="填报人ID" prop="creator_id">
+        <el-input v-model="form.creator_id" placeholder="请输入填报人ID" disabled></el-input>
       </el-form-item>
     </el-col>
 
@@ -148,7 +148,6 @@ export default {
       collection_start_time: '',
       collection_end_time: '',
       record_time: '',
-      creator_name: '',
       creator_id: '',
       photo_path_before: '',
       photo_path_after: '',
@@ -175,8 +174,8 @@ export default {
       record_time: [
         { required: true, message: '请选择记录时间', trigger: 'change' }
       ],
-      creator_name: [
-        { required: true, message: '请输入填报人姓名', trigger: 'blur' }
+      creator_id: [
+        { required: true, message: '请输入填报人ID', trigger: 'blur' }
       ]
     };
 

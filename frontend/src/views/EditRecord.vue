@@ -153,33 +153,6 @@
           <el-button type="primary" @click="submitForm" :loading="loading">保存</el-button>
           <el-button @click="goBack">取消</el-button>
         </el-form-item>
-        
-        <!-- 调试信息 -->
-        <el-collapse v-if="!isNew">
-          <el-collapse-item title="调试信息">
-            <div>
-              <h4>收集前照片路径:</h4>
-              <div v-for="(file, index) in fileListBefore" :key="'before-'+index">
-                <div>名称: {{ file.name }}</div>
-                <div>URL: {{ file.url }}</div>
-                <div>
-                  <img :src="file.url" style="max-width: 200px; max-height: 200px;" />
-                </div>
-                <hr />
-              </div>
-              
-              <h4>收集后照片路径:</h4>
-              <div v-for="(file, index) in fileListAfter" :key="'after-'+index">
-                <div>名称: {{ file.name }}</div>
-                <div>URL: {{ file.url }}</div>
-                <div>
-                  <img :src="file.url" style="max-width: 200px; max-height: 200px;" />
-                </div>
-                <hr />
-              </div>
-            </div>
-          </el-collapse-item>
-        </el-collapse>
       </el-form>
     </div>
 

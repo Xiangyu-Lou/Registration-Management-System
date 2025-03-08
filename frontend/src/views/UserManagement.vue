@@ -96,7 +96,7 @@
         
         <el-form-item 
           label="密码" 
-          prop="password"
+          :prop="isEdit ? '' : 'password'"
         >
           <el-input 
             v-model="form.password" 
@@ -195,7 +195,26 @@ export default {
           message: '请输入密码', 
           trigger: 'blur' 
         },
-        { min: 1, max: 20, message: '长度在 1 到 20 个字符', trigger: 'blur' }
+        { 
+          validator: (rule, value, callback) => {
+            // 只有当有输入值且不为空时才验证长度
+            if (value && value.length > 0) {
+              if (value.length < 1 || value.length > 20) {
+                callback(new Error('长度在 1 到 20 个字符'));
+              } else {
+                callback();
+              }
+            } else {
+              // 空值在编辑模式下是允许的
+              if (isEdit.value) {
+                callback();
+              } else {
+                callback(new Error('请输入密码'));
+              }
+            }
+          },
+          trigger: 'blur'
+        }
       ]
     };
     

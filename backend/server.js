@@ -405,16 +405,6 @@ app.put('/api/users/:id', async (req, res) => {
       }
     }
     
-    // 如果是更改角色且新角色是管理员但没有密码
-    if ((roleId == 2 || roleId == 3) && existingUser.role_id == 1 && !password && !existingUser.password) {
-      return res.status(400).json({ error: '从普通员工提升为管理员需要设置密码' });
-    }
-    
-    // 如果用户没有密码且没有提供新密码
-    if (!existingUser.password && !password) {
-      return res.status(400).json({ error: '用户没有密码，必须设置密码' });
-    }
-    
     // 准备更新数据
     let sql;
     let params;
@@ -575,21 +565,19 @@ app.post('/api/waste-records', verifyToken, upload.fields([
     
     // 获取当前用户信息
     const userId = req.body.creator_id || (req.user ? req.user.id : null);
-    const userName = req.body.creator_name || (req.user ? req.user.username : null);
     
     console.log('处理废物记录提交:', {
       body: req.body,
       userId,
-      userName,
       user: req.user
     });
     
     // 插入记录
     const [result] = await pool.query(
       `INSERT INTO waste_records 
-      (unit_id, waste_type_id, location, collection_start_time, photo_path_before, photo_path_after, quantity, created_at, creator_id, creator_name, remarks)
-      VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?)`,
-      [unitId, wasteTypeId, location, collectionStartTime, photo_path_before, photo_path_after, quantity, userId, userName, remarks]
+      (unit_id, waste_type_id, location, collection_start_time, photo_path_before, photo_path_after, quantity, created_at, creator_id, remarks)
+      VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)`,
+      [unitId, wasteTypeId, location, collectionStartTime, photo_path_before, photo_path_after, quantity, userId, remarks]
     );
     
     res.status(201).json({
@@ -609,7 +597,7 @@ app.get('/api/waste-records/:unitId', async (req, res) => {
   try {
     const [rows] = await pool.query(
       `SELECT wr.*, u.name as unit_name, wt.name as waste_type_name,
-       IFNULL(wr.creator_name, IFNULL(creator.username, creator.phone)) as creator_name
+       IFNULL(creator.username, creator.phone) as creator_name
        FROM waste_records wr
        JOIN units u ON wr.unit_id = u.id
        JOIN waste_types wt ON wr.waste_type_id = wt.id
@@ -743,7 +731,7 @@ app.get('/api/waste-records/detail/:id', async (req, res) => {
   try {
     const [rows] = await pool.query(
       `SELECT wr.*, u.name as unit_name, wt.name as waste_type_name,
-       IFNULL(wr.creator_name, IFNULL(creator.username, creator.phone)) as creator_name
+       IFNULL(creator.username, creator.phone) as creator_name
        FROM waste_records wr
        JOIN units u ON wr.unit_id = u.id
        JOIN waste_types wt ON wr.waste_type_id = wt.id
@@ -837,7 +825,7 @@ app.get('/api/waste-records/user/:userId', async (req, res) => {
     // 添加分页
     const dataSql = `
       SELECT wr.*, u.name as unit_name, wt.name as waste_type_name,
-      IFNULL(wr.creator_name, IFNULL(creator.username, creator.phone)) as creator_name
+      IFNULL(creator.username, creator.phone) as creator_name
       ${baseSql} LIMIT ? OFFSET ?
     `;
     
@@ -961,10 +949,12 @@ app.get('/api/waste-records/export/user/:userId', async (req, res) => {
 app.get('/api/waste-records', async (req, res) => {
   try {
     const [rows] = await pool.query(
-      `SELECT wr.*, u.name as unit_name, wt.name as waste_type_name 
+      `SELECT wr.*, u.name as unit_name, wt.name as waste_type_name,
+       IFNULL(creator.username, creator.phone) as creator_name
        FROM waste_records wr
        JOIN units u ON wr.unit_id = u.id
        JOIN waste_types wt ON wr.waste_type_id = wt.id
+       LEFT JOIN users creator ON wr.creator_id = creator.id
        ORDER BY wr.created_at DESC`
     );
     
