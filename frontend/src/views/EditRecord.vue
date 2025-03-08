@@ -331,6 +331,10 @@ export default {
             form.unitId = auth.state.user.unit_id;
             await fetchUnitName(form.unitId);
           }
+          
+          // 设置默认的收集日期和时间为当前时间
+          form.collectionDate = new Date().toISOString().slice(0, 10);
+          form.collectionTime = new Date().toTimeString().slice(0, 5);
         } else {
           // 只有在编辑现有记录时才获取记录详情
           await fetchRecordDetails();

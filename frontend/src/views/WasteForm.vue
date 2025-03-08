@@ -224,7 +224,7 @@ export default {
       wasteTypeId: '',
       location: '',
       collectionDate: new Date().toISOString().slice(0, 10), // 默认为当天
-      collectionTime: '08:00',
+      collectionTime: new Date().toTimeString().slice(0, 5), // 默认为当前时间，格式为HH:MM
       quantity: undefined,
       photo_before: [],
       photo_after: [],
@@ -858,7 +858,7 @@ export default {
       fileListAfter.value = [];
       form.quantity = undefined;
       form.collectionDate = new Date().toISOString().slice(0, 10); // 重置为今天
-      form.collectionTime = '08:00'; // 重置为默认时间
+      form.collectionTime = new Date().toTimeString().slice(0, 5); // 重置为当前时间，格式为HH:MM
     };
 
     const goBack = () => {
