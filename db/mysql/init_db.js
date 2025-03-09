@@ -164,16 +164,15 @@ async function initializeDatabase() {
         ['13800000001', '13800000002', '13800000003']);
       
       // 加密密码
-      const adminPassword = await hashPassword('1');
-      const managerPassword = await hashPassword('2');
+      const password = await hashPassword('1');
       
       // 插入测试用户
       await connection.execute(`
         INSERT INTO users (username, phone, password, role_id, unit_id, status) VALUES 
-        ('超级管理员', '13800000001', ?, 1, NULL, 1),
-        ('牛庄管理员', '13800000002', ?, 1, ?, 1),
-        ('牛庄员工', '13800000003', NULL, 1, ?, 1)
-      `, [adminPassword, managerPassword, niuzhuangId, niuzhuangId]);
+        ('牛庄员工', '13800000001', ?, 1, ?, 1),
+        ('牛庄管理员', '13800000002', ?, 2, ?, 1),
+        ('超级管理员', '13800000003', ?, 3, NULL, 1)
+      `, [password, niuzhuangId, password, niuzhuangId, password]);
       console.log('已插入用户测试数据');
     } else {
       console.log('用户测试数据已存在，跳过插入');

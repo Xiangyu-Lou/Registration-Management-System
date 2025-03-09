@@ -6,6 +6,7 @@ import Login from '../views/Login.vue'
 import EditRecord from '../views/EditRecord.vue'
 import UserManagement from '../views/UserManagement.vue'
 import AdminRecords from '../views/AdminRecords.vue'
+import UserProfile from '../views/UserProfile.vue'
 import auth from '../store/auth'
 
 const routes = [
@@ -20,6 +21,12 @@ const routes = [
     name: 'UserManagement',
     component: UserManagement,
     meta: { requiresAuth: true, requiresManager: true }
+  },
+  {
+    path: '/profile',
+    name: 'UserProfile',
+    component: UserProfile,
+    meta: { requiresAuth: true }
   },
   {
     path: '/',

@@ -11,6 +11,9 @@
           {{ auth.state.user.unit_name }}
         </span>
       </span>
+      <el-button type="text" class="profile-button" @click="goToProfile">
+        <el-icon><user /></el-icon> 账号设置
+      </el-button>
       <el-button type="text" class="logout-button" @click="handleLogout">
         退出登录
       </el-button>
@@ -42,10 +45,16 @@ export default {
       router.push('/login');
     };
     
+    // 跳转到个人资料页面
+    const goToProfile = () => {
+      router.push('/profile');
+    };
+    
     return {
       auth,
       userName,
-      handleLogout
+      handleLogout,
+      goToProfile
     };
   }
 };
@@ -85,12 +94,14 @@ export default {
   background-color: rgba(255, 255, 255, 0.3);
 }
 
+.profile-button,
 .logout-button {
   color: white;
   font-weight: bold;
   margin-left: 15px;
 }
 
+.profile-button:hover,
 .logout-button:hover {
   color: #f0f0f0;
   background-color: rgba(255, 255, 255, 0.1);

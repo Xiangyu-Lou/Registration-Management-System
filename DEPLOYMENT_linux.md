@@ -174,6 +174,8 @@ sudo systemctl restart nginx
 
 ```bash
 sudo mv ../ngnix_config/linux/product/waste-management /etc/nginx/sites-available/
+# 或者使用
+sudo vim /etc/nginx/sites-available/waste-management
 ```
 
 启用配置并重启 Nginx：
@@ -182,3 +184,23 @@ sudo ln -s /etc/nginx/sites-available/waste-management /etc/nginx/sites-enabled/
 sudo nginx -t  # 检测配置是否正确
 sudo systemctl restart nginx
 ```
+
+修改权限（可能需要）
+sudo chmod +x /home/ecs-user/
+
+## 5. 配置SSL证书
+
+上传证书到 /etc/nginx/ssl/
+
+修改配置文件
+
+```bash
+sudo vim /etc/nginx/sites-available/waste-management
+```
+
+启用配置并重启 Nginx：
+
+```bash
+sudo nginx -t  # 检测配置是否正确
+sudo systemctl restart nginx
+``` 

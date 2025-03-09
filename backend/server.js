@@ -1082,6 +1082,95 @@ app.delete('/api/waste-records/:id', async (req, res) => {
   }
 });
 
+// 更新用户个人资料（用户名和密码）
+app.put('/api/users/:id/profile', verifyToken, async (req, res) => {
+  const userId = req.params.id;
+  const { username, oldPassword, newPassword } = req.body;
+  
+  try {
+    // 验证当前用户只能修改自己的资料
+    if (req.user.id != userId) {
+      return res.status(403).json({ error: '您只能修改自己的个人资料' });
+    }
+    
+    // 验证用户名
+    if (!username || username.trim().length < 2) {
+      return res.status(400).json({ error: '用户名不能为空且长度必须大于等于2个字符' });
+    }
+    
+    // 获取用户当前信息
+    const [userRows] = await pool.query('SELECT * FROM users WHERE id = ?', [userId]);
+    if (userRows.length === 0) {
+      return res.status(404).json({ error: '用户不存在' });
+    }
+    
+    // 如果要修改密码
+    if (newPassword) {
+      // 验证旧密码
+      if (!oldPassword) {
+        return res.status(400).json({ error: '修改密码时必须提供原密码' });
+      }
+      
+      // 验证旧密码是否正确
+      const isPasswordValid = await comparePassword(oldPassword, userRows[0].password);
+      if (!isPasswordValid) {
+        return res.status(400).json({ error: '原密码不正确' });
+      }
+      
+      // 加密新密码
+      const hashedPassword = await hashPassword(newPassword);
+      
+      // 更新用户名和密码
+      await pool.query(
+        'UPDATE users SET username = ?, password = ? WHERE id = ?',
+        [username, hashedPassword, userId]
+      );
+    } else {
+      // 仅更新用户名
+      await pool.query(
+        'UPDATE users SET username = ? WHERE id = ?',
+        [username, userId]
+      );
+    }
+    
+    res.json({ message: '个人资料已更新' });
+    
+  } catch (error) {
+    console.error('更新用户个人资料错误:', error);
+    res.status(500).json({ error: '服务器错误' });
+  }
+});
+
+// 更改用户状态（启用/禁用）
+app.patch('/api/users/:id/status', async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+  
+  if (status !== 0 && status !== 1) {
+    return res.status(400).json({ error: '无效的状态值' });
+  }
+  
+  try {
+    // 验证用户是否存在
+    const [existingUsers] = await pool.query('SELECT * FROM users WHERE id = ?', [id]);
+    if (existingUsers.length === 0) {
+      return res.status(404).json({ error: '用户不存在' });
+    }
+    
+    // 更新用户状态
+    await pool.query('UPDATE users SET status = ? WHERE id = ?', [status, id]);
+    
+    res.json({
+      id: parseInt(id),
+      status,
+      message: status === 1 ? '账号已恢复' : '账号已停用'
+    });
+  } catch (error) {
+    console.error('修改用户状态错误:', error);
+    res.status(500).json({ error: '服务器错误' });
+  }
+});
+
 // 处理所有前端路由请求，返回index.html
 app.get('*', (req, res) => {
   // 排除API请求

@@ -130,6 +130,23 @@ const getUnitId = () => {
   return state.user ? state.user.unit_id : null;
 };
 
+// 更新用户信息
+const updateUserInfo = (updatedUser) => {
+  if (!state.isLoggedIn || !state.user) return;
+  
+  // 更新状态中的用户信息
+  state.user = { ...state.user, ...updatedUser };
+  
+  // 更新存储中的用户信息
+  if (localStorage.getItem('user')) {
+    localStorage.setItem('user', JSON.stringify(state.user));
+  }
+  
+  if (sessionStorage.getItem('user')) {
+    sessionStorage.setItem('user', JSON.stringify(state.user));
+  }
+};
+
 // 初始化认证状态
 init();
 
@@ -140,5 +157,6 @@ export default {
   isAdmin,
   isUnitAdmin,
   getUserId,
-  getUnitId
+  getUnitId,
+  updateUserInfo
 };

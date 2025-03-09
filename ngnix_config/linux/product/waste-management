@@ -1,7 +1,32 @@
 server {
     listen 80;
-    server_name 47.104.215.111;  # 替换为你的实际域名
+    server_name www.slytgfgl.com slytgfgl.com;  # 域名和不带www的域名
+    
+    # HTTP重定向到HTTPS
+    return 301 https://$host$request_uri;
+}
 
+server {
+    listen 443 ssl http2;
+    server_name www.slytgfgl.com slytgfgl.com;  # 域名和不带www的域名
+    
+    # SSL证书配置
+    ssl_certificate /etc/nginx/ssl/slytgfgl.com.pem;
+    ssl_certificate_key /etc/nginx/ssl/slytgfgl.com.key;
+    
+    # SSL优化设置
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 10m;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers on;
+    ssl_ciphers "EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH";
+    
+    # 启用OCSP Stapling
+    ssl_stapling on;
+    ssl_stapling_verify on;
+    resolver 8.8.8.8 8.8.4.4 valid=300s;
+    resolver_timeout 5s;
+    
     # 安全相关的HTTP头
     add_header X-Content-Type-Options nosniff;
     add_header X-XSS-Protection "1; mode=block";
