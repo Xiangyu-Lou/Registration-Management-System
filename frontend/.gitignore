@@ -17,7 +17,7 @@ desktop.ini
 
 # 前端 (Vue.js)
 /frontend/node_modules/
-/frontend/dist/
+# /frontend/dist/
 /frontend/.env.local
 /frontend/.env.*.local
 /frontend/npm-debug.log*
@@ -31,7 +31,7 @@ desktop.ini
 
 # 后端 (Node.js)
 /backend/node_modules/
-/backend/dist/
+# /backend/dist/
 /backend/build/
 /backend/coverage/
 /backend/.nyc_output/

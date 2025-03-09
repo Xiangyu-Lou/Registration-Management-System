@@ -45,7 +45,7 @@ sudo apt install nginx
 ```bash
 # 克隆代码仓库
 git clone git@github.com:Xiangyu-Lou/Hazardous-waste-management-system.git
-cd hazardous-waste-management-system
+cd Hazardous-waste-management-system
 ```
 ## 2. 部署后端
 
@@ -117,7 +117,7 @@ npm run start
 
 ```bash
 # 安装 PM2
-npm install -g pm2
+sudo npm install -g pm2
 
 # 启动后端服务
 cd backend
@@ -142,9 +142,6 @@ npm install
 ### 3.2 部署前端（开发版本）
 
 ```bash
-# 进入前端目录
-cd ../frontend
-
 # 启动开发服务
 npm run serve
 ```
@@ -152,9 +149,6 @@ npm run serve
 ### 3.3 部署前端（生产版本）（需要ngnix）
 
 ```bash
-# 进入前端目录
-cd ../frontend
-
 # 构建生产版本
 npm run build
 ```

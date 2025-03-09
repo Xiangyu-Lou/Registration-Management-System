@@ -17,7 +17,7 @@ desktop.ini
 
 # 前端 (Vue.js)
 /frontend/node_modules/
-/frontend/dist/
+# /frontend/dist/
 /frontend/.env.local
 /frontend/.env.*.local
 /frontend/npm-debug.log*
