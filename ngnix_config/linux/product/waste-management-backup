@@ -1,6 +1,6 @@
 server {
     listen 80;
-    server_name www.your_domain.com your_domain.com;  # 你的域名(www.your_domain.com 和 your_domain.com)
+    server_name www.slytgfgl.com slytgfgl.com;  # 域名和不带www的域名
     
     # HTTP重定向到HTTPS
     return 301 https://$host$request_uri;
@@ -8,11 +8,11 @@ server {
 
 server {
     listen 443 ssl http2;
-    server_name www.your_domain.com your_domain.com;  # 你的域名(www.your_domain.com 和 your_domain.com)
+    server_name www.slytgfgl.com slytgfgl.com;  # 域名和不带www的域名
     
     # SSL证书配置
-    ssl_certificate /etc/nginx/ssl/your_domain.com.pem; # 你的SSL证书路径
-    ssl_certificate_key /etc/nginx/ssl/your_domain.com.key; # 你的SSL密钥路径
+    ssl_certificate /etc/nginx/ssl/slytgfgl.com.pem;
+    ssl_certificate_key /etc/nginx/ssl/slytgfgl.com.key;
     
     # SSL优化设置
     ssl_session_cache shared:SSL:10m;
@@ -35,7 +35,7 @@ server {
     
     # 前端静态资源
     location / {
-        root /home/ecs-user/Registration-Management-System/frontend/dist;
+        root /home/ecs-user/Registration-Management-System/frontend/dist;  # 替换为实际的前端构建文件路径
         index index.html index.htm;
         try_files $uri $uri/ /index.html;  # 支持前端路由
         
@@ -83,7 +83,7 @@ server {
     
     # 上传文件目录
     location /uploads/ {
-        alias /home/ecs-user/Registration-Management-System/uploads/;
+        alias /home/ecs-user/Registration-Management-System/uploads/;  # 更新为实际的上传文件目录
         autoindex off;
         
         # 禁用所有访问限制
