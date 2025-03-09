@@ -1,6 +1,6 @@
 server {
     listen 80;
-    server_name www.slytgfgl.com slytgfgl.com;  # 域名和不带www的域名
+    server_name www.your_domain.com your_domain.com;  # 你的域名(www.your_domain.com 和 your_domain.com)
     
     # HTTP重定向到HTTPS
     return 301 https://$host$request_uri;
@@ -8,11 +8,11 @@ server {
 
 server {
     listen 443 ssl http2;
-    server_name www.slytgfgl.com slytgfgl.com;  # 域名和不带www的域名
+    server_name www.your_domain.com your_domain.com;  # 你的域名(www.your_domain.com 和 your_domain.com)
     
     # SSL证书配置
-    ssl_certificate /etc/nginx/ssl/slytgfgl.com.pem;
-    ssl_certificate_key /etc/nginx/ssl/slytgfgl.com.key;
+    ssl_certificate /etc/nginx/ssl/your_domain.com.pem; # 你的SSL证书路径
+    ssl_certificate_key /etc/nginx/ssl/your_domain.com.key; # 你的SSL密钥路径
     
     # SSL优化设置
     ssl_session_cache shared:SSL:10m;
