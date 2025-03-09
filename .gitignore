@@ -83,7 +83,6 @@ desktop.ini
 # 本地配置文件
 config.local.js
 *.local.json
-/ngnix_config/linux/product/waste-management
 
 # 敏感信息
 .env
@@ -98,6 +97,9 @@ config.local.js
 *.log
 logs/
 log/
+
+# Nginx配置文件
+# ngnix_config/linux/product/waste-management
 
 # 其他
 .history/
