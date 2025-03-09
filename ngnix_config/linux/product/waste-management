@@ -127,34 +127,3 @@ server {
         root /home/ecs-user/Registration-Management-System/frontend/dist;
     }
 }
-
-# HTTPS服务器配置 - 取消注释并配置SSL证书后启用
-# server {
-#     listen 443 ssl http2;
-#     server_name example.com;  # 替换为你的实际域名
-#     
-#     ssl_certificate /etc/letsencrypt/live/example.com/fullchain.pem;  # 替换为实际的SSL证书路径
-#     ssl_certificate_key /etc/letsencrypt/live/example.com/privkey.pem;  # 替换为实际的SSL密钥路径
-#     
-#     ssl_session_cache shared:SSL:10m;
-#     ssl_session_timeout 10m;
-#     ssl_protocols TLSv1.2 TLSv1.3;
-#     ssl_prefer_server_ciphers on;
-#     ssl_ciphers "EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH";
-#     
-#     # 启用OCSP Stapling
-#     ssl_stapling on;
-#     ssl_stapling_verify on;
-#     resolver 8.8.8.8 8.8.4.4 valid=300s;
-#     resolver_timeout 5s;
-#     
-#     # 其他配置与HTTP服务器相同
-#     # ...
-# }
-
-# HTTP重定向到HTTPS - 取消注释并配置域名后启用
-# server {
-#     listen 80;
-#     server_name example.com;  # 替换为你的实际域名
-#     return 301 https://$host$request_uri;
-# } 

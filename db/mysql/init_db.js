@@ -12,8 +12,8 @@ const hashPassword = async (password) => {
 // MySQL连接配置
 const dbConfig = {
   host: 'localhost',
-  user: 'Xiangyu',
-  password: '990924',
+  user: 'your_username', // 你的用户名
+  password: 'your_password', // 你的密码
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
