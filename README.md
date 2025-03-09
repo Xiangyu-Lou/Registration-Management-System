@@ -73,7 +73,7 @@ hazardous-waste-management-system/
 
 | Windows | Linux | Changelog |
 |------|------|----------|
-|[Windows Deployment Guide](DEPLOYMENT.md#dev) | [Linux Deployment Guide](DEPLOYMENT.md#prod) | [Changelog](Changelog.md) |
+|[Windows Deployment Guide](development_windows.md#dev) | [Linux Deployment Guide](development_linux.md#prod) | [Changelog](Changelog.md) |
 
 ## Test Accounts
 

@@ -72,7 +72,7 @@ hazardous-waste-management-system/
 
 | Windows | Linux | 更新日志 |
 |------|------|----------|
-|[windows部署指南](DEPLOYMENT_CN.md#dev) | [linux部署指南](DEPLOYMENT_CN.md#prod) | [更新日志](Changelog.md) |
+|[windows部署指南](development_windows_CN.md#dev) | [linux部署指南](development_linux_CN.md#prod) | [更新日志](Changelog.md) |
 
 ## 测试账号
 
