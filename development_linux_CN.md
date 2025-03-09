@@ -1,6 +1,4 @@
-# 危险废物管理系统部署指南 Linux
-
-本文档提供了在Linux系统上部署危险废物管理系统的详细步骤。
+# 登记系统部署指南 Linux
 
 ## 1. 准备工作
 
@@ -44,8 +42,8 @@ sudo apt install nginx
 ### 1.4 获取代码
 ```bash
 # 克隆代码仓库
-git clone git@github.com:Xiangyu-Lou/Hazardous-waste-management-system.git
-cd Hazardous-waste-management-system
+git clone git@github.com:Xiangyu-Lou/Registration-Management-System.git
+cd Registration-Management-System
 ```
 ## 2. 部署后端
 
@@ -169,8 +167,25 @@ sudo ln -s /etc/nginx/sites-available/waste-management /etc/nginx/sites-enabled/
 sudo nginx -t  # 检测配置是否正确
 sudo systemctl restart nginx
 ```
+### 4.2 生产版本(使用IP)
 
-### 4.2 生产版本
+```bash
+sudo mv ../ngnix_config/linux/product/waste-management-ip /etc/nginx/sites-available/
+# 或者使用
+sudo vim /etc/nginx/sites-available/waste-management-ip
+```
+
+启用配置并重启 Nginx：
+```bash
+sudo ln -s /etc/nginx/sites-available/waste-management /etc/nginx/sites-enabled/
+sudo nginx -t  # 检测配置是否正确
+sudo systemctl restart nginx
+```
+
+修改权限（可能需要）
+sudo chmod +x /home/ecs-user/
+
+### 4.3 生产版本(使用https)
 
 ```bash
 sudo mv ../ngnix_config/linux/product/waste-management /etc/nginx/sites-available/
@@ -188,7 +203,7 @@ sudo systemctl restart nginx
 修改权限（可能需要）
 sudo chmod +x /home/ecs-user/
 
-## 5. 配置SSL证书
+### 4.3.1 配置SSL证书
 
 上传证书到 /etc/nginx/ssl/
 

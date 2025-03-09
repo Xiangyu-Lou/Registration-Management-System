@@ -22,8 +22,8 @@ npm --version
 
 ### 1.3 获取代码
 ```bash
-git clone https://github.com/Xiangyu-Lou/Hazardous-waste-management-system.git
-cd Hazardous-waste-management-system
+git clone https://github.com/Xiangyu-Lou/Registration-Management-System.git
+cd Registration-Management-System
 ```
 ## 2. 部署后端
 

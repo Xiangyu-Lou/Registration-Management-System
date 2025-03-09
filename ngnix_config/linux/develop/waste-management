@@ -1,6 +1,6 @@
 server {
     listen 80;
-    server_name 47.104.215.111;  # 使用你的实际IP或域名
+    server_name 127.0.0.1;  # 使用你的实际IP或域名
      
     # 前端代理
     location / {

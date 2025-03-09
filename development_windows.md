@@ -1,6 +1,6 @@
-# Hazardous Waste Management System Deployment Guide for Windows
+# Registration-Management-System Deployment Guide for Windows
 
-This document provides detailed steps for deploying the Hazardous Waste Management System on Windows.
+This document provides detailed steps for deploying the Registration-Management-System on Windows.
 
 ## 1. Preparation
 
@@ -22,8 +22,8 @@ npm --version
 
 ### 1.3 Get the code
 ```bash
-git clone https://github.com/Xiangyu-Lou/Hazardous-waste-management-system.git
-cd Hazardous-waste-management-system
+git clone https://github.com/Xiangyu-Lou/Registration-Management-System.git
+cd Registration-Management-System
 ```
 ## 2. Deploy the Backend
 

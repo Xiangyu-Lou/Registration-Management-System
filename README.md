@@ -1,6 +1,6 @@
 # Registration Management System
 
-This is a Registration Management System based on Vue and MySQL, designed for basic units to report the generation of hazardous waste.
+This is a Registration Management System based on Vue and MySQL
 
 [简体中文](README_CN.md#dev)
 ## Project Features
@@ -42,7 +42,7 @@ This is a Registration Management System based on Vue and MySQL, designed for ba
 ## Project Structure
 
 ```
-hazardous-waste-management-system/
+Registration-Management-System/
 │
 ├── backend/          # Node.js backend service
 │   ├── package.json  # Backend dependency configuration

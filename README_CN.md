@@ -41,7 +41,7 @@
 ## 项目结构
 
 ```
-hazardous-waste-management-system/
+Registration-Management-System/
 │
 ├── backend/          # Node.js 后端服务
 │   ├── package.json  # 后端依赖配置

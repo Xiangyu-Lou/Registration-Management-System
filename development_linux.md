@@ -1,6 +1,6 @@
-# Hazardous Waste Management System Deployment Guide for Linux
+# Registration-Management-System Deployment Guide for Linux
 
-This document provides detailed steps for deploying the Hazardous Waste Management System on Linux.
+This document provides detailed steps for deploying the Registration-Management-System on Linux.
 
 ## 1. Preparation
 
@@ -44,8 +44,8 @@ sudo apt install nginx
 ### 1.4 Get the code
 ```bash
 # Clone the repository
-git clone git@github.com:Xiangyu-Lou/Hazardous-waste-management-system.git
-cd Hazardous-waste-management-system
+git clone git@github.com:Xiangyu-Lou/Registration-Management-System.git
+cd Registration-Management-System
 ```
 ## 2. Deploy the Backend
 
@@ -169,8 +169,22 @@ sudo ln -s /etc/nginx/sites-available/waste-management /etc/nginx/sites-enabled/
 sudo nginx -t  # Check if configuration is correct
 sudo systemctl restart nginx
 ```
+### 4.2 Production Version（Using IP）
 
-### 4.2 Production Version
+```bash
+sudo mv ../ngnix_config/linux/product/waste-management-ip /etc/nginx/sites-available/
+# Or use
+sudo vim /etc/nginx/sites-available/waste-management-ip
+```
+
+Enable configuration and restart Nginx:
+```bash
+sudo ln -s /etc/nginx/sites-available/waste-management /etc/nginx/sites-enabled/
+sudo nginx -t  # Check if configuration is correct
+sudo systemctl restart nginx
+```
+
+### 4.3 Production Version（Using https）
 
 ```bash
 sudo mv ../ngnix_config/linux/product/waste-management /etc/nginx/sites-available/
@@ -188,7 +202,7 @@ sudo systemctl restart nginx
 Modify permissions (may be necessary)
 sudo chmod +x /home/ecs-user/
 
-## 5. Configure SSL Certificate
+### 4.3.1 Configure SSL Certificate
 
 Upload certificate to /etc/nginx/ssl/
 

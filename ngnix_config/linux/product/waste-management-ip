@@ -1,6 +1,6 @@
 server {
     listen 80;
-    server_name 47.104.215.111;  # 替换为你的实际域名
+    server_name 127.0.0.1;  # 替换为你的实际域名
 
     # 安全相关的HTTP头
     add_header X-Content-Type-Options nosniff;
@@ -10,7 +10,7 @@ server {
     
     # 前端静态资源
     location / {
-        root /home/ecs-user/Hazardous-waste-management-system/frontend/dist;  # 替换为实际的前端构建文件路径
+        root /home/ecs-user/Registration-Management-System/frontend/dist;  # 替换为实际的前端构建文件路径
         index index.html index.htm;
         try_files $uri $uri/ /index.html;  # 支持前端路由
         
@@ -58,7 +58,7 @@ server {
     
     # 上传文件目录
     location /uploads/ {
-        alias /home/ecs-user/Hazardous-waste-management-system/uploads/;  # 更新为实际的上传文件目录
+        alias /home/ecs-user/Registration-Management-System/uploads/;  # 更新为实际的上传文件目录
         autoindex off;
         
         # 禁用所有访问限制
@@ -94,12 +94,12 @@ server {
     # 错误页面
     error_page 404 /404.html;
     location = /404.html {
-        root /home/ecs-user/Hazardous-waste-management-system/frontend/dist;
+        root /home/ecs-user/Registration-Management-System/frontend/dist;
     }
     
     error_page 500 502 503 504 /50x.html;
     location = /50x.html {
-        root /home/ecs-user/Hazardous-waste-management-system/frontend/dist;
+        root /home/ecs-user/Registration-Management-System/frontend/dist;
     }
 }
 

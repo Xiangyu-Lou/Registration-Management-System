@@ -1,4 +1,4 @@
-# Hazardous Waste Management System Changelog
+# Registration-Management-System Changelog
 
 ## 2024-03-09 System Optimization Upgrade
 
