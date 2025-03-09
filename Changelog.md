@@ -1,141 +1,141 @@
-# 危险废物管理系统更新日志
+# Hazardous Waste Management System Changelog
 
-## 2024-03-09 系统优化升级
+## 2024-03-09 System Optimization Upgrade
 
-### 用户界面改进
+### User Interface Improvements
 
-1. **界面风格升级**
-   - 调整废物记录列表表头样式，提升可读性
-   - 为记录列表增加序号，便于查找和引用
-   - 更新系统Logo
+1. **Interface Style Upgrade**
+   - Adjusted waste record list header styles to improve readability
+   - Added sequence numbers to record lists for easier finding and referencing
+   - Updated system logo
 
-2. **命名与标签优化**
-   - 系统名称更改为"固体废物管理系统"
-   - "汇报人"改名为"填报人"，更符合实际操作逻辑
-   - 超级管理员用户查询页面改名为"固体废物管理系统历史记录"
-   - 用户管理页面移除ID显示，简化界面
+2. **Naming and Label Optimization**
+   - System name changed to "Solid Waste Management System"
+   - "Reporter" renamed to "Submitter" to better match actual operational logic
+   - Super administrator user query page renamed to "Solid Waste Management System Historical Records"
+   - Removed ID display from user management page to simplify interface
 
-### 功能增强
+### Feature Enhancements
 
-1. **废物管理功能增强**
-   - 废物类型新增"一般固废物"类别
-   - 增加备注栏，支持更详细的记录信息
+1. **Waste Management Feature Enhancements**
+   - Added "General Solid Waste" category to waste types
+   - Added remarks field to support more detailed record information
 
-2. **用户权限优化**
-   - 登录页面取消账号类型选择，简化登录流程
-   - 员工角色移除删除按钮，防止误操作
-   - 限制普通员工只能查看过去7天内的记录
-   - 当用户被删除后，其创建的记录保留在系统中
+2. **User Permission Optimization**
+   - Removed account type selection from login page to simplify login process
+   - Removed delete button for employee role to prevent accidental operations
+   - Limited regular employees to viewing only records from the past 7 days
+   - When a user is deleted, their created records are retained in the system
 
-### 技术改进
+### Technical Improvements
 
-1. **后端API增强**
-   - 优化废物记录API，添加总量统计功能
-   - 改进数据关联逻辑，解除用户与记录的强关联
-   - 增加详细的日志记录，方便调试和监控
+1. **Backend API Enhancements**
+   - Optimized waste record API, added total statistics functionality
+   - Improved data association logic, decoupled users from records
+   - Added detailed logging for easier debugging and monitoring
 
-2. **前端交互优化**
-   - 简化用户交互流程
-   - 提升数据展示清晰度
-   - 增强数据筛选和统计能力
+2. **Frontend Interaction Optimization**
+   - Simplified user interaction process
+   - Improved data display clarity
+   - Enhanced data filtering and statistical capabilities
   
-### 安全改进
+### Security Improvements
 
-1. **用户权限管理**
-   - 新增用户状态管理，支持禁用账号
-   - 优化登录验证流程，提升系统安全性
-   - 增加详细的日志记录，方便监控和审计
-   - 用户权限控制转移至后端
+1. **User Permission Management**
+   - Added user status management to support account disabling
+   - Optimized login verification process to enhance system security
+   - Added detailed logging for monitoring and auditing
+   - User permission control transferred to backend
 
-### 如何使用新功能
+### How to Use New Features
 
-- **备注功能**：在创建或编辑记录时，可以添加详细备注信息
-- **简化登录**：直接使用手机号和密码登录，无需选择账号类型
-- **记录序号**：表格中自动显示序号，便于定位和引用特定记录
+- **Remarks Function**: When creating or editing records, detailed remarks can be added
+- **Simplified Login**: Login directly using phone number and password without selecting account type
+- **Record Sequence Numbers**: Table automatically displays sequence numbers for easier location and reference of specific records
 
-## 2024-03-01：云服务器部署优化
+## 2024-03-01: Cloud Server Deployment Optimization
 
-### 修复问题
+### Fixed Issues
 
-1. **修复API URL硬编码问题**
-   - 问题：前端代码中API地址硬编码为`localhost:3000`，导致部署到云服务器后，浏览器会尝试访问用户本地而非服务器的API
-   - 解决方案：创建API配置文件和HTTP服务封装，根据环境自动切换API地址
+1. **Fixed API URL Hardcoding Issue**
+   - Problem: API addresses in frontend code were hardcoded as `localhost:3000`, causing browsers to attempt accessing the user's local machine rather than the server API after cloud deployment
+   - Solution: Created API configuration file and HTTP service encapsulation to automatically switch API addresses based on environment
 
-### 主要改动
+### Major Changes
 
-1. **添加API配置**
-   - 创建`frontend/src/config/api.js`配置文件
-   - 开发环境使用`localhost:3000`
-   - 生产环境使用相对路径，自动指向当前域名下的API
+1. **Added API Configuration**
+   - Created `frontend/src/config/api.js` configuration file
+   - Development environment uses `localhost:3000`
+   - Production environment uses relative paths, automatically pointing to APIs under the current domain
 
-2. **HTTP服务封装**
-   - 创建`frontend/src/config/httpService.js`服务
-   - 封装常用的HTTP请求方法
-   - 统一处理错误和请求配置
+2. **HTTP Service Encapsulation**
+   - Created `frontend/src/config/httpService.js` service
+   - Encapsulated common HTTP request methods
+   - Unified error handling and request configuration
 
-3. **更新所有组件**
-   - 修改`Login.vue`、`WasteForm.vue`、`RecordsList.vue`、`EditRecord.vue`和`UserManagement.vue`
-   - 使用新的API配置和HTTP服务替换硬编码的API URL
+3. **Updated All Components**
+   - Modified `Login.vue`, `WasteForm.vue`, `RecordsList.vue`, `EditRecord.vue`, and `UserManagement.vue`
+   - Used new API configuration and HTTP service to replace hardcoded API URLs
 
-4. **更新前端构建配置**
-   - 修改`vue.config.js`
-   - 设置`publicPath`为相对路径`./`
-   - 添加代码分割和优化配置
+4. **Updated Frontend Build Configuration**
+   - Modified `vue.config.js`
+   - Set `publicPath` to relative path `./`
+   - Added code splitting and optimization configuration
 
-5. **增强后端跨域支持**
-   - 更新`server.js`中的CORS配置
-   - 支持带凭证的请求
-   - 允许更多的HTTP方法和头部
+5. **Enhanced Backend CORS Support**
+   - Updated CORS configuration in `server.js`
+   - Supported requests with credentials
+   - Allowed more HTTP methods and headers
 
-### 新增文档
+### New Documentation
 
-1. **部署指南 (DEPLOYMENT.md)**
-   - 详细的云服务器部署步骤
-   - 环境准备、Nginx配置、PM2进程管理
-   - 安全建议和故障排查
+1. **Deployment Guide (DEPLOYMENT.md)**
+   - Detailed cloud server deployment steps
+   - Environment preparation, Nginx configuration, PM2 process management
+   - Security recommendations and troubleshooting
 
-### 如何使用新功能
+### How to Use New Features
 
-项目修改后的部署流程：
+Deployment process after project modification:
 
-1. 在本地开发环境中进行开发和测试
-2. 运行`npm run build`构建前端项目
-3. 将前端`dist`目录和后端代码上传到服务器
-4. 按照`DEPLOYMENT.md`配置Nginx和后端服务
-5. 访问服务器IP或域名即可使用系统
+1. Develop and test in local development environment
+2. Run `npm run build` to build the frontend project
+3. Upload frontend `dist` directory and backend code to server
+4. Configure Nginx and backend service according to `DEPLOYMENT.md`
+5. Access the system via server IP or domain name
 
-## 2024-03-03 更新日志
+## 2024-03-03 Changelog
 
-### 新增功能
+### New Features
 
-1. **用户登录增强**
-   - 增加密码验证功能
-   - 员工登录现在也需要密码验证
-   - 提升系统安全性
+1. **Enhanced User Login**
+   - Added password verification functionality
+   - Employee login now also requires password verification
+   - Improved system security
 
-2. **文档重构与完善**
-   - 重构README.md文件，使其更加清晰和全面
-   - 添加详细的系统功能说明和架构介绍
-   - 优化安装和使用说明
+2. **Documentation Restructuring and Improvement**
+   - Restructured README.md file to make it clearer and more comprehensive
+   - Added detailed system functionality description and architecture introduction
+   - Optimized installation and usage instructions
 
-3. **部署指南扩展**
-   - 新增前端生产环境部署详细指南
-   - 添加Windows和Linux环境下的部署步骤
-   - 包含常见问题和解决方案
+3. **Deployment Guide Extension**
+   - Added detailed frontend production environment deployment guide
+   - Added deployment steps for Windows and Linux environments
+   - Included common issues and solutions
 
-4. **Nginx配置**
-   - 添加完整的Nginx配置文件
-   - 针对开发和生产环境提供不同配置
-   - 包含反向代理、静态资源缓存和安全设置
+4. **Nginx Configuration**
+   - Added complete Nginx configuration files
+   - Provided different configurations for development and production environments
+   - Included reverse proxy, static resource caching, and security settings
 
-### 如何使用新功能
+### How to Use New Features
 
-1. **密码登录**
-   - 所有用户（包括员工）现在需要使用用户名和密码登录
-   - 默认密码在系统初始化时设置，可在用户管理界面修改
+1. **Password Login**
+   - All users (including employees) now need to login with username and password
+   - Default passwords are set during system initialization and can be modified in the user management interface
 
-2. **部署新版本**
-   - 按照更新后的部署指南进行操作
-   - 对于已部署的系统，需要更新Nginx配置
-   - 重启服务以应用新的安全设置
+2. **Deploying New Version**
+   - Follow the updated deployment guide
+   - For already deployed systems, update Nginx configuration
+   - Restart services to apply new security settings
 

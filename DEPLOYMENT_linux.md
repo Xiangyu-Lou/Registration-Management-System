@@ -1,39 +1,39 @@
-# 危险废物管理系统部署指南 Linux
+# Hazardous Waste Management System Deployment Guide for Linux
 
-本文档提供了在Linux系统上部署危险废物管理系统的详细步骤。
+This document provides detailed steps for deploying the Hazardous Waste Management System on Linux.
 
-## 1. 准备工作
+## 1. Preparation
 
-### 1.1 安装 Node.js
+### 1.1 Install Node.js
 
 ```bash
-# 使用 nvm 安装 Node.js（推荐）
+# Using nvm to install Node.js (recommended)
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
 source ~/.bashrc
 nvm install --lts
 nvm use --lts
 
-# 直接安装
+# Direct installation
 # Ubuntu/Debian
 sudo apt update
 sudo apt install nodejs npm
 ```
 
-### 1.2 安装 MySQL
+### 1.2 Install MySQL
 
 ```bash
 # Ubuntu/Debian
 sudo apt update
 sudo apt install mysql-server
 
-# 启动 MySQL 服务并设置开机自启
+# Start MySQL service and enable auto-start
 sudo systemctl start mysql
 sudo systemctl enable mysql
 
-# 配置 MySQL 安全设置
+# Configure MySQL security settings
 sudo mysql_secure_installation
 ```
-### 1.3 安装Nginx(可选)
+### 1.3 Install Nginx (optional)
 
 ```bash
 # Ubuntu/Debian
@@ -41,53 +41,53 @@ sudo apt update
 sudo apt install nginx
 ```
 
-### 1.4 获取代码
+### 1.4 Get the code
 ```bash
-# 克隆代码仓库
+# Clone the repository
 git clone git@github.com:Xiangyu-Lou/Hazardous-waste-management-system.git
 cd Hazardous-waste-management-system
 ```
-## 2. 部署后端
+## 2. Deploy the Backend
 
-### 2.1 安装依赖
+### 2.1 Install Dependencies
 
 ```bash
-# 安装后端依赖
+# Install backend dependencies
 cd backend
 npm install
 
-# 安装数据库初始化脚本依赖
+# Install database initialization script dependencies
 cd ../db/mysql
 npm install
 ```
 
-### 2.2 初始化数据库
+### 2.2 Initialize the Database
 
-1. 打开项目中的 `db/mysql/init_db.js` 文件
-2. 修改数据库连接配置：
+1. Open the `db/mysql/init_db.js` file in the project
+2. Modify the database connection configuration:
 ```javascript
 const dbConfig = {
     host: 'localhost',
-    user: 'your_username',    // 替换为您的MySQL用户名
-    password: 'your_password', // 替换为您的MySQL密码
+    user: 'your_username',    // Replace with your MySQL username
+    password: 'your_password', // Replace with your MySQL password
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0
 };
 ```
-3. 运行初始化脚本：
+3. Run the initialization script:
 ```bash
 node init_db.js
 ```
 
-### 2.3 配置数据库链接
+### 2.3 Configure Database Connection
 
-编辑 `backend/server.js` 文件，修改数据库连接配置：
+Edit the `backend/server.js` file, modify the database connection configuration:
 ```javascript
 const dbConfig = {
     host: 'localhost',
-    user: 'your_username',  // 修改为您创建的用户名
-    password: 'your_password',  // 修改为您设置的密码
+    user: 'your_username',  // Change to your created username
+    password: 'your_password',  // Change to your set password
     database: 'waste_management',
     waitForConnections: true,
     connectionLimit: 10,
@@ -96,111 +96,111 @@ const dbConfig = {
 };
 ```
 
-### 2.4 创建上传目录
+### 2.4 Create Upload Directory
 
 ```bash
-# 修改上传目录权限
+# Modify upload directory permissions
 cd ../../
 chmod 755 uploads
 ```
 
-### 2.5 部署后端服务（开发环境）
+### 2.5 Deploy Backend Service (Development Environment)
 
 ```bash
-# 进入后端目录
+# Enter the backend directory
 cd backend
-# 启动开发服务
+# Start development service
 npm run start
 ```
 
-### 2.6 部署后端服务（生产环境）
+### 2.6 Deploy Backend Service (Production Environment)
 
 ```bash
-# 安装 PM2
+# Install PM2
 sudo npm install -g pm2
 
-# 启动后端服务
+# Start backend service
 cd backend
 pm2 start server.js --name "waste-management-backend"
 
-# 设置开机自启
+# Set up auto-start
 pm2 startup
 pm2 save
 ```
-## 3. 部署前端
+## 3. Deploy Frontend
 
-### 3.1 安装依赖并构建前端
+### 3.1 Install Dependencies and Build Frontend
 
 ```bash
-# 进入前端目录
+# Enter frontend directory
 cd ../frontend
 
-# 安装依赖
+# Install dependencies
 npm install
 ```
 
-### 3.2 部署前端（开发版本）
+### 3.2 Deploy Frontend (Development Version)
 
 ```bash
-# 启动开发服务
+# Start development server
 npm run serve
 ```
 
-### 3.3 部署前端（生产版本）（需要ngnix）
+### 3.3 Deploy Frontend (Production Version) (Requires Nginx)
 
 ```bash
-# 构建生产版本
+# Build production version
 npm run build
 ```
 
-## 4. 配置 Nginx
+## 4. Configure Nginx
 
-### 4.1 开发版本
-创建 Nginx 配置文件：
+### 4.1 Development Version
+Create Nginx configuration file:
 
 ```bash
 sudo mv ../ngnix_config/linux/develop/waste-management /etc/nginx/sites-available/
 ```
 
-启用配置并重启 Nginx：
+Enable configuration and restart Nginx:
 
 ```bash
 sudo ln -s /etc/nginx/sites-available/waste-management /etc/nginx/sites-enabled/
-sudo nginx -t  # 检测配置是否正确
+sudo nginx -t  # Check if configuration is correct
 sudo systemctl restart nginx
 ```
 
-### 4.2 生产版本
+### 4.2 Production Version
 
 ```bash
 sudo mv ../ngnix_config/linux/product/waste-management /etc/nginx/sites-available/
-# 或者使用
+# Or use
 sudo vim /etc/nginx/sites-available/waste-management
 ```
 
-启用配置并重启 Nginx：
+Enable configuration and restart Nginx:
 ```bash
 sudo ln -s /etc/nginx/sites-available/waste-management /etc/nginx/sites-enabled/
-sudo nginx -t  # 检测配置是否正确
+sudo nginx -t  # Check if configuration is correct
 sudo systemctl restart nginx
 ```
 
-修改权限（可能需要）
+Modify permissions (may be necessary)
 sudo chmod +x /home/ecs-user/
 
-## 5. 配置SSL证书
+## 5. Configure SSL Certificate
 
-上传证书到 /etc/nginx/ssl/
+Upload certificate to /etc/nginx/ssl/
 
-修改配置文件
+Modify configuration file
 
 ```bash
 sudo vim /etc/nginx/sites-available/waste-management
 ```
 
-启用配置并重启 Nginx：
+Enable configuration and restart Nginx:
 
 ```bash
-sudo nginx -t  # 检测配置是否正确
+sudo nginx -t  # Check if configuration is correct
 sudo systemctl restart nginx
 ``` 

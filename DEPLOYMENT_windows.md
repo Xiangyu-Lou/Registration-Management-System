@@ -1,33 +1,33 @@
-# 危险废物管理系统部署指南 Windows
+# Hazardous Waste Management System Deployment Guide for Windows
 
-本文档提供了在Windows系统上部署危险废物管理系统的详细步骤。
+This document provides detailed steps for deploying the Hazardous Waste Management System on Windows.
 
-## 1. 准备工作
+## 1. Preparation
 
-### 1.1 安装 Node.js
+### 1.1 Install Node.js
 
-1. 访问 [Node.js 官网](https://nodejs.org/)下载Windows安装包
-2. 验证安装：
+1. Visit the [Node.js official website](https://nodejs.org/) to download the Windows installer
+2. Verify installation:
 ```bash
 node --version
 npm --version
 ```
 
-### 1.2 安装 MySQL
+### 1.2 Install MySQL
 
-1. 访问 [MySQL官网](https://dev.mysql.com/downloads/installer/) 下载MySQL安装程序
-2. 确保MySQL服务已启动：
-   - 在Windows搜索栏中输入"services.msc"
-   - 找到"MySQL"服务，确保其状态为"正在运行"
+1. Visit the [MySQL official website](https://dev.mysql.com/downloads/installer/) to download the MySQL installer
+2. Ensure MySQL service is running:
+   - Type "services.msc" in the Windows search bar
+   - Find the "MySQL" service and make sure its status is "Running"
 
-### 1.3 获取代码
+### 1.3 Get the code
 ```bash
 git clone https://github.com/Xiangyu-Lou/Hazardous-waste-management-system.git
 cd Hazardous-waste-management-system
 ```
-## 2. 部署后端
+## 2. Deploy the Backend
 
-### 2.1 安装依赖
+### 2.1 Install Dependencies
 
 ```bash
 cd ../db/mysql
@@ -36,34 +36,34 @@ cd ../../backend
 npm install
 ```
 
-### 2.3 初始化数据库
+### 2.3 Initialize the Database
 
-1. 打开项目中的 `db/mysql/init_db.js` 文件
-2. 修改数据库连接配置：
+1. Open the `db/mysql/init_db.js` file in the project
+2. Modify the database connection configuration:
 ```javascript
 const dbConfig = {
     host: 'localhost',
-    user: 'your_username',    // 替换为您的MySQL用户名
-    password: 'your_password', // 替换为您的MySQL密码
+    user: 'your_username',    // Replace with your MySQL username
+    password: 'your_password', // Replace with your MySQL password
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0
 };
 ```
-3. 运行初始化脚本：
+3. Run the initialization script:
 ```bash
 cd db/mysql
 node init_db.js
 ```
 
-### 2.4 配置数据库链接
+### 2.4 Configure Database Connection
 
-编辑 `backend/server.js` 文件，修改数据库连接配置：
+Edit the `backend/server.js` file, modify the database connection configuration:
 ```javascript
 const dbConfig = {
     host: 'localhost',
-    user: 'your_username',  // 修改为您创建的用户名
-    password: 'your_password',  // 修改为您设置的密码
+    user: 'your_username',  // Change to your created username
+    password: 'your_password',  // Change to your set password
     database: 'waste_management',
     waitForConnections: true,
     connectionLimit: 10,
@@ -72,58 +72,58 @@ const dbConfig = {
 };
 ```
 
-### 2.5 运行后端服务
+### 2.5 Run Backend Service
 ```bash
 cd ../../backend
 npm run start
 ```
 
-## 3. 部署前端
+## 3. Deploy Frontend
 
-### 3.1 安装依赖
+### 3.1 Install Dependencies
 ```bash
 cd ../frontend
 npm install
 ```
 
-### 3.2 运行前端服务(开发环境)
+### 3.2 Run Frontend Service (Development Environment)
 ```bash
 cd ../frontend
 npm run serve
 ```
 
-### 2.6 运行前端服务(生产环境)
+### 3.3 Run Frontend Service (Production Environment)
 ```bash
 cd ../frontend
 npm run build
 ```
-如果不是使用nginx，则需要使用http-server运行前端服务
+If not using Nginx, you'll need to use http-server to run the frontend service
 ```bash
 npm install -g http-server
 cd dist
 http-server -p 8080
 ```
 
-## 3. 配置 Nginx (可选)
+## 4. Configure Nginx (Optional)
 
-1. 访问 [Nginx 官方网站](http://nginx.org/en/download.html)，下载 Windows 版本
-2. 将下载的 zip 文件解压到您选择的目录，例如 `C:\Program Files (x86)\nginx-1.27.4`
-3. 配置nginx.conf文件
-   - 对于开发环境，使用 `\ngnix_config\windows\develop\nginx.conf` 替换 `C:\Program Files (x86)\nginx-1.27.4\conf\nginx.conf` 文件
-   - 对于生产环境，使用 `\ngnix_config\windows\production\nginx.conf` 替换 `C:\Program Files (x86)\nginx-1.27.4\conf\nginx.conf` 文件
+1. Visit the [Nginx official website](http://nginx.org/en/download.html) to download the Windows version
+2. Extract the downloaded zip file to a directory of your choice, for example `C:\Program Files (x86)\nginx-1.27.4`
+3. Configure the nginx.conf file
+   - For development environment, replace `C:\Program Files (x86)\nginx-1.27.4\conf\nginx.conf` with `\ngnix_config\windows\develop\nginx.conf`
+   - For production environment, replace `C:\Program Files (x86)\nginx-1.27.4\conf\nginx.conf` with `\ngnix_config\windows\production\nginx.conf`
 
-4. 启动 Nginx：
-   - 导航到 Nginx 目录：`cd C:\Program Files (x86)\nginx-1.27.4`
-   - 验证配置文件：`nginx -t`
-   - 启动 Nginx：`start nginx`
+4. Start Nginx:
+   - Navigate to the Nginx directory: `cd C:\Program Files (x86)\nginx-1.27.4`
+   - Verify the configuration file: `nginx -t`
+   - Start Nginx: `start nginx`
 
-5. 访问 http://localhost
+5. Visit http://localhost
 
-6. 常用命令：
-   - 启动 Nginx：`start nginx`
-   - 停止 Nginx：`nginx -s stop`
-   - 重新加载配置：`nginx -s reload`
-   - 退出：`nginx -s quit`
+6. Common commands:
+   - Start Nginx: `start nginx`
+   - Stop Nginx: `nginx -s stop`
+   - Reload configuration: `nginx -s reload`
+   - Quit: `nginx -s quit`
 
 
 

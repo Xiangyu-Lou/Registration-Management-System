@@ -1,91 +1,92 @@
-# 危险废物管理系统
+# Registration Management System
 
-这是一个基于 Vue 和 MySQL 的危险废物管理系统，用于基层单位填报危险废物的产生情况。
+This is a Registration Management System based on Vue and MySQL, designed for basic units to report the generation of hazardous waste.
 
-## 项目功能
+[简体中文](README_CN.md#dev)
+## Project Features
 
-### 基础功能
-- 基层单位管理
-  - 支持多个基层单位的选择和管理
-  - 每个单位可独立管理废物记录
+### Basic Functions
+- Basic Unit Management
+  - Support for multiple basic units selection and management
+  - Each unit can independently manage waste records
 
-### 用户权限体系
-- 三级权限管理
-  - 超级管理员
-    - 全系统数据查看权限
-    - 所有单位记录管理权限
-  - 单位管理员
-    - 本单位数据查看权限
-    - 本单位记录管理权限
-  - 基层员工
-    - 本单位废物填报权限
-    - 基础数据查看权限
+### User Permission System
+- Three-level permission management
+  - Super Administrator
+    - Full system data viewing permissions
+    - Record management permissions for all units
+  - Unit Administrator
+    - Data viewing permissions for their own unit
+    - Record management permissions for their own unit
+  - Basic Employee
+    - Waste reporting permissions for their own unit
+    - Basic data viewing permissions
 
-### 废物管理
-- 废物分类系统
-  - 油泥沙
-  - 含油包装物  
-  - 其他类别
-- 废物信息填报
-  - 基本信息
-    - 产生地点
-    - 收集开始时间
-    - 收集数量
-  - 现场照片管理
-    - 收集前照片(≤5张)
-    - 收集后照片(≤5张)
-  - 自动化功能
-    - 自动记录填报时间
-    - 自动关联填报单位
+### Waste Management
+- Waste Classification System
+  - Oil sludge
+  - Oil-containing packaging materials
+  - Other categories
+- Waste Information Reporting
+  - Basic Information
+    - Generation location
+    - Collection start time
+    - Collection quantity
+  - On-site Photo Management
+    - Photos before collection (≤5 photos)
+    - Photos after collection (≤5 photos)
+  - Automated Features
+    - Automatic recording of reporting time
+    - Automatic association with reporting unit
 
-## 项目结构
+## Project Structure
 
 ```
 hazardous-waste-management-system/
 │
-├── backend/          # Node.js 后端服务
-│   ├── package.json  # 后端依赖配置
-│   └── server.js     # 后端服务主文件
+├── backend/          # Node.js backend service
+│   ├── package.json  # Backend dependency configuration
+│   └── server.js     # Main backend service file
 │
-├── frontend/         # Vue 前端应用
-│   ├── public/       # 静态资源
-│   ├── src/          # 源代码
-│   │   ├── views/    # 页面组件
-│   │   ├── router/   # 路由配置
-│   │   ├── store/    # 状态管理
-│   │   ├── config/   # 配置文件
-│   │   ├── App.vue   # 主应用组件
-│   │   └── main.js   # 应用入口文件
-│   ├── package.json  # 前端依赖配置
-│   └── vue.config.js # Vue配置文件
+├── frontend/         # Vue frontend application
+│   ├── public/       # Static resources
+│   ├── src/          # Source code
+│   │   ├── views/    # Page components
+│   │   ├── router/   # Routing configuration
+│   │   ├── store/    # State management
+│   │   ├── config/   # Configuration files
+│   │   ├── App.vue   # Main application component
+│   │   └── main.js   # Application entry file
+│   ├── package.json  # Frontend dependency configuration
+│   └── vue.config.js # Vue configuration file
 │
-├── db/               # 数据库文件
-│   └── mysql/        # MySQL数据库脚本
-│       ├── init_db.js        # 完整版MySQL初始化脚本
-│       ├── init_db_simple.js # 简化版MySQL初始化脚本
-│       └── README.md         # MySQL配置说明
+├── db/               # Database files
+│   └── mysql/        # MySQL database scripts
+│       ├── init_db.js        # Complete MySQL initialization script
+│       ├── init_db_simple.js # Simplified MySQL initialization script
+│       └── README.md         # MySQL configuration instructions
 │
-└── uploads/          # 上传的照片存储目录(运行后生成)
+└── uploads/          # Directory for storing uploaded photos (generated after running)
 ```
 
-## 部署指南
+## Deployment Guide
 
-| Windows | Linux | 更新日志 |
+| Windows | Linux | Changelog |
 |------|------|----------|
-|[windows部署指南](DEPLOYMENT.md#dev) | [linux部署指南](DEPLOYMENT.md#prod) | [更新日志](Changelog.md) |
+|[Windows Deployment Guide](DEPLOYMENT.md#dev) | [Linux Deployment Guide](DEPLOYMENT.md#prod) | [Changelog](Changelog.md) |
 
-## 测试账号
+## Test Accounts
 
-初始化数据库后，系统包含以下测试账号：
+After initializing the database, the system contains the following test accounts:
 
-1. 超级管理员
-   - 手机号: 13800000001
-   - 密码: 1
+1. Super Administrator
+   - Phone: 13800000003
+   - Password: 1
 
-2. 单位管理员
-   - 手机号: 13800000002
-   - 密码: 1
+2. Unit Administrator
+   - Phone: 13800000002
+   - Password: 1
 
-3. 员工
-   - 手机号: 13800000003
-   - 密码: 1
+3. Employee
+   - Phone: 13800000001
+   - Password: 1
