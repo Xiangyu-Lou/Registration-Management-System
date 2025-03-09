@@ -1,0 +1,129 @@
+server {
+    listen 80;
+    server_name www.your_domain.com your_domain.com;  # 你的域名(www.your_domain.com 和 your_domain.com)
+    
+    # HTTP重定向到HTTPS
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name www.your_domain.com your_domain.com;  # 你的域名(www.your_domain.com 和 your_domain.com)
+    
+    # SSL证书配置
+    ssl_certificate /etc/nginx/ssl/your_domain.com.pem; # 你的SSL证书路径
+    ssl_certificate_key /etc/nginx/ssl/your_domain.com.key; # 你的SSL密钥路径
+    
+    # SSL优化设置
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 10m;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers on;
+    ssl_ciphers "EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH";
+    
+    # 启用OCSP Stapling
+    ssl_stapling on;
+    ssl_stapling_verify on;
+    resolver 8.8.8.8 8.8.4.4 valid=300s;
+    resolver_timeout 5s;
+    
+    # 安全相关的HTTP头
+    add_header X-Content-Type-Options nosniff;
+    add_header X-XSS-Protection "1; mode=block";
+    add_header X-Frame-Options "SAMEORIGIN";
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    
+    # 前端静态资源
+    location / {
+        root /home/ecs-user/Registration-Management-System/frontend/dist;  # 替换为实际的前端构建文件路径
+        index index.html index.htm;
+        try_files $uri $uri/ /index.html;  # 支持前端路由
+        
+        # 静态资源缓存设置
+        location ~* \.(jpg|jpeg|png|gif|ico|css|js|svg|woff|woff2|ttf|eot)$ {
+            expires 30d;
+            add_header Cache-Control "public, max-age=2592000";
+            access_log off;
+        }
+    }
+    
+    # 后端API代理
+    location /api {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        # 超时设置
+        proxy_connect_timeout 300s;
+        proxy_send_timeout 300s;
+        proxy_read_timeout 300s;
+        
+        # 增加客户端请求体大小限制
+        client_max_body_size 50M;
+    }
+    
+    # WebSocket支持
+    location /ws {
+        proxy_pass http://localhost:8080;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+    
+    # 上传文件目录
+    location /uploads/ {
+        alias /home/ecs-user/Registration-Management-System/uploads/;  # 更新为实际的上传文件目录
+        autoindex off;
+        
+        # 禁用所有访问限制
+        allow all;
+        
+        # 设置正确的MIME类型
+        types {
+            image/jpeg jpg jpeg;
+            image/png png;
+            image/gif gif;
+            image/webp webp;
+            application/pdf pdf;
+            text/plain txt;
+            application/octet-stream *;  # 添加通用MIME类型
+        }
+        
+        # 静态文件缓存
+        expires 7d;
+        add_header Cache-Control "public";
+        
+        # 安全设置
+        add_header X-Content-Type-Options nosniff;
+        add_header X-XSS-Protection "1; mode=block";
+    }
+    
+    # 日志配置
+    access_log /var/log/nginx/waste-management-access.log;
+    error_log /var/log/nginx/waste-management-error.log;
+    
+    # 增加上传文件大小限制
+    client_max_body_size 50M;
+    
+    # 错误页面
+    error_page 404 /404.html;
+    location = /404.html {
+        root /home/ecs-user/Registration-Management-System/frontend/dist;
+    }
+    
+    error_page 500 502 503 504 /50x.html;
+    location = /50x.html {
+        root /home/ecs-user/Registration-Management-System/frontend/dist;
+    }
+}

@@ -99,7 +99,7 @@ logs/
 log/
 
 # Nginx配置文件
-ngnix_config/linux/product/waste-management
+# ngnix_config/linux/product/waste-management
 
 # 其他
 .history/
