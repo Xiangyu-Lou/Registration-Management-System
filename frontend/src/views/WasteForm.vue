@@ -768,6 +768,9 @@ export default {
             }
             formData.append('quantity', form.quantity);
             
+            // 添加备注字段
+            formData.append('remarks', form.remarks || '');
+            
             // 添加创建者ID（如果用户已登录）
             if (auth.state.isLoggedIn && auth.state.user) {
               formData.append('creator_id', auth.state.user.id);
@@ -784,6 +787,7 @@ export default {
               wasteTypeId: form.wasteTypeId,
               location: form.location,
               quantity: form.quantity,
+              remarks: form.remarks || '',
               photo_before: photoFilesBefore.value ? photoFilesBefore.value.length : 0,
               photo_after: photoFilesAfter.value ? photoFilesAfter.value.length : 0
             });

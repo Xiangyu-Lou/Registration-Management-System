@@ -221,6 +221,7 @@ export default {
     const uploadPercentage = ref(0);
     const uploadStatus = ref('准备上传...');
     const showLargeFileWarning = ref(false);
+    const record = ref(null);
     
     // 添加解析照片路径的函数
     const parsePhotoPath = (path) => {
@@ -388,27 +389,32 @@ export default {
         loading.value = true;
         const response = await httpService.get(`${apiConfig.endpoints.wasteRecords}/detail/${route.params.id}`);
         
-        const record = response.data;
-        console.log('获取到的记录详情:', record);
+        record.value = response.data; // 保存原始记录数据
+        const recordData = response.data;
+        console.log('获取到的记录详情:', recordData);
         
-        form.unitId = record.unit_id;
-        form.wasteTypeId = record.waste_type_id;
-        form.location = record.location;
-        form.recordId = record.id;
+        form.unitId = recordData.unit_id;
+        form.wasteTypeId = recordData.waste_type_id;
+        form.location = recordData.location;
+        form.recordId = recordData.id;
         
         // 处理收集时间
-        if (record.collection_start_time) {
-          const dateTime = new Date(record.collection_start_time);
+        if (recordData.collection_start_time) {
+          const dateTime = new Date(recordData.collection_start_time);
           form.collectionDate = dateTime.toISOString().slice(0, 10);
           form.collectionTime = dateTime.toTimeString().slice(0, 5);
         }
         
-        form.quantity = record.quantity;
+        form.quantity = recordData.quantity;
+        
+        // 添加备注字段赋值
+        form.remarks = recordData.remarks || '';
+        console.log('设置备注字段:', recordData.remarks);
         
         // 处理照片
-        if (record.photo_path_before) {
-          console.log('收集前照片路径:', record.photo_path_before);
-          const photoPaths = parsePhotoPath(record.photo_path_before);
+        if (recordData.photo_path_before) {
+          console.log('收集前照片路径:', recordData.photo_path_before);
+          const photoPaths = parsePhotoPath(recordData.photo_path_before);
           console.log('解析后的收集前照片路径:', photoPaths);
           
           fileListBefore.value = photoPaths.map(path => {
@@ -429,9 +435,9 @@ export default {
           });
         }
         
-        if (record.photo_path_after) {
-          console.log('收集后照片路径:', record.photo_path_after);
-          const photoPaths = parsePhotoPath(record.photo_path_after);
+        if (recordData.photo_path_after) {
+          console.log('收集后照片路径:', recordData.photo_path_after);
+          const photoPaths = parsePhotoPath(recordData.photo_path_after);
           console.log('解析后的收集后照片路径:', photoPaths);
           
           fileListAfter.value = photoPaths.map(path => {
@@ -453,10 +459,10 @@ export default {
         }
         
         // 获取单位名称
-        unitName.value = record.unit_name;
+        unitName.value = recordData.unit_name;
         
         // 设置创建时间
-        createdAt.value = record.created_at;
+        createdAt.value = recordData.created_at;
         
         // 初始化预览图片列表
         updatePreviewImages([...fileListBefore.value, ...fileListAfter.value]);
@@ -1062,9 +1068,11 @@ export default {
                 console.log('保存现有收集前照片路径(无新照片):', existingPaths);
                 formData.append('photo_path_before', JSON.stringify(existingPaths));
               }
-            } else {
-              // 如果没有照片，设置为空数组
-              formData.append('photo_path_before', JSON.stringify([]));
+            } else if (!isNew.value && record.value && record.value.photo_path_before) {
+              // 如果是编辑现有记录，且原记录有照片，但现在照片列表为空，表示用户删除了所有照片
+              // 发送一个特殊标记，告诉后端将字段设为null
+              console.log('用户删除了所有收集前照片，发送NULL标记');
+              formData.append('photo_path_before', 'NULL');
             }
             
             // 处理收集后照片
@@ -1122,9 +1130,11 @@ export default {
                 console.log('保存现有收集后照片路径(无新照片):', existingPaths);
                 formData.append('photo_path_after', JSON.stringify(existingPaths));
               }
-            } else {
-              // 如果没有照片，设置为空数组
-              formData.append('photo_path_after', JSON.stringify([]));
+            } else if (!isNew.value && record.value && record.value.photo_path_after) {
+              // 如果是编辑现有记录，且原记录有照片，但现在照片列表为空，表示用户删除了所有照片
+              // 发送一个特殊标记，告诉后端将字段设为null
+              console.log('用户删除了所有收集后照片，发送NULL标记');
+              formData.append('photo_path_after', 'NULL');
             }
             
             // 打印FormData内容，用于调试
@@ -1221,7 +1231,8 @@ export default {
       uploadPercentage,
       uploadStatus,
       percentageFormat,
-      showLargeFileWarning
+      showLargeFileWarning,
+      record
     };
   }
 };

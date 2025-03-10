@@ -660,18 +660,36 @@ app.put('/api/waste-records/:id', verifyToken, upload.fields([
       // 如果前端提供了现有照片路径，则合并
       if (photo_path_before) {
         console.log('收到现有收集前照片路径:', photo_path_before);
-        let existingPaths = [];
-        try {
-          existingPaths = JSON.parse(photo_path_before);
-        } catch (e) {
-          console.error('解析现有收集前照片路径失败:', e);
-          existingPaths = photo_path_before ? [photo_path_before] : [];
-        }
         
-        // 合并新上传的照片和现有照片
-        const allPhotosBefore = [...newPhotosBefore, ...existingPaths];
-        newPhotoPathBefore = JSON.stringify(allPhotosBefore);
-        console.log('合并后的收集前照片路径:', newPhotoPathBefore);
+        // 检查是否为特殊的NULL标记
+        if (photo_path_before === 'NULL') {
+          console.log('收到NULL标记，将收集前照片字段设为null');
+          newPhotoPathBefore = null;
+        } else {
+          let existingPaths = [];
+          try {
+            existingPaths = JSON.parse(photo_path_before);
+            // 检查是否为空数组
+            if (Array.isArray(existingPaths) && existingPaths.length === 0) {
+              console.log('收集前照片路径为空数组，将字段设为null');
+              // 设置为null
+              newPhotoPathBefore = null;
+            } else {
+              // 合并新上传的照片和现有照片
+              const allPhotosBefore = [...newPhotosBefore, ...existingPaths];
+              newPhotoPathBefore = JSON.stringify(allPhotosBefore);
+              console.log('合并后的收集前照片路径:', newPhotoPathBefore);
+            }
+          } catch (e) {
+            console.error('解析现有收集前照片路径失败:', e);
+            existingPaths = photo_path_before ? [photo_path_before] : [];
+            
+            // 合并新上传的照片和现有照片
+            const allPhotosBefore = [...newPhotosBefore, ...existingPaths];
+            newPhotoPathBefore = JSON.stringify(allPhotosBefore);
+            console.log('合并后的收集前照片路径(解析失败):', newPhotoPathBefore);
+          }
+        }
       } else {
         // 如果没有现有照片路径，只使用新上传的照片
         newPhotoPathBefore = JSON.stringify(newPhotosBefore);
@@ -680,7 +698,27 @@ app.put('/api/waste-records/:id', verifyToken, upload.fields([
     } else if (photo_path_before) {
       // 如果没有新上传的照片，但有现有照片路径
       console.log('没有新的收集前照片，使用现有路径:', photo_path_before);
-      newPhotoPathBefore = photo_path_before;
+      
+      // 检查是否为特殊的NULL标记
+      if (photo_path_before === 'NULL') {
+        console.log('收到NULL标记，将收集前照片字段设为null');
+        newPhotoPathBefore = null;
+      } else {
+        // 检查是否为空数组
+        try {
+          const existingPaths = JSON.parse(photo_path_before);
+          if (Array.isArray(existingPaths) && existingPaths.length === 0) {
+            console.log('收集前照片路径为空数组，将字段设为null');
+            // 设置为null
+            newPhotoPathBefore = null;
+          } else {
+            newPhotoPathBefore = photo_path_before;
+          }
+        } catch (e) {
+          // 如果不是有效的JSON，直接使用
+          newPhotoPathBefore = photo_path_before;
+        }
+      }
     }
     
     // 处理收集后照片
@@ -693,18 +731,36 @@ app.put('/api/waste-records/:id', verifyToken, upload.fields([
       // 如果前端提供了现有照片路径，则合并
       if (photo_path_after) {
         console.log('收到现有收集后照片路径:', photo_path_after);
-        let existingPaths = [];
-        try {
-          existingPaths = JSON.parse(photo_path_after);
-        } catch (e) {
-          console.error('解析现有收集后照片路径失败:', e);
-          existingPaths = photo_path_after ? [photo_path_after] : [];
-        }
         
-        // 合并新上传的照片和现有照片
-        const allPhotosAfter = [...newPhotosAfter, ...existingPaths];
-        newPhotoPathAfter = JSON.stringify(allPhotosAfter);
-        console.log('合并后的收集后照片路径:', newPhotoPathAfter);
+        // 检查是否为特殊的NULL标记
+        if (photo_path_after === 'NULL') {
+          console.log('收到NULL标记，将收集后照片字段设为null');
+          newPhotoPathAfter = null;
+        } else {
+          let existingPaths = [];
+          try {
+            existingPaths = JSON.parse(photo_path_after);
+            // 检查是否为空数组
+            if (Array.isArray(existingPaths) && existingPaths.length === 0) {
+              console.log('收集后照片路径为空数组，将字段设为null');
+              // 设置为null
+              newPhotoPathAfter = null;
+            } else {
+              // 合并新上传的照片和现有照片
+              const allPhotosAfter = [...newPhotosAfter, ...existingPaths];
+              newPhotoPathAfter = JSON.stringify(allPhotosAfter);
+              console.log('合并后的收集后照片路径:', newPhotoPathAfter);
+            }
+          } catch (e) {
+            console.error('解析现有收集后照片路径失败:', e);
+            existingPaths = photo_path_after ? [photo_path_after] : [];
+            
+            // 合并新上传的照片和现有照片
+            const allPhotosAfter = [...newPhotosAfter, ...existingPaths];
+            newPhotoPathAfter = JSON.stringify(allPhotosAfter);
+            console.log('合并后的收集后照片路径(解析失败):', newPhotoPathAfter);
+          }
+        }
       } else {
         // 如果没有现有照片路径，只使用新上传的照片
         newPhotoPathAfter = JSON.stringify(newPhotosAfter);
@@ -713,7 +769,27 @@ app.put('/api/waste-records/:id', verifyToken, upload.fields([
     } else if (photo_path_after) {
       // 如果没有新上传的照片，但有现有照片路径
       console.log('没有新的收集后照片，使用现有路径:', photo_path_after);
-      newPhotoPathAfter = photo_path_after;
+      
+      // 检查是否为特殊的NULL标记
+      if (photo_path_after === 'NULL') {
+        console.log('收到NULL标记，将收集后照片字段设为null');
+        newPhotoPathAfter = null;
+      } else {
+        // 检查是否为空数组
+        try {
+          const existingPaths = JSON.parse(photo_path_after);
+          if (Array.isArray(existingPaths) && existingPaths.length === 0) {
+            console.log('收集后照片路径为空数组，将字段设为null');
+            // 设置为null
+            newPhotoPathAfter = null;
+          } else {
+            newPhotoPathAfter = photo_path_after;
+          }
+        } catch (e) {
+          // 如果不是有效的JSON，直接使用
+          newPhotoPathAfter = photo_path_after;
+        }
+      }
     }
     
     // 格式化收集时间
