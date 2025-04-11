@@ -45,8 +45,44 @@
         <div v-show="showFilterPanel" class="filter-form-container">
           <el-form :model="filterForm" label-width="100px" class="filter-form">
             <el-row :gutter="20">
+              <!-- 废物类型 -->
+              <el-col :xs="24" :sm="12" :md="8" :lg="6" :xl="6">
+                <el-form-item label="废物类型">
+                  <el-select v-model="filterForm.wasteTypeId" placeholder="选择废物类型" style="width: 100%" clearable>
+                    <el-option 
+                      v-for="type in wasteTypes" 
+                      :key="type.id" 
+                      :label="type.name" 
+                      :value="type.id" 
+                    />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+              
+              <!-- 产生地点 -->
+              <el-col :xs="24" :sm="12" :md="8" :lg="6" :xl="6">
+                <el-form-item label="产生地点">
+                  <el-input 
+                    v-model="filterForm.location" 
+                    placeholder="输入地点关键词搜索" 
+                    clearable
+                  />
+                </el-form-item>
+              </el-col>
+              
+              <!-- 产生工序 -->
+              <el-col :xs="24" :sm="12" :md="8" :lg="6" :xl="6">
+                <el-form-item label="产生工序">
+                  <el-input 
+                    v-model="filterForm.process" 
+                    placeholder="输入工序关键词搜索" 
+                    clearable
+                  />
+                </el-form-item>
+              </el-col>
+              
               <!-- 收集时间范围 -->
-              <el-col :xs="24" :sm="24" :md="12" :lg="12" :xl="12">
+              <el-col :xs="24" :sm="12" :md="8" :lg="6" :xl="6">
                 <el-form-item label="收集时间">
                   <el-date-picker
                     v-model="filterForm.dateRange"
@@ -61,25 +97,11 @@
                   />
                 </el-form-item>
               </el-col>
-              
-              <!-- 废物类型 -->
-              <el-col :xs="24" :sm="24" :md="12" :lg="12" :xl="12">
-                <el-form-item label="废物类型">
-                  <el-select v-model="filterForm.wasteTypeId" placeholder="选择废物类型" style="width: 100%" clearable>
-                    <el-option 
-                      v-for="type in wasteTypes" 
-                      :key="type.id" 
-                      :label="type.name" 
-                      :value="type.id" 
-                    />
-                  </el-select>
-                </el-form-item>
-              </el-col>
             </el-row>
             
             <el-row :gutter="20">
               <!-- 数量范围 -->
-              <el-col :xs="24" :sm="24" :md="12" :lg="12" :xl="12">
+              <el-col :xs="24" :sm="12" :md="16" :lg="12" :xl="12">
                 <el-form-item label="数量范围(吨)">
                   <div class="quantity-range">
                     <el-input-number 
@@ -103,22 +125,14 @@
                 </el-form-item>
               </el-col>
               
-              <!-- 产生地点 -->
-              <el-col :xs="24" :sm="24" :md="12" :lg="12" :xl="12">
-                <el-form-item label="产生地点">
-                  <el-input 
-                    v-model="filterForm.location" 
-                    placeholder="输入地点关键词搜索" 
-                    clearable
-                  />
-                </el-form-item>
+              <!-- 筛选按钮 -->
+              <el-col :xs="24" :sm="12" :md="8" :lg="12" :xl="12" class="filter-buttons-col">
+                <div class="filter-actions">
+                  <el-button type="primary" @click="applyFilter">筛选</el-button>
+                  <el-button @click="resetFilter">重置</el-button>
+                </div>
               </el-col>
             </el-row>
-            
-            <div class="filter-actions">
-              <el-button type="primary" @click="applyFilter">筛选</el-button>
-              <el-button @click="resetFilter">重置</el-button>
-            </div>
           </el-form>
         </div>
       </el-card>
@@ -133,6 +147,16 @@
               </el-button>
             </div>
           </div>
+          
+          <!-- 基层员工提示信息 -->
+          <el-alert
+            v-if="isBasicEmployee"
+            type="info"
+            show-icon
+            :closable="false"
+            title="提示：只能查看自己提交的近7天内的记录"
+            style="margin-bottom: 15px;"
+          />
           
           <el-table 
             :data="filteredRecords" 
@@ -155,6 +179,11 @@
             <el-table-column prop="remarks" label="备注" min-width="150">
               <template #default="scope">
                 {{ scope.row.remarks || '无' }}
+              </template>
+            </el-table-column>
+            <el-table-column prop="process" label="产生工序" min-width="120">
+              <template #default="scope">
+                {{ scope.row.process || '无' }}
               </template>
             </el-table-column>
             <el-table-column prop="location" label="产生地点" min-width="120" />
@@ -366,7 +395,8 @@ export default {
       wasteTypeId: null,
       minQuantity: null,
       maxQuantity: null,
-      location: ''
+      location: '',
+      process: ''
     });
     
     // 筛选记录
@@ -390,6 +420,11 @@ export default {
         
         // 筛选地点
         if (filterForm.location && !record.location.includes(filterForm.location)) {
+          return false;
+        }
+        
+        // 筛选工序
+        if (filterForm.process && !record.process.includes(filterForm.process)) {
           return false;
         }
         
@@ -479,7 +514,7 @@ export default {
       const unitId = auth.getUnitId();
       if (isUnitAdmin.value && unitId && record.unit_id === parseInt(unitId)) return true;
       
-      // 普通用户只能编辑自己创建的记录
+      // 普通用户(基层员工)只能编辑自己创建的记录
       const userId = auth.getUserId();
       return userId && record.creator_id === parseInt(userId);
     };
@@ -545,6 +580,7 @@ export default {
       filterForm.minQuantity = null;
       filterForm.maxQuantity = null;
       filterForm.location = '';
+      filterForm.process = '';
       
       // 重置分页
       page.value = 1;
@@ -609,6 +645,7 @@ export default {
           minQuantity: filterForm.minQuantity ? filterForm.minQuantity : undefined,
           maxQuantity: filterForm.maxQuantity ? filterForm.maxQuantity : undefined,
           location: filterForm.location || undefined,
+          process: filterForm.process || undefined,
           dateRange: filterForm.dateRange ? JSON.stringify(filterForm.dateRange) : undefined,
           unitId: props.unitId ? parseInt(props.unitId) : undefined
         };
@@ -717,6 +754,7 @@ export default {
           minQuantity: filterForm.minQuantity ? filterForm.minQuantity : undefined,
           maxQuantity: filterForm.maxQuantity ? filterForm.maxQuantity : undefined,
           location: filterForm.location || undefined,
+          process: filterForm.process || undefined,
           dateRange: filterForm.dateRange ? JSON.stringify(filterForm.dateRange) : undefined,
           unitId: props.unitId ? parseInt(props.unitId) : undefined
         };
@@ -885,6 +923,7 @@ export default {
           minQuantity: filterForm.minQuantity,
           maxQuantity: filterForm.maxQuantity,
           location: filterForm.location,
+          process: filterForm.process,
         };
         
         // 如果有日期范围筛选，添加到参数
@@ -949,6 +988,11 @@ export default {
       return false;
     };
 
+    // 判断是否为基层员工
+    const isBasicEmployee = computed(() => {
+      return !isAdmin.value && !isUnitAdmin.value;
+    });
+
     return {
       records,
       filteredRecords,
@@ -994,6 +1038,8 @@ export default {
       // 添加disabledDate函数
       disabledDate,
       tableHeight,  // 添加到返回值中
+      // 判断是否为基层员工
+      isBasicEmployee,
     };
   }
 };
@@ -1146,9 +1192,15 @@ export default {
 
 .filter-actions {
   display: flex;
-  justify-content: flex-end;
-  margin-top: 20px;
   gap: 10px;
+  justify-content: flex-end;
+  align-items: flex-end;
+  height: 100%;
+}
+
+.filter-buttons-col {
+  display: flex;
+  align-items: flex-end;
 }
 
 .records-card {
@@ -1463,6 +1515,14 @@ export default {
   /* 让某些列在移动设备上自动调整宽度 */
   :deep(.el-table__cell.is-hidden-mobile) {
     display: none !important;
+  }
+  
+  .filter-buttons-col {
+    margin-top: 15px;
+  }
+  
+  .filter-actions {
+    justify-content: flex-start;
   }
 }
 

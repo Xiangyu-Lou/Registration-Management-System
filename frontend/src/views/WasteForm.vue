@@ -34,17 +34,49 @@
           </el-select>
         </el-form-item>
 
-        <el-form-item label="备注" prop="remarks">
+        <el-form-item label="产生工序" prop="process">
+          <el-select v-model="form.process" placeholder="请选择产生工序" style="width: 100%">
+            <el-option 
+              v-for="option in processOptions" 
+              :key="option" 
+              :label="option" 
+              :value="option" 
+            />
+          </el-select>
+          <!-- 自定义产生工序输入框 -->
           <el-input 
-            v-model="form.remarks" 
-            type="textarea" 
-            :rows="3"
-            placeholder="请输入备注信息（选填）" 
+            v-if="form.process === '其他'" 
+            v-model="customProcess" 
+            placeholder="请输入具体产生工序" 
+            style="margin-top: 10px; height: 40px;"
           />
         </el-form-item>
 
         <el-form-item label="产生地点" prop="location">
-          <el-input v-model="form.location" placeholder="请输入废物产生地点" />
+          <el-select v-model="form.location" placeholder="请选择废物产生地点" style="width: 100%">
+            <el-option 
+              v-for="option in locationOptions" 
+              :key="option" 
+              :label="option" 
+              :value="option" 
+            />
+          </el-select>
+          <!-- 自定义产生地点输入框 -->
+          <el-input 
+            v-if="form.location === '其他'" 
+            v-model="customLocation" 
+            placeholder="请输入具体产生地点" 
+            style="margin-top: 10px; height: 40px;"
+          />
+        </el-form-item>
+        
+        <el-form-item label="备注" prop="remarks">
+          <el-input 
+            v-model="form.remarks" 
+            type="textarea" 
+            :rows="1"
+            placeholder="请输入备注信息（选填）" 
+          />
         </el-form-item>
 
         <div class="form-row">
@@ -213,6 +245,24 @@ export default {
     const uploadPercentage = ref(0);
     const uploadStatus = ref('准备上传...');
     const showLargeFileWarning = ref(false);
+    const locationOptions = ref([]);
+    const customLocation = ref(''); // 自定义产生地点
+    const customProcess = ref(''); // 自定义产生工序
+    const processOptions = ['作业现场', '清罐清理', '报废清理', '管线刺漏', '历史遗留', '日常维护', '封井退出', '其他'];
+    
+    // 各管理区对应的四级单位列表
+    const locationMap = {
+      '桓台': ['金家接转站', '金17-1注采站', '金17-2注采站', '金6金9项目组', '金8注采站', '其他'],
+      '潍北': ['潍北联合站', '昌79注采站', '昌3注采站', '疃3注采站', '昌15注采站', '其他'],
+      '高青': ['高青联合站', '樊107注采站', '樊14注采站', '高21注采站', '高54注采站', '其他'],
+      '牛庄': ['牛25集输站', '牛25注采站', '营13注采站', '史112注采站', '其他'],
+      '金角': ['长堤注采站', '桩23注采站', '其他'],
+      '信远': ['河125注采站', '河122注采站', '永551注采站', '其他'],
+      '滨博': ['樊142注采站', '樊142-2-12注采站', '樊162注采站', '樊页1井组', '滨博接转站', '其他'],
+      '无棣': ['车41注采站', '车142注采站', '车40注采站', '车408注采站', '车274注采站', '车1接转站', '东风港联合站', '其他'],
+      '河口': ['沾14东注采站', '沾14西注采站', '渤南注采站', '大北注采站', '沾5注采站', '太平接转站', '沾5接转站', '其他'],
+      '胜兴': ['博兴注采站']
+    };
     
     // 检查用户是否为超级管理员
     const isAdmin = computed(() => {
@@ -228,15 +278,39 @@ export default {
       quantity: undefined,
       photo_before: [],
       photo_after: [],
-      remarks: ''
+      remarks: '',
+      process: ''
     });
 
     const rules = {
       wasteTypeId: [
         { required: true, message: '请选择废物类型', trigger: 'change' }
       ],
+      process: [
+        { required: true, message: '请选择产生工序', trigger: 'change' },
+        {
+          validator: (rule, value, callback) => {
+            if (value === '其他' && !customProcess.value.trim()) {
+              callback(new Error('请输入具体产生工序'));
+            } else {
+              callback();
+            }
+          },
+          trigger: 'blur'
+        }
+      ],
       location: [
-        { required: true, message: '请输入废物产生地点', trigger: 'blur' }
+        { required: true, message: '请选择废物产生地点', trigger: 'change' },
+        {
+          validator: (rule, value, callback) => {
+            if (value === '其他' && !customLocation.value.trim()) {
+              callback(new Error('请输入具体产生地点'));
+            } else {
+              callback();
+            }
+          },
+          trigger: 'blur'
+        }
       ],
       collectionDate: [
         { required: false }
@@ -262,7 +336,7 @@ export default {
         originalViewport.remove();
       }
 
-      await fetchUnitName();
+      await fetchUnitName(); // 这里会同时更新locationOptions
       await fetchWasteTypes();
     });
 
@@ -286,6 +360,14 @@ export default {
         const unit = response.data.find(u => u.id === parseInt(props.id));
         if (unit) {
           unitName.value = unit.name;
+          
+          // 获取到单位名称后，更新地点选项
+          if (locationMap[unitName.value]) {
+            locationOptions.value = locationMap[unitName.value];
+          } else {
+            locationOptions.value = [];
+            console.warn(`未找到管理区 "${unitName.value}" 的地点选项`);
+          }
         }
       } catch (error) {
         console.error('Error fetching unit name:', error);
@@ -759,7 +841,20 @@ export default {
             const formData = new FormData();
             formData.append('unitId', props.id);
             formData.append('wasteTypeId', form.wasteTypeId);
-            formData.append('location', form.location);
+            
+            // 处理产生工序 - 如果选择了"其他"并填写了自定义工序，则使用自定义工序
+            if (form.process === '其他' && customProcess.value.trim()) {
+              formData.append('process', customProcess.value.trim());
+            } else {
+              formData.append('process', form.process);
+            }
+            
+            // 处理产生地点 - 如果选择了"其他"并填写了自定义地点，则使用自定义地点
+            if (form.location === '其他' && customLocation.value.trim()) {
+              formData.append('location', customLocation.value.trim());
+            } else {
+              formData.append('location', form.location);
+            }
             
             // 组合日期和时间，如果有的话
             if (form.collectionDate && form.collectionTime) {
@@ -785,7 +880,8 @@ export default {
             console.log('提交表单数据:', {
               unitId: props.id,
               wasteTypeId: form.wasteTypeId,
-              location: form.location,
+              process: form.process === '其他' ? customProcess.value : form.process,
+              location: form.location === '其他' ? customLocation.value : form.location,
               quantity: form.quantity,
               remarks: form.remarks || '',
               photo_before: photoFilesBefore.value ? photoFilesBefore.value.length : 0,
@@ -856,13 +952,25 @@ export default {
       if (wasteForm.value) {
         wasteForm.value.resetFields();
       }
+      // 重置表单各字段
+      form.wasteTypeId = '';
+      form.location = ''; 
+      form.process = '';
+      form.remarks = '';
+      form.quantity = undefined;
+      form.collectionDate = new Date().toISOString().slice(0, 10); // 重置为今天
+      form.collectionTime = new Date().toTimeString().slice(0, 5); // 重置为当前时间，格式为HH:MM
+      
+      // 清空自定义输入
+      customLocation.value = '';
+      customProcess.value = '';
+      
+      // 清空照片数据
       photoFilesBefore.value = [];
       photoFilesAfter.value = [];
       fileListBefore.value = [];
       fileListAfter.value = [];
-      form.quantity = undefined;
-      form.collectionDate = new Date().toISOString().slice(0, 10); // 重置为今天
-      form.collectionTime = new Date().toTimeString().slice(0, 5); // 重置为当前时间，格式为HH:MM
+      showLargeFileWarning.value = false;
     };
 
     const goBack = () => {
@@ -913,7 +1021,11 @@ export default {
       uploadPercentage,
       uploadStatus,
       percentageFormat,
-      showLargeFileWarning
+      showLargeFileWarning,
+      locationOptions,
+      customLocation,
+      customProcess,
+      processOptions
     };
   }
 };
@@ -1165,5 +1277,21 @@ export default {
   margin-top: 10px;
   color: #606266;
   font-size: 14px;
+}
+
+.waste-form :deep(.el-input__wrapper) {
+  box-sizing: border-box;
+  height: 40px !important;
+  line-height: normal;
+}
+
+.waste-form :deep(.el-input__inner) {
+  height: 40px !important;
+  line-height: 40px;
+}
+
+.waste-form :deep(.el-textarea__inner) {
+  height: auto !important; /* 让textarea可以自适应行数设置 */
+  min-height: 32px; /* 最小高度与单行输入框一致 */
 }
 </style>

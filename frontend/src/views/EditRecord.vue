@@ -31,6 +31,7 @@
               :value="unit.id" 
             />
           </el-select>
+          <div class="form-tip">请先选择单位，才能选择产生地点</div>
         </el-form-item>
 
         <el-form-item label="废物类型" prop="wasteTypeId">
@@ -44,17 +45,49 @@
           </el-select>
         </el-form-item>
 
-        <el-form-item label="备注" prop="remarks">
+        <el-form-item label="产生工序" prop="process">
+          <el-select v-model="form.process" placeholder="请选择产生工序" style="width: 100%">
+            <el-option 
+              v-for="option in processOptions" 
+              :key="option" 
+              :label="option" 
+              :value="option" 
+            />
+          </el-select>
+          <!-- 自定义产生工序输入框 -->
           <el-input 
-            v-model="form.remarks" 
-            type="textarea" 
-            :rows="3"
-            placeholder="请输入备注信息（选填）" 
+            v-if="form.process === '其他'" 
+            v-model="customProcess" 
+            placeholder="请输入具体产生工序" 
+            style="margin-top: 10px; height: 40px;"
           />
         </el-form-item>
 
         <el-form-item label="产生地点" prop="location">
-          <el-input v-model="form.location" placeholder="请输入废物产生地点" />
+          <el-select v-model="form.location" :placeholder="isSuperAdmin && !unitName ? '请先选择单位' : '请选择废物产生地点'" style="width: 100%" :disabled="isSuperAdmin && !unitName">
+            <el-option 
+              v-for="option in locationOptions" 
+              :key="option" 
+              :label="option" 
+              :value="option" 
+            />
+          </el-select>
+          <!-- 自定义产生地点输入框 -->
+          <el-input 
+            v-if="form.location === '其他'" 
+            v-model="customLocation" 
+            placeholder="请输入具体产生地点" 
+            style="margin-top: 10px; height: 40px;"
+          />
+        </el-form-item>
+        
+        <el-form-item label="备注" prop="remarks">
+          <el-input 
+            v-model="form.remarks" 
+            type="textarea" 
+            :rows="1"
+            placeholder="请输入备注信息（选填）" 
+          />
         </el-form-item>
 
         <el-form-item label="收集日期">
@@ -183,7 +216,7 @@
 </template>
 
 <script>
-import { ref, reactive, onMounted, computed } from 'vue';
+import { ref, reactive, onMounted, computed, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { ElMessage, ElImageViewer } from 'element-plus';
 import httpService from '../config/httpService';
@@ -222,6 +255,24 @@ export default {
     const uploadStatus = ref('准备上传...');
     const showLargeFileWarning = ref(false);
     const record = ref(null);
+    const locationOptions = ref([]);
+    const customLocation = ref('');
+    const customProcess = ref('');
+    const processOptions = ['作业现场', '清罐清理', '报废清理', '管线刺漏', '历史遗留', '日常维护', '封井退出', '其他'];
+    
+    // 各管理区对应的四级单位列表
+    const locationMap = {
+      '桓台': ['金家接转站', '金17-1注采站', '金17-2注采站', '金6金9项目组', '金8注采站', '其他'],
+      '潍北': ['潍北联合站', '昌79注采站', '昌3注采站', '疃3注采站', '昌15注采站', '其他'],
+      '高青': ['高青联合站', '樊107注采站', '樊14注采站', '高21注采站', '高54注采站', '其他'],
+      '牛庄': ['牛25集输站', '牛25注采站', '营13注采站', '史112注采站', '其他'],
+      '金角': ['长堤注采站', '桩23注采站', '其他'],
+      '信远': ['河125注采站', '河122注采站', '永551注采站', '其他'],
+      '滨博': ['樊142注采站', '樊142-2-12注采站', '樊162注采站', '樊页1井组', '滨博接转站', '其他'],
+      '无棣': ['车41注采站', '车142注采站', '车40注采站', '车408注采站', '车274注采站', '车1接转站', '东风港联合站', '其他'],
+      '河口': ['沾14东注采站', '沾14西注采站', '渤南注采站', '大北注采站', '沾5注采站', '太平接转站', '沾5接转站', '其他'],
+      '胜兴': ['博兴注采站']
+    };
     
     // 添加解析照片路径的函数
     const parsePhotoPath = (path) => {
@@ -289,7 +340,8 @@ export default {
       creatorId: auth.state.user?.id || null,
       photo_path_before: '',
       photo_path_after: '',
-      remarks: ''
+      remarks: '',
+      process: ''
     });
 
     const rules = {
@@ -299,8 +351,31 @@ export default {
       wasteTypeId: [
         { required: true, message: '请选择废物类型', trigger: 'change' }
       ],
+      process: [
+        { required: true, message: '请选择产生工序', trigger: 'change' },
+        {
+          validator: (rule, value, callback) => {
+            if (value === '其他' && !customProcess.value.trim()) {
+              callback(new Error('请输入具体产生工序'));
+            } else {
+              callback();
+            }
+          },
+          trigger: 'blur'
+        }
+      ],
       location: [
-        { required: true, message: '请输入废物产生地点', trigger: 'blur' }
+        { required: true, message: '请选择废物产生地点', trigger: 'change' },
+        {
+          validator: (rule, value, callback) => {
+            if (value === '其他' && !customLocation.value.trim()) {
+              callback(new Error('请输入具体产生地点'));
+            } else {
+              callback();
+            }
+          },
+          trigger: 'blur'
+        }
       ],
       collectionDate: [
         { required: false }
@@ -366,6 +441,14 @@ export default {
         const unit = response.data.find(u => u.id === parseInt(unitId));
         if (unit) {
           unitName.value = unit.name;
+          
+          // 获取到单位名称后，更新地点选项
+          if (locationMap[unitName.value]) {
+            locationOptions.value = locationMap[unitName.value];
+          } else {
+            locationOptions.value = [];
+            console.warn(`未找到管理区 "${unitName.value}" 的地点选项`);
+          }
         }
       } catch (error) {
         console.error('获取单位信息失败:', error);
@@ -395,7 +478,28 @@ export default {
         
         form.unitId = recordData.unit_id;
         form.wasteTypeId = recordData.waste_type_id;
-        form.location = recordData.location;
+        
+        // 获取单位名称和地点选项
+        await fetchUnitName(form.unitId);
+        
+        // 处理产生工序 - 如果工序不在预设选项中，则设为"其他"并填写自定义工序
+        if (recordData.process) {
+          if (processOptions.includes(recordData.process)) {
+            form.process = recordData.process;
+          } else {
+            form.process = '其他';
+            customProcess.value = recordData.process;
+          }
+        }
+        
+        // 处理产生地点 - 如果地点不在预设选项中，则设为"其他"并填写自定义地点
+        if (locationOptions.value.includes(recordData.location)) {
+          form.location = recordData.location;
+        } else {
+          form.location = '其他';
+          customLocation.value = recordData.location;
+        }
+        
         form.recordId = recordData.id;
         
         // 处理收集时间
@@ -1004,7 +1108,21 @@ export default {
             const formData = new FormData();
             formData.append('unitId', form.unitId);
             formData.append('wasteTypeId', form.wasteTypeId);
-            formData.append('location', form.location);
+            
+            // 处理产生工序 - 如果选择了"其他"并填写了自定义工序，则使用自定义工序
+            if (form.process === '其他' && customProcess.value.trim()) {
+              formData.append('process', customProcess.value.trim());
+            } else {
+              formData.append('process', form.process);
+            }
+            
+            // 处理产生地点 - 如果选择了"其他"并填写了自定义地点，则使用自定义地点
+            if (form.location === '其他' && customLocation.value.trim()) {
+              formData.append('location', customLocation.value.trim());
+            } else {
+              formData.append('location', form.location);
+            }
+            
             formData.append('collectionDate', form.collectionDate);
             formData.append('collectionTime', form.collectionTime);
             formData.append('quantity', form.quantity);
@@ -1199,6 +1317,17 @@ export default {
       }
     };
 
+    // 监听unitId变化，更新locationOptions
+    watch(() => form.unitId, async (newUnitId) => {
+      if (newUnitId) {
+        await fetchUnitName(newUnitId);
+      } else {
+        // 清空地点选项
+        locationOptions.value = [];
+        unitName.value = '';
+      }
+    });
+
     return {
       form,
       rules,
@@ -1232,7 +1361,12 @@ export default {
       uploadStatus,
       percentageFormat,
       showLargeFileWarning,
-      record
+      record,
+      locationOptions,
+      locationMap,
+      customLocation,
+      customProcess,
+      processOptions
     };
   }
 };
@@ -1336,6 +1470,22 @@ export default {
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
 }
 
+.record-form :deep(.el-input__wrapper) {
+  box-sizing: border-box;
+  height: 40px !important;
+  line-height: normal;
+}
+
+.record-form :deep(.el-input__inner) {
+  height: 40px !important;
+  line-height: 40px;
+}
+
+.record-form :deep(.el-textarea__inner) {
+  height: auto !important; /* 让textarea可以自适应行数设置 */
+  min-height: 32px; /* 最小高度与单行输入框一致 */
+}
+
 .waste-photo-uploader {
   width: 100%;
 }
@@ -1366,6 +1516,13 @@ export default {
   margin-top: 10px;
   color: #606266;
   font-size: 14px;
+}
+
+.form-tip {
+  font-size: 12px;
+  color: #909399;
+  margin-top: 5px;
+  line-height: 1.2;
 }
 </style>
 

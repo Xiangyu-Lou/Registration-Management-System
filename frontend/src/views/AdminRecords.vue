@@ -31,8 +31,8 @@
         <div v-show="showFilterPanel" class="filter-form-container">
           <el-form :model="filterForm" label-width="100px" class="filter-form">
             <el-row :gutter="20">
-              <!-- 所属单位（超级管理员特有） -->
-              <el-col :span="12">
+              <!-- 所属单位 -->
+              <el-col :xs="24" :sm="12" :md="8" :lg="6" :xl="6">
                 <el-form-item label="所属单位">
                   <el-select v-model="filterForm.unitId" placeholder="选择单位" style="width: 100%" clearable>
                     <el-option 
@@ -45,8 +45,46 @@
                 </el-form-item>
               </el-col>
               
+              <!-- 废物类型 -->
+              <el-col :xs="24" :sm="12" :md="8" :lg="6" :xl="6">
+                <el-form-item label="废物类型">
+                  <el-select v-model="filterForm.wasteTypeId" placeholder="选择废物类型" style="width: 100%" clearable>
+                    <el-option 
+                      v-for="type in wasteTypes" 
+                      :key="type.id" 
+                      :label="type.name" 
+                      :value="type.id" 
+                    />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+              
+              <!-- 产生地点 -->
+              <el-col :xs="24" :sm="12" :md="8" :lg="6" :xl="6">
+                <el-form-item label="产生地点">
+                  <el-input 
+                    v-model="filterForm.location" 
+                    placeholder="输入地点关键词搜索" 
+                    clearable
+                  />
+                </el-form-item>
+              </el-col>
+              
+              <!-- 产生工序 -->
+              <el-col :xs="24" :sm="12" :md="8" :lg="6" :xl="6">
+                <el-form-item label="产生工序">
+                  <el-input 
+                    v-model="filterForm.process" 
+                    placeholder="输入工序关键词搜索" 
+                    clearable
+                  />
+                </el-form-item>
+              </el-col>
+            </el-row>
+            
+            <el-row :gutter="20">
               <!-- 收集时间范围 -->
-              <el-col :span="12">
+              <el-col :xs="24" :sm="12" :md="10" :lg="8" :xl="8">
                 <el-form-item label="收集时间">
                   <el-date-picker
                     v-model="filterForm.dateRange"
@@ -60,25 +98,9 @@
                   />
                 </el-form-item>
               </el-col>
-            </el-row>
-            
-            <el-row :gutter="20">
-              <!-- 废物类型 -->
-              <el-col :span="8">
-                <el-form-item label="废物类型">
-                  <el-select v-model="filterForm.wasteTypeId" placeholder="选择废物类型" style="width: 100%" clearable>
-                    <el-option 
-                      v-for="type in wasteTypes" 
-                      :key="type.id" 
-                      :label="type.name" 
-                      :value="type.id" 
-                    />
-                  </el-select>
-                </el-form-item>
-              </el-col>
               
               <!-- 数量范围 -->
-              <el-col :span="8">
+              <el-col :xs="24" :sm="12" :md="10" :lg="8" :xl="8">
                 <el-form-item label="数量范围(吨)">
                   <div class="quantity-range">
                     <el-input-number 
@@ -102,22 +124,14 @@
                 </el-form-item>
               </el-col>
               
-              <!-- 产生地点 -->
-              <el-col :span="8">
-                <el-form-item label="产生地点">
-                  <el-input 
-                    v-model="filterForm.location" 
-                    placeholder="输入地点关键词搜索" 
-                    clearable
-                  />
-                </el-form-item>
+              <!-- 筛选按钮 -->
+              <el-col :xs="24" :sm="24" :md="4" :lg="8" :xl="8" class="filter-buttons-col">
+                <div class="filter-actions">
+                  <el-button type="primary" @click="applyFilter">筛选</el-button>
+                  <el-button @click="resetFilter">重置</el-button>
+                </div>
               </el-col>
             </el-row>
-            
-            <div class="filter-actions">
-              <el-button type="primary" @click="applyFilter">筛选</el-button>
-              <el-button @click="resetFilter">重置</el-button>
-            </div>
           </el-form>
         </div>
       </el-card>
@@ -155,6 +169,11 @@
             <el-table-column prop="remarks" label="备注" min-width="150">
               <template #default="scope">
                 {{ scope.row.remarks || '无' }}
+              </template>
+            </el-table-column>
+            <el-table-column prop="process" label="产生工序" min-width="120">
+              <template #default="scope">
+                {{ scope.row.process || '无' }}
               </template>
             </el-table-column>
             <el-table-column prop="location" label="产生地点" min-width="120" />
@@ -374,13 +393,14 @@ export default {
       wasteTypeId: null,
       minQuantity: null,
       maxQuantity: null,
-      location: ''
+      location: '',
+      process: '',
     });
     
     // 过滤后的记录
     const filteredRecords = computed(() => {
       return records.value.filter(record => {
-        // 检查所属单位
+        // 检查单位
         if (filterForm.unitId && record.unit_id !== filterForm.unitId) {
           return false;
         }
@@ -391,15 +411,23 @@ export default {
         }
         
         // 检查数量范围
-        if (filterForm.minQuantity !== null && parseFloat(record.quantity) < filterForm.minQuantity) {
+        if (filterForm.minQuantity !== null && filterForm.minQuantity !== '' && 
+            parseFloat(record.quantity) < filterForm.minQuantity) {
           return false;
         }
-        if (filterForm.maxQuantity !== null && parseFloat(record.quantity) > filterForm.maxQuantity) {
+        
+        if (filterForm.maxQuantity !== null && filterForm.maxQuantity !== '' && 
+            parseFloat(record.quantity) > filterForm.maxQuantity) {
           return false;
         }
         
         // 检查地点关键词
         if (filterForm.location && !record.location.toLowerCase().includes(filterForm.location.toLowerCase())) {
+          return false;
+        }
+        
+        // 检查产生工序关键词
+        if (filterForm.process && !record.process?.toLowerCase().includes(filterForm.process.toLowerCase())) {
           return false;
         }
         
@@ -499,6 +527,7 @@ export default {
           minQuantity: filterForm.minQuantity,
           maxQuantity: filterForm.maxQuantity,
           location: filterForm.location,
+          process: filterForm.process,
         };
         
         // Only add dateRange if it exists and has both start and end dates
@@ -585,6 +614,7 @@ export default {
       filterForm.minQuantity = null;
       filterForm.maxQuantity = null;
       filterForm.location = '';
+      filterForm.process = '';
       await fetchRecords();
       ElMessage.info('筛选条件已重置');
     };
@@ -642,6 +672,7 @@ export default {
           minQuantity: filterForm.minQuantity ? filterForm.minQuantity : undefined,
           maxQuantity: filterForm.maxQuantity ? filterForm.maxQuantity : undefined,
           location: filterForm.location || undefined,
+          process: filterForm.process || undefined,
           dateRange: filterForm.dateRange ? JSON.stringify(filterForm.dateRange) : undefined,
           unitId: filterForm.unitId ? filterForm.unitId : undefined
         };
@@ -676,6 +707,7 @@ export default {
             '单位': record.unit_name,
             '废物类型': record.waste_type_name,
             '备注': record.remarks || '无',
+            '产生工序': record.process || '无',
             '产生地点': record.location,
             '数量(kg)': record.quantity,
             '收集开始时间': formatDateTime(record.collection_start_time),
@@ -696,6 +728,7 @@ export default {
           { text: '单位', field: '单位' },
           { text: '废物类型', field: '废物类型' },
           { text: '备注', field: '备注' },
+          { text: '产生工序', field: '产生工序' },
           { text: '产生地点', field: '产生地点' },
           { text: '数量(kg)', field: '数量(kg)' },
           { text: '收集开始时间', field: '收集开始时间' },
@@ -752,6 +785,7 @@ export default {
           minQuantity: filterForm.minQuantity ? filterForm.minQuantity : undefined,
           maxQuantity: filterForm.maxQuantity ? filterForm.maxQuantity : undefined,
           location: filterForm.location || undefined,
+          process: filterForm.process || undefined,
           dateRange: filterForm.dateRange ? JSON.stringify(filterForm.dateRange) : undefined,
           unitId: filterForm.unitId ? filterForm.unitId : undefined
         };
@@ -777,6 +811,7 @@ export default {
           '单位': record.unit_name,
           '废物类型': record.waste_type_name,
           '备注': record.remarks || '无',
+          '产生工序': record.process || '无',
           '产生地点': record.location,
           '数量(kg)': record.quantity,
           '收集开始时间': formatDateTime(record.collection_start_time),
@@ -796,6 +831,7 @@ export default {
           { text: '单位', field: '单位' },
           { text: '废物类型', field: '废物类型' },
           { text: '备注', field: '备注' },
+          { text: '产生工序', field: '产生工序' },
           { text: '产生地点', field: '产生地点' },
           { text: '数量(kg)', field: '数量(kg)' },
           { text: '收集开始时间', field: '收集开始时间' },
@@ -925,64 +961,29 @@ export default {
 
 <style scoped>
 .admin-records-container {
-  display: flex;
-  flex-direction: column;
+  padding: 20px;
   min-height: 100vh;
+  background-color: #f5f7fa;
 }
 
 .header {
-  /* 修改背景渐变，实现两端深中间浅的效果 */
-  background: linear-gradient(to right, #1976d2, #42a5f5, #1976d2);
-  color: white;
-  padding: 20px;
-  text-align: center;
-  border-radius: 0 0 20px 20px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   margin-bottom: 20px;
-  position: relative;
-  overflow: hidden;
-}
-
-.header::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  /* 调整覆盖层渐变，增强立体感 */
-  background: linear-gradient(45deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 50%, rgba(255, 255, 255, 0) 100%);
-  z-index: 1;
-}
-
-.header h1 {
-  position: relative;
-  z-index: 2;
-  margin: 0;
-  font-size: 24px;
-  font-weight: 600;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  letter-spacing: 1px;
+  text-align: center;
 }
 
 .content {
-  flex: 1;
-  padding: 20px 30px; /* 减少上下内边距 */
-  max-width: 90%; /* 从固定的1200px改为相对宽度 */
+  max-width: 1600px;
   margin: 0 auto;
-  width: 100%;
-  box-sizing: border-box;
 }
 
 .actions {
   display: flex;
-  justify-content: flex-end;
-  margin-bottom: 15px; /* 减少下边距 */
   gap: 10px;
+  margin-bottom: 20px;
 }
 
 .filter-card {
-  margin-bottom: 15px; /* 减少下边距 */
+  margin-bottom: 20px;
 }
 
 .filter-header {
@@ -992,13 +993,31 @@ export default {
   margin-bottom: 15px;
 }
 
-.filter-header h3 {
-  margin: 0;
-  color: #333;
-}
-
 .filter-form-container {
   transition: all 0.3s ease;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  align-items: flex-end;
+  height: 100%;
+}
+
+.filter-buttons-col {
+  display: flex;
+  align-items: flex-end;
+}
+
+@media (max-width: 768px) {
+  .filter-buttons-col {
+    margin-top: 15px;
+  }
+  
+  .filter-actions {
+    justify-content: flex-start;
+  }
 }
 
 .quantity-range {
@@ -1008,155 +1027,59 @@ export default {
 }
 
 .range-separator {
-  margin: 0 5px;
-}
-
-.filter-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 20px;
-  gap: 10px;
-}
-
-.records-wrapper {
-  margin-top: 15px; /* 减少上边距 */
+  padding: 0 5px;
 }
 
 .records-card {
-  margin-top: 15px; /* 减少上边距 */
-  border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s;
-}
-
-.records-card:hover {
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  margin-bottom: 20px;
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px; /* 减小下边距 */
+  margin-bottom: 15px;
 }
 
-.card-header h3 {
-  margin: 0;
-  color: #333;
+.card-actions {
+  display: flex;
+  gap: 10px;
 }
 
-.footer {
-  background-color: #f5f7fa;
-  padding: 10px; /* 减小内边距 */
-  text-align: center;
-  color: #606266;
-}
-
-/* 表格标题样式 */
-.table-title {
-  font-size: 18px;
-  font-weight: bold;
-  color: #409EFF;
-  margin: 0;
-  padding-bottom: 10px;
-  border-bottom: 2px solid #409EFF;
-  display: inline-block;
-}
-
-/* 照片缩略图相关样式 */
-.photo-thumbnail-container {
-  cursor: pointer;
-  margin-bottom: 2px;
-}
-
-.photo-count {
-  font-size: 12px;
-  color: #909399;
-  text-align: center;
-  margin-top: 2px;
+.responsive-table {
+  width: 100%;
+  overflow-x: auto;
 }
 
 .photo-preview {
   display: flex;
-  flex-direction: column;
-  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  position: relative;
 }
 
-/* Element Plus 表格样式覆盖 */
-:deep(.el-table) {
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-  margin-top: 15px;
+.photo-thumbnail-container {
+  cursor: pointer;
 }
 
-:deep(.el-table__header) {
-  background: linear-gradient(to bottom, #409EFF, #1E88E5) !important;
+.photo-count {
+  margin-top: 5px;
+  color: #909399;
+  font-size: 12px;
 }
 
-:deep(.el-table__header th.el-table__cell) {
-  background: linear-gradient(to bottom, #409EFF, #1E88E5) !important;
-  color: white !important;
-  font-weight: bold !important;
-  font-size: 15px !important;
-  height: 50px !important;
-  border-right: 1px solid rgba(255, 255, 255, 0.2) !important;
-  border-bottom: none !important;
-}
-
-:deep(.el-table__header th.el-table__cell .cell) {
-  color: white !important;
-  font-weight: bold !important;
-  text-align: center !important;
-  padding: 12px 0 !important;
-}
-
-:deep(.el-table__row) {
-  transition: all 0.3s;
-  height: 60px; /* 添加默认表格行高 */
-}
-
-:deep(.el-table__row:hover) {
-  background-color: #f0f9ff !important;
-  transform: translateY(-2px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-:deep(.el-table__row td) {
-  padding: 14px 0;
-  border-bottom: 1px solid #ebeef5;
-}
-
-/* 表格行交替颜色 */
-:deep(.el-table__row:nth-child(odd)) {
-  background-color: #fafafa;
-}
-
-:deep(.el-table__row:nth-child(even)) {
-  background-color: #ffffff;
-}
-
-/* 确保表格内容居中对齐 */
-:deep(.el-table .cell) {
-  text-align: center;
-  padding-left: 10px;
-  padding-right: 10px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.empty-block {
+  padding: 30px 0;
 }
 
 .loading-more {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 10px;
+  text-align: center;
+  margin: 20px 0;
   color: #909399;
 }
 
 .loading {
   animation: rotating 2s linear infinite;
-  margin-right: 5px;
 }
 
 @keyframes rotating {
@@ -1168,95 +1091,15 @@ export default {
   }
 }
 
-.empty-block {
-  padding: 30px;
+.footer {
   text-align: center;
+  padding: 20px 0;
+  color: #909399;
 }
 
 .operation-buttons {
   display: flex;
-  flex-direction: column;
-  gap: 5px;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-}
-
-.operation-buttons .el-button {
-  width: 80%;
-  margin-left: 0;
-  margin-right: 0;
-  text-align: center;
-  justify-content: center;
-}
-
-/* 响应式调整 */
-@media (max-width: 1600px) {
-  .content {
-    max-width: 95%;
-  }
-}
-
-@media (max-width: 1200px) {
-  .content {
-    max-width: 100%;
-    padding: 20px;
-  }
-}
-
-@media (max-width: 768px) {
-  .header {
-    padding: 15px;
-  }
-  
-  .content {
-    padding: 15px;
-  }
-  
-  /* 在移动设备上调整表格的高度 */
-  .responsive-table {
-    max-height: 80vh !important; /* 增加移动设备上的高度 */
-  }
-  
-  /* 表格行在移动设备上高度稍小 */
-  :deep(.el-table__row) {
-    height: 50px;
-  }
-  
-  :deep(.el-table__row td) {
-    padding: 10px 0;
-  }
-  
-  /* 让某些列在移动设备上自动调整宽度 */
-  :deep(.el-table__cell.is-hidden-mobile) {
-    display: none !important;
-  }
-}
-
-/* 添加大屏幕适配 */
-@media (min-width: 1920px) {
-  .content {
-    max-width: 85%;
-  }
-  
-  /* 大屏幕上行高更高 */
-  :deep(.el-table__row) {
-    height: 70px; /* 增加大屏幕上的行高 */
-  }
-}
-
-:deep(.el-table--scrollable-x .el-table__body-wrapper) {
-  overflow-x: auto !important;
-}
-
-/* 表格分割线样式 */
-:deep(.el-table--border .el-table__cell) {
-  border-right: 1px solid #EBEEF5;
-}
-
-:deep(.el-table--border) {
-  border: 1px solid #EBEEF5;
-  border-radius: 8px;
+  gap: 10px;
 }
 </style>
 

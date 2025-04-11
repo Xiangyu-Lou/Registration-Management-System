@@ -22,6 +22,15 @@
       <el-input v-model="form.location" placeholder="请输入收集地点"></el-input>
     </el-form-item>
 
+    <el-form-item label="备注" prop="remarks">
+      <el-input
+        v-model="form.remarks"
+        type="textarea"
+        :rows="1"
+        placeholder="请输入备注信息"
+      ></el-input>
+    </el-form-item>
+
     <el-form-item label="收集数量" prop="quantity">
       <el-input-number v-model="form.quantity" :min="0" :precision="2" style="width: 100%"></el-input-number>
     </el-form-item>
@@ -101,15 +110,6 @@
       >
         <el-icon><plus /></el-icon>
       </el-upload>
-    </el-form-item>
-
-    <el-form-item label="备注" prop="remarks">
-      <el-input
-        v-model="form.remarks"
-        type="textarea"
-        :rows="3"
-        placeholder="请输入备注信息"
-      ></el-input>
     </el-form-item>
 
     <el-form-item>
