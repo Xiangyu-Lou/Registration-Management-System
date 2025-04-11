@@ -533,16 +533,55 @@ app.get('/api/waste-types', async (req, res) => {
   }
 });
 
+// 获取单位的地点列表
+app.get('/api/locations/:unitId', async (req, res) => {
+  const { unitId } = req.params;
+  
+  try {
+    const [rows] = await pool.query(
+      `SELECT * FROM locations WHERE unit_id = ? ORDER BY name ASC`,
+      [unitId]
+    );
+    
+    res.json(rows);
+  } catch (error) {
+    console.error('获取单位地点列表错误:', error);
+    res.status(500).json({ error: '服务器错误' });
+  }
+});
+
+// 获取所有地点列表（仅超级管理员使用）
+app.get('/api/locations', verifyToken, async (req, res) => {
+  // 验证用户是否为超级管理员
+  if (!req.user || req.user.role_id !== 3) {
+    return res.status(403).json({ error: '无权访问此接口' });
+  }
+  
+  try {
+    const [rows] = await pool.query(
+      `SELECT l.*, u.name as unit_name 
+       FROM locations l
+       JOIN units u ON l.unit_id = u.id
+       ORDER BY u.name ASC, l.name ASC`
+    );
+    
+    res.json(rows);
+  } catch (error) {
+    console.error('获取所有地点列表错误:', error);
+    res.status(500).json({ error: '服务器错误' });
+  }
+});
+
 // 添加废物记录
 app.post('/api/waste-records', verifyToken, upload.fields([
   { name: 'photo_before', maxCount: 5 },
   { name: 'photo_after', maxCount: 5 }
 ]), async (req, res) => {
   try {
-    const { unitId, wasteTypeId, location, collectionDate, collectionTime, quantity, remarks } = req.body;
+    const { unitId, wasteTypeId, locationId, collectionDate, collectionTime, quantity, processType, remarks } = req.body;
     
     // 验证必填字段
-    if (!unitId || !wasteTypeId || !location || !collectionDate || !collectionTime || !quantity) {
+    if (!unitId || !wasteTypeId || !locationId || !collectionDate || !collectionTime || !quantity) {
       return res.status(400).json({ error: '所有字段都是必填的' });
     }
     
@@ -556,6 +595,12 @@ app.post('/api/waste-records', verifyToken, upload.fields([
     const [wasteTypeRows] = await pool.query('SELECT * FROM waste_types WHERE id = ?', [wasteTypeId]);
     if (wasteTypeRows.length === 0) {
       return res.status(400).json({ error: '废物类型不存在' });
+    }
+    
+    // 验证地点是否存在
+    const [locationRows] = await pool.query('SELECT * FROM locations WHERE id = ?', [locationId]);
+    if (locationRows.length === 0) {
+      return res.status(400).json({ error: '地点不存在' });
     }
     
     // 格式化收集时间
@@ -589,9 +634,9 @@ app.post('/api/waste-records', verifyToken, upload.fields([
     // 插入记录
     const [result] = await pool.query(
       `INSERT INTO waste_records 
-      (unit_id, waste_type_id, location, collection_start_time, photo_path_before, photo_path_after, quantity, created_at, creator_id, remarks)
-      VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)`,
-      [unitId, wasteTypeId, location, collectionStartTime, photo_path_before, photo_path_after, quantity, userId, remarks]
+      (unit_id, waste_type_id, location_id, collection_start_time, photo_path_before, photo_path_after, quantity, created_at, creator_id, process_type, remarks)
+      VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?)`,
+      [unitId, wasteTypeId, locationId, collectionStartTime, photo_path_before, photo_path_after, quantity, userId, processType, remarks]
     );
     
     res.status(201).json({
@@ -610,11 +655,12 @@ app.get('/api/waste-records/:unitId', async (req, res) => {
   
   try {
     const [rows] = await pool.query(
-      `SELECT wr.*, u.name as unit_name, wt.name as waste_type_name,
+      `SELECT wr.*, u.name as unit_name, wt.name as waste_type_name, l.name as location_name,
        IFNULL(creator.username, creator.phone) as creator_name
        FROM waste_records wr
        JOIN units u ON wr.unit_id = u.id
        JOIN waste_types wt ON wr.waste_type_id = wt.id
+       JOIN locations l ON wr.location_id = l.id
        LEFT JOIN users creator ON wr.creator_id = creator.id
        WHERE wr.unit_id = ?
        ORDER BY wr.created_at DESC`,
@@ -634,7 +680,7 @@ app.put('/api/waste-records/:id', verifyToken, upload.fields([
   { name: 'photo_after', maxCount: 5 }
 ]), async (req, res) => {
   const { id } = req.params;
-  const { unitId, wasteTypeId, location, collectionDate, collectionTime, quantity, photo_path_before, photo_path_after, remarks } = req.body;
+  const { unitId, wasteTypeId, locationId, collectionDate, collectionTime, quantity, photo_path_before, photo_path_after, processType, remarks } = req.body;
   
   try {
     // 验证记录是否存在
@@ -645,6 +691,14 @@ app.put('/api/waste-records/:id', verifyToken, upload.fields([
     }
     
     const record = rows[0];
+    
+    // 验证地点是否存在
+    if (locationId) {
+      const [locationRows] = await pool.query('SELECT * FROM locations WHERE id = ?', [locationId]);
+      if (locationRows.length === 0) {
+        return res.status(400).json({ error: '地点不存在' });
+      }
+    }
     
     // 处理照片
     let newPhotoPathBefore = record.photo_path_before;
@@ -798,10 +852,10 @@ app.put('/api/waste-records/:id', verifyToken, upload.fields([
     // 更新记录
     await pool.query(
       `UPDATE waste_records 
-       SET unit_id = ?, waste_type_id = ?, location = ?, collection_start_time = ?, 
-       photo_path_before = ?, photo_path_after = ?, quantity = ?, remarks = ?
+       SET unit_id = ?, waste_type_id = ?, location_id = ?, collection_start_time = ?, 
+       photo_path_before = ?, photo_path_after = ?, quantity = ?, process_type = ?, remarks = ?
        WHERE id = ?`,
-      [unitId, wasteTypeId, location, collectionStartTime, newPhotoPathBefore, newPhotoPathAfter, quantity, remarks, id]
+      [unitId, wasteTypeId, locationId, collectionStartTime, newPhotoPathBefore, newPhotoPathAfter, quantity, processType, remarks, id]
     );
     
     res.json({
@@ -820,11 +874,12 @@ app.get('/api/waste-records/detail/:id', async (req, res) => {
   
   try {
     const [rows] = await pool.query(
-      `SELECT wr.*, u.name as unit_name, wt.name as waste_type_name,
+      `SELECT wr.*, u.name as unit_name, wt.name as waste_type_name, l.name as location_name,
        IFNULL(creator.username, creator.phone) as creator_name
        FROM waste_records wr
        JOIN units u ON wr.unit_id = u.id
        JOIN waste_types wt ON wr.waste_type_id = wt.id
+       JOIN locations l ON wr.location_id = l.id
        LEFT JOIN users creator ON wr.creator_id = creator.id
        WHERE wr.id = ?`,
       [id]
@@ -844,7 +899,7 @@ app.get('/api/waste-records/detail/:id', async (req, res) => {
 // 获取用户创建的废物记录（支持分页）
 app.get('/api/waste-records/user/:userId', async (req, res) => {
   const { userId } = req.params;
-  const { page = 1, pageSize = 20, wasteTypeId, minQuantity, maxQuantity, location, dateRange } = req.query;
+  const { page = 1, pageSize = 20, wasteTypeId, minQuantity, maxQuantity, locationId, dateRange, processType, remarksKeyword } = req.query;
   
   try {
     // 获取用户信息以确定其权限
@@ -859,6 +914,7 @@ app.get('/api/waste-records/user/:userId', async (req, res) => {
       FROM waste_records wr
       JOIN units u ON wr.unit_id = u.id
       JOIN waste_types wt ON wr.waste_type_id = wt.id
+      JOIN locations l ON wr.location_id = l.id
       LEFT JOIN users creator ON wr.creator_id = creator.id
       WHERE 1=1
     `;
@@ -866,20 +922,24 @@ app.get('/api/waste-records/user/:userId', async (req, res) => {
     const params = [];
     
     // 根据用户角色添加权限过滤
-    if (user.role_id !== 3) { // 不是超级管理员
-      baseSql += ' AND wr.unit_id = ?';
-      params.push(user.unit_id);
-    }
-    
-    // 为普通员工（role_id=1）添加7天时间限制
     if (user.role_id === 1) {
+      // 普通员工：只能看自己的记录，并且有7天限制
+      baseSql += ' AND wr.creator_id = ?';
+      params.push(userId);
+      
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
       const formattedDate = sevenDaysAgo.toISOString().split('T')[0]; // 格式如 YYYY-MM-DD
       
       baseSql += ' AND DATE(wr.created_at) >= ?';
       params.push(formattedDate);
-    }
+      
+    } else if (user.role_id === 2) {
+      // 单位管理员：只能看自己单位的记录
+      baseSql += ' AND wr.unit_id = ?';
+      params.push(user.unit_id);
+      
+    } // 超级管理员(role_id=3)没有单位和创建人限制
     
     // 添加筛选条件
     if (wasteTypeId) {
@@ -897,9 +957,21 @@ app.get('/api/waste-records/user/:userId', async (req, res) => {
       params.push(parseFloat(maxQuantity));
     }
     
-    if (location) {
-      baseSql += ' AND wr.location LIKE ?';
-      params.push(`%${location}%`);
+    if (locationId) {
+      baseSql += ' AND wr.location_id = ?';
+      params.push(locationId);
+    }
+    
+    // 添加产生工序筛选
+    if (processType) {
+      baseSql += ' AND wr.process_type = ?';
+      params.push(processType);
+    }
+    
+    // 添加备注关键词筛选
+    if (remarksKeyword) {
+      baseSql += ' AND wr.remarks LIKE ?';
+      params.push(`%${remarksKeyword}%`);
     }
     
     if (dateRange) {
@@ -924,7 +996,7 @@ app.get('/api/waste-records/user/:userId', async (req, res) => {
     
     // 添加分页
     const dataSql = `
-      SELECT wr.*, u.name as unit_name, wt.name as waste_type_name,
+      SELECT wr.*, u.name as unit_name, wt.name as waste_type_name, l.name as location_name,
       IFNULL(creator.username, creator.phone) as creator_name
       ${baseSql} LIMIT ? OFFSET ?
     `;
@@ -953,7 +1025,7 @@ app.get('/api/waste-records/user/:userId', async (req, res) => {
 // 导出用户的废物记录（获取所有符合条件的记录）
 app.get('/api/waste-records/export/user/:userId', async (req, res) => {
   const { userId } = req.params;
-  const { wasteTypeId, minQuantity, maxQuantity, location, dateRange, unitId } = req.query;
+  const { wasteTypeId, minQuantity, maxQuantity, locationId, dateRange, unitId, processType, remarksKeyword } = req.query;
   
   try {
     console.log('导出记录API被调用，参数:', req.query);
@@ -967,11 +1039,12 @@ app.get('/api/waste-records/export/user/:userId', async (req, res) => {
     
     const user = users[0];
     let sql = `
-      SELECT wr.*, u.name as unit_name, wt.name as waste_type_name,
+      SELECT wr.*, u.name as unit_name, wt.name as waste_type_name, l.name as location_name,
       IFNULL(creator.username, creator.phone) as creator_name
       FROM waste_records wr
       JOIN units u ON wr.unit_id = u.id
       JOIN waste_types wt ON wr.waste_type_id = wt.id
+      JOIN locations l ON wr.location_id = l.id
       LEFT JOIN users creator ON wr.creator_id = creator.id
       WHERE 1=1
     `;
@@ -979,23 +1052,22 @@ app.get('/api/waste-records/export/user/:userId', async (req, res) => {
     const params = [];
     
     // 根据用户角色添加权限过滤
-    if (user.role_id !== 3) { // 不是超级管理员
-      sql += ' AND wr.unit_id = ?';
-      params.push(user.unit_id);
-    }
-    
-    // 为普通员工（role_id=1）添加7天时间限制
     if (user.role_id === 1) {
+      // 普通员工：只能看自己的记录，并且有7天限制
+      sql += ' AND wr.creator_id = ?';
+      params.push(userId);
+      
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
       const formattedDate = sevenDaysAgo.toISOString().split('T')[0]; // 格式如 YYYY-MM-DD
       
       sql += ' AND DATE(wr.created_at) >= ?';
       params.push(formattedDate);
-    }
-    
-    // 添加筛选条件
-    if (unitId && user.role_id === 3) { // 只有超级管理员可以按单位筛选
+    } else if (user.role_id === 2) {
+      // 单位管理员：只能看自己单位的记录
+      sql += ' AND wr.unit_id = ?';
+      params.push(user.unit_id);
+    } else if (user.role_id === 3 && unitId) {
       sql += ' AND wr.unit_id = ?';
       params.push(unitId);
     }
@@ -1015,9 +1087,21 @@ app.get('/api/waste-records/export/user/:userId', async (req, res) => {
       params.push(maxQuantity);
     }
     
-    if (location) {
-      sql += ' AND wr.location LIKE ?';
-      params.push(`%${location}%`);
+    if (locationId) {
+      sql += ' AND wr.location_id = ?';
+      params.push(locationId);
+    }
+    
+    // 添加产生工序筛选
+    if (processType) {
+      sql += ' AND wr.process_type = ?';
+      params.push(processType);
+    }
+    
+    // 添加备注关键词筛选
+    if (remarksKeyword) {
+      sql += ' AND wr.remarks LIKE ?';
+      params.push(`%${remarksKeyword}%`);
     }
     
     if (dateRange) {
@@ -1052,11 +1136,12 @@ app.get('/api/waste-records/export/user/:userId', async (req, res) => {
 app.get('/api/waste-records', async (req, res) => {
   try {
     const [rows] = await pool.query(
-      `SELECT wr.*, u.name as unit_name, wt.name as waste_type_name,
+      `SELECT wr.*, u.name as unit_name, wt.name as waste_type_name, l.name as location_name,
        IFNULL(creator.username, creator.phone) as creator_name
        FROM waste_records wr
        JOIN units u ON wr.unit_id = u.id
        JOIN waste_types wt ON wr.waste_type_id = wt.id
+       JOIN locations l ON wr.location_id = l.id
        LEFT JOIN users creator ON wr.creator_id = creator.id
        ORDER BY wr.created_at DESC`
     );

@@ -16,6 +16,8 @@ export default {
     userProfile: '/api/users/:id/profile', // 用户个人资料更新API
     units: '/api/units',
     wasteTypes: '/api/waste-types',
+    locations: '/api/locations', // 获取所有地点（超级管理员专用）
+    locationsByUnit: '/api/locations', // 获取指定单位的地点
     wasteRecords: '/api/waste-records',
     wasteRecordsByUnit: '/api/waste-records',
     wasteRecordDetail: '/api/waste-records/detail',

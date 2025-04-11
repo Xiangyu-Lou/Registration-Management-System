@@ -14,7 +14,7 @@
         class="login-form"
         @submit.prevent="submitForm"
       >
-        <el-form-item label="手机号" prop="phone">
+        <el-form-item label="用户名" prop="phone">
           <el-input 
             v-model="form.phone" 
             placeholder="请输入手机号" 

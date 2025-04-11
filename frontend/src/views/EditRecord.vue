@@ -44,17 +44,42 @@
           </el-select>
         </el-form-item>
 
-        <el-form-item label="备注" prop="remarks">
-          <el-input 
-            v-model="form.remarks" 
-            type="textarea" 
-            :rows="3"
-            placeholder="请输入备注信息（选填）" 
-          />
-        </el-form-item>
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="产生工序" prop="processType">
+              <el-select v-model="form.processType" placeholder="请选择产生工序" style="width: 100%">
+                <el-option label="作业现场" value="作业现场" />
+                <el-option label="清罐清理" value="清罐清理" />
+                <el-option label="报废清理" value="报废清理" />
+                <el-option label="管线刺漏" value="管线刺漏" />
+                <el-option label="历史遗留" value="历史遗留" />
+                <el-option label="日常维护" value="日常维护" />
+                <el-option label="封井退出" value="封井退出" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="备注" prop="remarks">
+              <el-input 
+                v-model="form.remarks" 
+                type="textarea" 
+                :rows="1"
+                placeholder="请输入备注信息（选填）" 
+                style="height: 40px; line-height: 40px;"
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
 
-        <el-form-item label="产生地点" prop="location">
-          <el-input v-model="form.location" placeholder="请输入废物产生地点" />
+        <el-form-item label="产生地点" prop="locationId">
+          <el-select v-model="form.locationId" placeholder="请选择废物产生地点" style="width: 100%">
+            <el-option 
+              v-for="location in locations" 
+              :key="location.id" 
+              :label="location.name" 
+              :value="location.id" 
+            />
+          </el-select>
         </el-form-item>
 
         <el-form-item label="收集日期">
@@ -183,7 +208,7 @@
 </template>
 
 <script>
-import { ref, reactive, onMounted, computed } from 'vue';
+import { ref, reactive, onMounted, computed, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { ElMessage, ElImageViewer } from 'element-plus';
 import httpService from '../config/httpService';
@@ -209,6 +234,7 @@ export default {
     const unitName = ref('');
     const wasteTypes = ref([]);
     const units = ref([]);
+    const locations = ref([]);
     const fileListBefore = ref([]);
     const fileListAfter = ref([]);
     const photoFilesBefore = ref([]);
@@ -281,7 +307,7 @@ export default {
     const form = reactive({
       unitId: '',
       wasteTypeId: '',
-      location: '',
+      locationId: '',
       collectionDate: '',
       collectionTime: '',
       quantity: 0,
@@ -289,6 +315,7 @@ export default {
       creatorId: auth.state.user?.id || null,
       photo_path_before: '',
       photo_path_after: '',
+      processType: '',
       remarks: ''
     });
 
@@ -299,8 +326,8 @@ export default {
       wasteTypeId: [
         { required: true, message: '请选择废物类型', trigger: 'change' }
       ],
-      location: [
-        { required: true, message: '请输入废物产生地点', trigger: 'blur' }
+      locationId: [
+        { required: true, message: '请选择废物产生地点', trigger: 'change' }
       ],
       collectionDate: [
         { required: false }
@@ -331,6 +358,7 @@ export default {
           if (!isSuperAdmin.value && auth.state.user) {
             form.unitId = auth.state.user.unit_id;
             await fetchUnitName(form.unitId);
+            await fetchLocations(form.unitId); // 获取该单位的地点列表
           }
           
           // 设置默认的收集日期和时间为当前时间
@@ -345,6 +373,19 @@ export default {
         ElMessage.error('加载数据失败，请刷新重试');
       } finally {
         loading.value = false;
+      }
+    });
+    
+    // 监听单位ID变化，更新地点列表
+    watch(() => form.unitId, async (newUnitId, oldUnitId) => {
+      // 仅当oldUnitId存在（即不是初始化时），才重置locationId
+      if (newUnitId && newUnitId !== oldUnitId) {
+        await fetchUnitName(newUnitId);
+        await fetchLocations(newUnitId);
+        // 只有在oldUnitId不为空（表示不是初始化触发）时才重置
+        if (oldUnitId) {
+          form.locationId = '';
+        }
       }
     });
 
@@ -383,6 +424,20 @@ export default {
       }
     };
 
+    // 获取单位对应的地点列表
+    const fetchLocations = async (unitId) => {
+      try {
+        if (!unitId) return;
+        
+        const response = await httpService.get(`${apiConfig.endpoints.locationsByUnit}/${unitId}`);
+        locations.value = response.data;
+        console.log('获取到的地点列表:', locations.value);
+      } catch (error) {
+        console.error('获取地点列表失败:', error);
+        ElMessage.error('获取地点列表失败');
+      }
+    };
+
     // 获取记录详情
     const fetchRecordDetails = async () => {
       try {
@@ -395,8 +450,12 @@ export default {
         
         form.unitId = recordData.unit_id;
         form.wasteTypeId = recordData.waste_type_id;
-        form.location = recordData.location;
+        form.locationId = recordData.location_id;
         form.recordId = recordData.id;
+        
+        // 获取单位名称和地点列表
+        await fetchUnitName(form.unitId);
+        await fetchLocations(form.unitId);
         
         // 处理收集时间
         if (recordData.collection_start_time) {
@@ -406,6 +465,10 @@ export default {
         }
         
         form.quantity = recordData.quantity;
+        
+        // 添加产生工序字段赋值
+        form.processType = recordData.process_type || '';
+        console.log('设置产生工序字段:', recordData.process_type);
         
         // 添加备注字段赋值
         form.remarks = recordData.remarks || '';
@@ -1004,10 +1067,11 @@ export default {
             const formData = new FormData();
             formData.append('unitId', form.unitId);
             formData.append('wasteTypeId', form.wasteTypeId);
-            formData.append('location', form.location);
+            formData.append('locationId', form.locationId);
             formData.append('collectionDate', form.collectionDate);
             formData.append('collectionTime', form.collectionTime);
             formData.append('quantity', form.quantity);
+            formData.append('processType', form.processType || '');
             formData.append('remarks', form.remarks || '');
             
             // 处理照片 - 根据后端逻辑，如果有新上传的照片，后端会删除所有旧照片
@@ -1208,6 +1272,7 @@ export default {
       unitName,
       wasteTypes,
       units,
+      locations,
       fileListBefore,
       fileListAfter,
       photoFilesBefore,

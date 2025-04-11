@@ -78,6 +78,34 @@
             </el-row>
             
             <el-row :gutter="20">
+              <!-- 产生工序 -->
+              <el-col :xs="24" :sm="24" :md="12" :lg="12" :xl="12">
+                <el-form-item label="产生工序">
+                  <el-select v-model="filterForm.processType" placeholder="选择产生工序" style="width: 100%" clearable>
+                    <el-option label="作业现场" value="作业现场" />
+                    <el-option label="清罐清理" value="清罐清理" />
+                    <el-option label="报废清理" value="报废清理" />
+                    <el-option label="管线刺漏" value="管线刺漏" />
+                    <el-option label="历史遗留" value="历史遗留" />
+                    <el-option label="日常维护" value="日常维护" />
+                    <el-option label="封井退出" value="封井退出" />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+              
+              <!-- 备注关键词 -->
+              <el-col :xs="24" :sm="24" :md="12" :lg="12" :xl="12">
+                <el-form-item label="备注关键词">
+                  <el-input 
+                    v-model="filterForm.remarksKeyword" 
+                    placeholder="输入关键词搜索" 
+                    clearable
+                  />
+                </el-form-item>
+              </el-col>
+            </el-row>
+            
+            <el-row :gutter="20">
               <!-- 数量范围 -->
               <el-col :xs="24" :sm="24" :md="12" :lg="12" :xl="12">
                 <el-form-item label="数量范围(吨)">
@@ -106,11 +134,20 @@
               <!-- 产生地点 -->
               <el-col :xs="24" :sm="24" :md="12" :lg="12" :xl="12">
                 <el-form-item label="产生地点">
-                  <el-input 
-                    v-model="filterForm.location" 
-                    placeholder="输入地点关键词搜索" 
+                  <el-select 
+                    v-model="filterForm.locationId" 
+                    placeholder="选择产生地点" 
+                    style="width: 100%" 
                     clearable
-                  />
+                    filterable
+                  >
+                    <el-option 
+                      v-for="location in locations" 
+                      :key="location.id" 
+                      :label="location.name" 
+                      :value="location.id" 
+                    />
+                  </el-select>
                 </el-form-item>
               </el-col>
             </el-row>
@@ -152,12 +189,17 @@
               :index="indexMethod"
             />
             <el-table-column prop="waste_type_name" label="废物类型" min-width="120" />
+            <el-table-column prop="process_type" label="产生工序" min-width="120">
+              <template #default="scope">
+                {{ scope.row.process_type || '无' }}
+              </template>
+            </el-table-column>
             <el-table-column prop="remarks" label="备注" min-width="150">
               <template #default="scope">
                 {{ scope.row.remarks || '无' }}
               </template>
             </el-table-column>
-            <el-table-column prop="location" label="产生地点" min-width="120" />
+            <el-table-column prop="location_name" label="产生地点" min-width="120" />
             <el-table-column label="收集开始时间" min-width="160">
               <template #default="scope">
                 {{ parseFormattedDateTime(scope.row.collection_start_time) }}
@@ -331,6 +373,7 @@ export default {
     const loading = ref(false);
     const unitName = ref('');
     const wasteTypes = ref([]);
+    const locations = ref([]);
     const showFilterPanel = ref(true);
     
     // 添加baseUrl定义
@@ -366,7 +409,9 @@ export default {
       wasteTypeId: null,
       minQuantity: null,
       maxQuantity: null,
-      location: ''
+      locationId: null,
+      processType: null,
+      remarksKeyword: null
     });
     
     // 筛选记录
@@ -389,7 +434,7 @@ export default {
         }
         
         // 筛选地点
-        if (filterForm.location && !record.location.includes(filterForm.location)) {
+        if (filterForm.locationId && record.location_id !== filterForm.locationId) {
           return false;
         }
         
@@ -405,6 +450,16 @@ export default {
           if (recordDate < startDate || recordDate > endDate) {
             return false;
           }
+        }
+        
+        // 筛选产生工序
+        if (filterForm.processType && record.process_type !== filterForm.processType) {
+          return false;
+        }
+        
+        // 筛选备注关键词
+        if (filterForm.remarksKeyword && !record.remarks.includes(filterForm.remarksKeyword)) {
+          return false;
         }
         
         // 注意：移除了普通员工只能看到7天内记录的前端限制，因为这已经在后端实现
@@ -544,7 +599,9 @@ export default {
       filterForm.wasteTypeId = null;
       filterForm.minQuantity = null;
       filterForm.maxQuantity = null;
-      filterForm.location = '';
+      filterForm.locationId = null;
+      filterForm.processType = null;
+      filterForm.remarksKeyword = null;
       
       // 重置分页
       page.value = 1;
@@ -608,9 +665,11 @@ export default {
           wasteTypeId: filterForm.wasteTypeId ? filterForm.wasteTypeId : undefined,
           minQuantity: filterForm.minQuantity ? filterForm.minQuantity : undefined,
           maxQuantity: filterForm.maxQuantity ? filterForm.maxQuantity : undefined,
-          location: filterForm.location || undefined,
+          locationId: filterForm.locationId ? filterForm.locationId : undefined,
           dateRange: filterForm.dateRange ? JSON.stringify(filterForm.dateRange) : undefined,
-          unitId: props.unitId ? parseInt(props.unitId) : undefined
+          unitId: props.unitId ? parseInt(props.unitId) : undefined,
+          processType: filterForm.processType ? filterForm.processType : undefined,
+          remarksKeyword: filterForm.remarksKeyword ? filterForm.remarksKeyword : undefined
         };
         
         console.log('导出记录的筛选条件:', queryParams);
@@ -642,8 +701,9 @@ export default {
           return {
             '单位': record.unit_name,
             '废物类型': record.waste_type_name,
+            '产生工序': record.process_type || '无',
             '备注': record.remarks || '无',
-            '产生地点': record.location,
+            '产生地点': record.location_name,
             '数量(kg)': record.quantity,
             '收集开始时间': parseFormattedDateTime(record.collection_start_time),
             '填报人': record.creator_name || '系统',
@@ -659,6 +719,7 @@ export default {
         const headers = [
           { text: '单位', field: '单位' },
           { text: '废物类型', field: '废物类型' },
+          { text: '产生工序', field: '产生工序' },
           { text: '备注', field: '备注' },
           { text: '产生地点', field: '产生地点' },
           { text: '数量(kg)', field: '数量(kg)' },
@@ -716,9 +777,11 @@ export default {
           wasteTypeId: filterForm.wasteTypeId ? filterForm.wasteTypeId : undefined,
           minQuantity: filterForm.minQuantity ? filterForm.minQuantity : undefined,
           maxQuantity: filterForm.maxQuantity ? filterForm.maxQuantity : undefined,
-          location: filterForm.location || undefined,
+          locationId: filterForm.locationId ? filterForm.locationId : undefined,
           dateRange: filterForm.dateRange ? JSON.stringify(filterForm.dateRange) : undefined,
-          unitId: props.unitId ? parseInt(props.unitId) : undefined
+          unitId: props.unitId ? parseInt(props.unitId) : undefined,
+          processType: filterForm.processType ? filterForm.processType : undefined,
+          remarksKeyword: filterForm.remarksKeyword ? filterForm.remarksKeyword : undefined
         };
         
         // 调用后端API获取完整的记录数据
@@ -741,8 +804,9 @@ export default {
         const exportData = data.map(record => ({
           '单位': record.unit_name,
           '废物类型': record.waste_type_name,
+          '产生工序': record.process_type || '无',
           '备注': record.remarks || '无',
-          '产生地点': record.location,
+          '产生地点': record.location_name,
           '数量(kg)': record.quantity,
           '收集开始时间': parseFormattedDateTime(record.collection_start_time),
           '填报人': record.creator_name || '系统',
@@ -757,6 +821,7 @@ export default {
         const headers = [
           { text: '单位', field: '单位' },
           { text: '废物类型', field: '废物类型' },
+          { text: '产生工序', field: '产生工序' },
           { text: '备注', field: '备注' },
           { text: '产生地点', field: '产生地点' },
           { text: '数量(kg)', field: '数量(kg)' },
@@ -829,6 +894,7 @@ export default {
       
       await fetchUnitName();
       await fetchWasteTypes();
+      await fetchLocations();
       await fetchRecords();
     });
 
@@ -843,8 +909,8 @@ export default {
         const response = await httpService.get(apiConfig.endpoints.wasteTypes);
         wasteTypes.value = response.data;
       } catch (error) {
-        console.error('Error fetching waste types:', error);
-        ElMessage.error('获取废物类型列表失败');
+        console.error('获取废物类型失败:', error);
+        ElMessage.error('获取废物类型失败，请刷新重试');
       }
     };
     
@@ -858,6 +924,17 @@ export default {
       } catch (error) {
         console.error('Error fetching unit name:', error);
         ElMessage.error('获取单位信息失败');
+      }
+    };
+
+    // 获取地点列表
+    const fetchLocations = async () => {
+      try {
+        const response = await httpService.get(`${apiConfig.endpoints.locationsByUnit}/${props.unitId}`);
+        locations.value = response.data;
+      } catch (error) {
+        console.error('获取地点列表失败:', error);
+        ElMessage.error('获取地点列表失败，请刷新重试');
       }
     };
 
@@ -884,7 +961,9 @@ export default {
           wasteTypeId: filterForm.wasteTypeId,
           minQuantity: filterForm.minQuantity,
           maxQuantity: filterForm.maxQuantity,
-          location: filterForm.location,
+          locationId: filterForm.locationId,
+          processType: filterForm.processType,
+          remarksKeyword: filterForm.remarksKeyword
         };
         
         // 如果有日期范围筛选，添加到参数
@@ -955,6 +1034,10 @@ export default {
       loading,
       unitName,
       wasteTypes,
+      locations,
+      showFilterPanel,
+      filterForm,
+      disabledDate,
       isAdmin,
       isUnitAdmin,
       parseFormattedDateTime,
@@ -967,33 +1050,23 @@ export default {
       canEdit,
       confirmDelete,
       apiConfig,
-      // 筛选相关
-      showFilterPanel,
-      filterForm,
       applyFilter,
       resetFilter,
-      // 导出相关
       exportRecords,
-      // 图片预览相关
       showViewer,
       previewImages,
       previewIndex,
       previewPhoto,
       closeViewer,
       handleScroll,
-      // 照片路径解析
       parsePhotoPath,
       baseUrl,
-      // 分页相关
       page,
       pageSize,
       hasMore,
       loadingMore,
-      // 计算序号方法
       indexMethod,
-      // 添加disabledDate函数
-      disabledDate,
-      tableHeight,  // 添加到返回值中
+      tableHeight,
     };
   }
 };
@@ -1406,26 +1479,6 @@ export default {
   
   .action-buttons {
     flex-direction: column;
-    justify-content: space-between;
-  }
-  
-  .action-buttons .el-button {
-    flex: 1;
-    justify-content: center;
-  }
-  
-  .filter-header {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-  }
-  
-  .header-left {
-    width: 100%;
-  }
-  
-  .action-buttons {
-    width: 100%;
     justify-content: space-between;
   }
   

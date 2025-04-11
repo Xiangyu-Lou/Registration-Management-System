@@ -34,17 +34,42 @@
           </el-select>
         </el-form-item>
 
-        <el-form-item label="备注" prop="remarks">
-          <el-input 
-            v-model="form.remarks" 
-            type="textarea" 
-            :rows="3"
-            placeholder="请输入备注信息（选填）" 
-          />
-        </el-form-item>
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="产生工序" prop="processType">
+              <el-select v-model="form.processType" placeholder="请选择产生工序" style="width: 100%">
+                <el-option label="作业现场" value="作业现场" />
+                <el-option label="清罐清理" value="清罐清理" />
+                <el-option label="报废清理" value="报废清理" />
+                <el-option label="管线刺漏" value="管线刺漏" />
+                <el-option label="历史遗留" value="历史遗留" />
+                <el-option label="日常维护" value="日常维护" />
+                <el-option label="封井退出" value="封井退出" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="备注" prop="remarks">
+              <el-input 
+                v-model="form.remarks" 
+                type="textarea" 
+                :rows="1"
+                placeholder="请输入备注信息（选填）" 
+                style="height: 40px; line-height: 40px;"
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
 
-        <el-form-item label="产生地点" prop="location">
-          <el-input v-model="form.location" placeholder="请输入废物产生地点" />
+        <el-form-item label="产生地点" prop="locationId">
+          <el-select v-model="form.locationId" placeholder="请选择废物产生地点" style="width: 100%">
+            <el-option 
+              v-for="location in locations" 
+              :key="location.id" 
+              :label="location.name" 
+              :value="location.id" 
+            />
+          </el-select>
         </el-form-item>
 
         <div class="form-row">
@@ -205,6 +230,7 @@ export default {
     const loading = ref(false);
     const unitName = ref('');
     const wasteTypes = ref([]);
+    const locations = ref([]);
     const photoFilesBefore = ref([]);
     const photoFilesAfter = ref([]);
     const fileListBefore = ref([]);
@@ -222,21 +248,22 @@ export default {
     // 初始化表单，将日期和时间分开
     const form = reactive({
       wasteTypeId: '',
-      location: '',
+      locationId: '',
       collectionDate: new Date().toISOString().slice(0, 10), // 默认为当天
       collectionTime: new Date().toTimeString().slice(0, 5), // 默认为当前时间，格式为HH:MM
       quantity: undefined,
       photo_before: [],
       photo_after: [],
-      remarks: ''
+      remarks: '',
+      processType: ''
     });
 
     const rules = {
       wasteTypeId: [
         { required: true, message: '请选择废物类型', trigger: 'change' }
       ],
-      location: [
-        { required: true, message: '请输入废物产生地点', trigger: 'blur' }
+      locationId: [
+        { required: true, message: '请选择废物产生地点', trigger: 'change' }
       ],
       collectionDate: [
         { required: false }
@@ -264,6 +291,7 @@ export default {
 
       await fetchUnitName();
       await fetchWasteTypes();
+      await fetchLocations();
     });
 
     onBeforeUnmount(() => {
@@ -300,6 +328,16 @@ export default {
       } catch (error) {
         console.error('Error fetching waste types:', error);
         ElMessage.error('获取废物类型失败');
+      }
+    };
+
+    const fetchLocations = async () => {
+      try {
+        const response = await httpService.get(`${apiConfig.endpoints.locationsByUnit}/${props.id}`);
+        locations.value = response.data;
+      } catch (error) {
+        console.error('Error fetching locations:', error);
+        ElMessage.error('获取地点列表失败');
       }
     };
 
@@ -752,23 +790,21 @@ export default {
     };
 
     const submitForm = () => {
+      if (!wasteForm.value) return;
+      
       wasteForm.value.validate(async (valid) => {
         if (valid) {
           loading.value = true;
+          
           try {
             const formData = new FormData();
             formData.append('unitId', props.id);
             formData.append('wasteTypeId', form.wasteTypeId);
-            formData.append('location', form.location);
-            
-            // 组合日期和时间，如果有的话
-            if (form.collectionDate && form.collectionTime) {
-              formData.append('collectionDate', form.collectionDate);
-              formData.append('collectionTime', form.collectionTime);
-            }
+            formData.append('locationId', form.locationId);
+            formData.append('collectionDate', form.collectionDate);
+            formData.append('collectionTime', form.collectionTime);
             formData.append('quantity', form.quantity);
-            
-            // 添加备注字段
+            formData.append('processType', form.processType);
             formData.append('remarks', form.remarks || '');
             
             // 添加创建者ID（如果用户已登录）
@@ -785,7 +821,7 @@ export default {
             console.log('提交表单数据:', {
               unitId: props.id,
               wasteTypeId: form.wasteTypeId,
-              location: form.location,
+              locationId: form.locationId,
               quantity: form.quantity,
               remarks: form.remarks || '',
               photo_before: photoFilesBefore.value ? photoFilesBefore.value.length : 0,
@@ -860,7 +896,7 @@ export default {
       photoFilesAfter.value = [];
       fileListBefore.value = [];
       fileListAfter.value = [];
-      form.quantity = undefined;
+      form.quantity = 0.001;
       form.collectionDate = new Date().toISOString().slice(0, 10); // 重置为今天
       form.collectionTime = new Date().toTimeString().slice(0, 5); // 重置为当前时间，格式为HH:MM
     };
@@ -896,6 +932,7 @@ export default {
       loading,
       unitName,
       wasteTypes,
+      locations,
       isAdmin,
       fileListBefore,
       fileListAfter,

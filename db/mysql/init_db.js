@@ -12,8 +12,10 @@ const hashPassword = async (password) => {
 // MySQL连接配置
 const dbConfig = {
   host: 'localhost',
-  user: 'your_username', // 你的用户名
-  password: 'your_password', // 你的密码
+  // user: 'your_username', // 你的用户名
+  user: 'Xiangyu', // 你的用户名
+  // password: 'your_password', // 你的密码
+  password: '990924', // 你的密码
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
@@ -66,6 +68,18 @@ async function initializeDatabase() {
     `);
     console.log('units表已创建');
     
+    // 创建地点表
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS locations (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        unit_id INT NOT NULL,
+        FOREIGN KEY (unit_id) REFERENCES units(id),
+        UNIQUE KEY unique_location_per_unit (name, unit_id)
+      )
+    `);
+    console.log('locations表已创建');
+    
     // 创建用户表
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS users (
@@ -91,22 +105,24 @@ async function initializeDatabase() {
     `);
     console.log('waste_types表已创建');
     
-    // 创建废物记录表
+    // 创建废物记录表 - 修改location为location_id外键
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS waste_records (
         id INT PRIMARY KEY AUTO_INCREMENT,
         unit_id INT NOT NULL,
         waste_type_id INT NOT NULL,
-        location VARCHAR(200) NOT NULL,
+        location_id INT NOT NULL,
         collection_start_time DATETIME NOT NULL,
         photo_path_before VARCHAR(500),
         photo_path_after VARCHAR(500),
         quantity DECIMAL(10, 3) NOT NULL,
         created_at DATETIME NOT NULL,
         creator_id INT,
+        process_type VARCHAR(50),
         remarks TEXT,
         FOREIGN KEY (unit_id) REFERENCES units(id),
         FOREIGN KEY (waste_type_id) REFERENCES waste_types(id),
+        FOREIGN KEY (location_id) REFERENCES locations(id),
         FOREIGN KEY (creator_id) REFERENCES users(id)
       )
     `);
@@ -147,6 +163,169 @@ async function initializeDatabase() {
       console.log('单位数据已存在，跳过插入');
     }
     
+    // 插入地点数据前，先获取各单位ID
+    const [unitsData] = await connection.execute(`SELECT id, name FROM units`);
+    
+    // 创建单位名称到ID的映射
+    const unitMap = {};
+    unitsData.forEach(unit => {
+      unitMap[unit.name] = unit.id;
+    });
+    
+    // 插入地点数据（检查是否已存在）
+    const [locationRows] = await connection.execute('SELECT COUNT(*) as count FROM locations');
+    if (locationRows[0].count === 0) {
+      const locationInserts = [];
+      
+      // 桓台地点
+      if (unitMap['桓台']) {
+        locationInserts.push(
+          `(?, ${unitMap['桓台']})`,
+          `(?, ${unitMap['桓台']})`,
+          `(?, ${unitMap['桓台']})`,
+          `(?, ${unitMap['桓台']})`,
+          `(?, ${unitMap['桓台']})`
+        );
+      }
+      
+      // 潍北地点
+      if (unitMap['潍北']) {
+        locationInserts.push(
+          `(?, ${unitMap['潍北']})`,
+          `(?, ${unitMap['潍北']})`,
+          `(?, ${unitMap['潍北']})`,
+          `(?, ${unitMap['潍北']})`,
+          `(?, ${unitMap['潍北']})`
+        );
+      }
+      
+      // 高青地点
+      if (unitMap['高青']) {
+        locationInserts.push(
+          `(?, ${unitMap['高青']})`,
+          `(?, ${unitMap['高青']})`,
+          `(?, ${unitMap['高青']})`,
+          `(?, ${unitMap['高青']})`,
+          `(?, ${unitMap['高青']})`
+        );
+      }
+      
+      // 牛庄地点
+      if (unitMap['牛庄']) {
+        locationInserts.push(
+          `(?, ${unitMap['牛庄']})`,
+          `(?, ${unitMap['牛庄']})`,
+          `(?, ${unitMap['牛庄']})`,
+          `(?, ${unitMap['牛庄']})`
+        );
+      }
+      
+      // 金角地点
+      if (unitMap['金角']) {
+        locationInserts.push(
+          `(?, ${unitMap['金角']})`,
+          `(?, ${unitMap['金角']})`
+        );
+      }
+      
+      // 信远地点
+      if (unitMap['信远']) {
+        locationInserts.push(
+          `(?, ${unitMap['信远']})`,
+          `(?, ${unitMap['信远']})`,
+          `(?, ${unitMap['信远']})`
+        );
+      }
+      
+      // 滨博地点
+      if (unitMap['滨博']) {
+        locationInserts.push(
+          `(?, ${unitMap['滨博']})`,
+          `(?, ${unitMap['滨博']})`,
+          `(?, ${unitMap['滨博']})`,
+          `(?, ${unitMap['滨博']})`,
+          `(?, ${unitMap['滨博']})`
+        );
+      }
+      
+      // 无棣地点
+      if (unitMap['无棣']) {
+        locationInserts.push(
+          `(?, ${unitMap['无棣']})`,
+          `(?, ${unitMap['无棣']})`,
+          `(?, ${unitMap['无棣']})`,
+          `(?, ${unitMap['无棣']})`,
+          `(?, ${unitMap['无棣']})`,
+          `(?, ${unitMap['无棣']})`,
+          `(?, ${unitMap['无棣']})`
+        );
+      }
+      
+      // 河口地点
+      if (unitMap['河口']) {
+        locationInserts.push(
+          `(?, ${unitMap['河口']})`,
+          `(?, ${unitMap['河口']})`,
+          `(?, ${unitMap['河口']})`,
+          `(?, ${unitMap['河口']})`,
+          `(?, ${unitMap['河口']})`,
+          `(?, ${unitMap['河口']})`,
+          `(?, ${unitMap['河口']})`
+        );
+      }
+      
+      // 胜兴地点
+      if (unitMap['胜兴']) {
+        locationInserts.push(
+          `(?, ${unitMap['胜兴']})`
+        );
+      }
+      
+      if (locationInserts.length > 0) {
+        const sql = `
+          INSERT INTO locations (name, unit_id) VALUES 
+          ${locationInserts.join(', ')}
+        `;
+        
+        const params = [
+          // 桓台地点
+          '金家接转站', '金17-1注采站', '金17-2注采站', '金6金9项目组', '金8注采站',
+          
+          // 潍北地点
+          '潍北联合站', '昌79注采站', '昌3注采站', '疃3注采站', '昌15注采站',
+          
+          // 高青地点
+          '高青联合站', '樊107注采站', '樊14注采站', '高21注采站', '高54注采站',
+          
+          // 牛庄地点
+          '牛25集输站', '牛25注采站', '营13注采站', '史112注采站',
+          
+          // 金角地点
+          '长堤注采站', '桩23注采站',
+          
+          // 信远地点
+          '河125注采站', '河122注采站', '永551注采站',
+          
+          // 滨博地点
+          '樊142注采站', '樊142-2-12注采站', '樊162注采站', '樊页1井组', '滨博接转站',
+          
+          // 无棣地点
+          '车41注采站', '车142注采站', '车40注采站', '车408注采站', '车274注采站', '车1接转站', '东风港联合站',
+          
+          // 河口地点
+          '沾14东注采站', '沾14西注采站', '渤南注采站', '大北注采站', '沾5注采站', '太平接转站', '沾5接转站',
+          
+          // 胜兴地点
+          '博兴注采站'
+        ];
+        
+        await connection.execute(sql, params);
+        console.log('已插入地点数据');
+      }
+    } else {
+      console.log('地点数据已存在，跳过插入');
+    }
+    
     // 获取牛庄单位的ID
     const [units] = await connection.execute(`SELECT id FROM units WHERE name = '牛庄'`);
     if (units.length === 0) {
@@ -183,9 +362,9 @@ async function initializeDatabase() {
     if (wasteTypeRows[0].count === 0) {
       await connection.execute(`
         INSERT INTO waste_types (name) VALUES 
-        ('油泥沙'),
+        ('油泥砂'),
         ('含油包装物'),
-        ('一般固废物'),
+        ('一般固废'),
         ('其他')
       `);
       console.log('已插入废物类型数据');
