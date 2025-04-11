@@ -105,21 +105,39 @@ export default {
         { min: 2, max: 20, message: '用户名长度应为2-20个字符', trigger: 'blur' }
       ],
       oldPassword: [
-        { required: function() { return form.newPassword || form.confirmPassword; }, 
-          message: '修改密码时需要输入原密码', trigger: 'blur' }
+        {
+          validator: (rule, value, callback) => {
+            // 仅当新密码有值时，原密码才必填
+            if (form.newPassword && !value) {
+              callback(new Error('修改密码时需要输入原密码'));
+            } else {
+              callback();
+            }
+          },
+          trigger: 'blur'
+        }
       ],
       newPassword: [
         { min: 1, max: 20, message: '密码长度应为1-20个字符', trigger: 'blur' }
       ],
       confirmPassword: [
-        { validator: (rule, value, callback) => {
-            if (form.newPassword && value !== form.newPassword) {
-              callback(new Error('两次输入的密码不一致'));
+        {
+          validator: (rule, value, callback) => {
+            // 仅当新密码有值时，确认密码才必填且需要验证一致性
+            if (form.newPassword) {
+              if (!value) {
+                callback(new Error('请再次输入新密码'));
+              } else if (value !== form.newPassword) {
+                callback(new Error('两次输入的密码不一致'));
+              } else {
+                callback();
+              }
             } else {
+              // 如果新密码为空，则确认密码也不需要验证
               callback();
             }
-          }, 
-          trigger: 'blur' 
+          },
+          trigger: 'blur'
         }
       ]
     });
@@ -194,6 +212,11 @@ export default {
         form.oldPassword = '';
         form.newPassword = '';
         form.confirmPassword = '';
+        
+        // 添加延迟跳转
+        setTimeout(() => {
+          goBack(); // 调用已有的返回函数
+        }, 1500); // 延迟1.5秒
         
       } catch (error) {
         if (error === 'cancel') return;
