@@ -44,33 +44,18 @@
           </el-select>
         </el-form-item>
 
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="产生工序" prop="processType">
-              <el-select v-model="form.processType" placeholder="请选择产生工序" style="width: 100%">
-                <el-option label="作业现场" value="作业现场" />
-                <el-option label="清罐清理" value="清罐清理" />
-                <el-option label="报废清理" value="报废清理" />
-                <el-option label="管线刺漏" value="管线刺漏" />
-                <el-option label="历史遗留" value="历史遗留" />
-                <el-option label="日常维护" value="日常维护" />
-                <el-option label="封井退出" value="封井退出" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="备注" prop="remarks">
-              <el-input 
-                v-model="form.remarks" 
-                type="textarea" 
-                :rows="1"
-                placeholder="请输入备注信息（选填）" 
-                style="height: 40px; line-height: 40px;"
-              />
-            </el-form-item>
-          </el-col>
-        </el-row>
-
+        <el-form-item label="产生工序" prop="processType">
+          <el-select v-model="form.processType" placeholder="请选择产生工序" style="width: 100%">
+            <el-option label="作业现场" value="作业现场" />
+            <el-option label="清罐清理" value="清罐清理" />
+            <el-option label="报废清理" value="报废清理" />
+            <el-option label="管线刺漏" value="管线刺漏" />
+            <el-option label="历史遗留" value="历史遗留" />
+            <el-option label="日常维护" value="日常维护" />
+            <el-option label="封井退出" value="封井退出" />
+          </el-select>
+        </el-form-item>
+        
         <el-form-item label="产生地点" prop="locationId">
           <el-select v-model="form.locationId" placeholder="请选择废物产生地点" style="width: 100%">
             <el-option 
@@ -80,6 +65,15 @@
               :value="location.id" 
             />
           </el-select>
+        </el-form-item>
+
+        <el-form-item label="备注" prop="remarks">
+          <el-input
+            v-model="form.remarks"
+            type="textarea"
+            :rows="1"
+            placeholder="若选择其他产生工序或产生地点，请在此说明"
+          />
         </el-form-item>
 
         <el-form-item label="收集日期">
