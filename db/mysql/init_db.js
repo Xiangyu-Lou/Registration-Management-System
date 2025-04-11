@@ -12,8 +12,10 @@ const hashPassword = async (password) => {
 // MySQL连接配置
 const dbConfig = {
   host: 'localhost',
-  user: 'your_username', // 你的用户名
-  password: 'your_password', // 你的密码
+  // user: 'your_username', // 你的用户名
+  user: 'Xiangyu', // 你的用户名
+  // password: 'your_password', // 你的密码
+  password: '990924', // 你的密码
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
@@ -105,6 +107,7 @@ async function initializeDatabase() {
         created_at DATETIME NOT NULL,
         creator_id INT,
         remarks TEXT,
+        process VARCHAR(100),
         FOREIGN KEY (unit_id) REFERENCES units(id),
         FOREIGN KEY (waste_type_id) REFERENCES waste_types(id),
         FOREIGN KEY (creator_id) REFERENCES users(id)
@@ -183,9 +186,9 @@ async function initializeDatabase() {
     if (wasteTypeRows[0].count === 0) {
       await connection.execute(`
         INSERT INTO waste_types (name) VALUES 
-        ('油泥沙'),
+        ('油泥砂'),
         ('含油包装物'),
-        ('一般固废物'),
+        ('一般固废'),
         ('其他')
       `);
       console.log('已插入废物类型数据');

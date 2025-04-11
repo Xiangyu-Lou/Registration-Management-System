@@ -539,10 +539,10 @@ app.post('/api/waste-records', verifyToken, upload.fields([
   { name: 'photo_after', maxCount: 5 }
 ]), async (req, res) => {
   try {
-    const { unitId, wasteTypeId, location, collectionDate, collectionTime, quantity, remarks } = req.body;
+    const { unitId, wasteTypeId, location, collectionDate, collectionTime, quantity, remarks, process } = req.body;
     
     // 验证必填字段
-    if (!unitId || !wasteTypeId || !location || !collectionDate || !collectionTime || !quantity) {
+    if (!unitId || !wasteTypeId || !location || !collectionDate || !collectionTime || !quantity || !process) {
       return res.status(400).json({ error: '所有字段都是必填的' });
     }
     
@@ -589,9 +589,9 @@ app.post('/api/waste-records', verifyToken, upload.fields([
     // 插入记录
     const [result] = await pool.query(
       `INSERT INTO waste_records 
-      (unit_id, waste_type_id, location, collection_start_time, photo_path_before, photo_path_after, quantity, created_at, creator_id, remarks)
-      VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)`,
-      [unitId, wasteTypeId, location, collectionStartTime, photo_path_before, photo_path_after, quantity, userId, remarks]
+      (unit_id, waste_type_id, location, collection_start_time, photo_path_before, photo_path_after, quantity, created_at, creator_id, remarks, process)
+      VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?)`,
+      [unitId, wasteTypeId, location, collectionStartTime, photo_path_before, photo_path_after, quantity, userId, remarks, process]
     );
     
     res.status(201).json({
@@ -634,7 +634,7 @@ app.put('/api/waste-records/:id', verifyToken, upload.fields([
   { name: 'photo_after', maxCount: 5 }
 ]), async (req, res) => {
   const { id } = req.params;
-  const { unitId, wasteTypeId, location, collectionDate, collectionTime, quantity, photo_path_before, photo_path_after, remarks } = req.body;
+  const { unitId, wasteTypeId, location, collectionDate, collectionTime, quantity, photo_path_before, photo_path_after, remarks, process } = req.body;
   
   try {
     // 验证记录是否存在
@@ -799,9 +799,9 @@ app.put('/api/waste-records/:id', verifyToken, upload.fields([
     await pool.query(
       `UPDATE waste_records 
        SET unit_id = ?, waste_type_id = ?, location = ?, collection_start_time = ?, 
-       photo_path_before = ?, photo_path_after = ?, quantity = ?, remarks = ?
+       photo_path_before = ?, photo_path_after = ?, quantity = ?, remarks = ?, process = ?
        WHERE id = ?`,
-      [unitId, wasteTypeId, location, collectionStartTime, newPhotoPathBefore, newPhotoPathAfter, quantity, remarks, id]
+      [unitId, wasteTypeId, location, collectionStartTime, newPhotoPathBefore, newPhotoPathAfter, quantity, remarks, process, id]
     );
     
     res.json({
@@ -844,7 +844,7 @@ app.get('/api/waste-records/detail/:id', async (req, res) => {
 // 获取用户创建的废物记录（支持分页）
 app.get('/api/waste-records/user/:userId', async (req, res) => {
   const { userId } = req.params;
-  const { page = 1, pageSize = 20, wasteTypeId, minQuantity, maxQuantity, location, dateRange } = req.query;
+  const { page = 1, pageSize = 20, wasteTypeId, minQuantity, maxQuantity, location, dateRange, process } = req.query;
   
   try {
     // 获取用户信息以确定其权限
@@ -871,7 +871,7 @@ app.get('/api/waste-records/user/:userId', async (req, res) => {
       params.push(user.unit_id);
     }
     
-    // 为普通员工（role_id=1）添加7天时间限制
+    // 为普通员工（role_id=1）添加7天时间限制并限制只能查看自己提交的记录
     if (user.role_id === 1) {
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -879,6 +879,10 @@ app.get('/api/waste-records/user/:userId', async (req, res) => {
       
       baseSql += ' AND DATE(wr.created_at) >= ?';
       params.push(formattedDate);
+      
+      // 只能查看自己提交的记录
+      baseSql += ' AND wr.creator_id = ?';
+      params.push(user.id);
     }
     
     // 添加筛选条件
@@ -912,6 +916,11 @@ app.get('/api/waste-records/user/:userId', async (req, res) => {
       } catch (error) {
         console.error('解析日期范围失败:', error);
       }
+    }
+    
+    if (process) {
+      baseSql += ' AND wr.process LIKE ?';
+      params.push(`%${process}%`);
     }
     
     // 添加排序
@@ -953,7 +962,7 @@ app.get('/api/waste-records/user/:userId', async (req, res) => {
 // 导出用户的废物记录（获取所有符合条件的记录）
 app.get('/api/waste-records/export/user/:userId', async (req, res) => {
   const { userId } = req.params;
-  const { wasteTypeId, minQuantity, maxQuantity, location, dateRange, unitId } = req.query;
+  const { wasteTypeId, minQuantity, maxQuantity, location, dateRange, unitId, process } = req.query;
   
   try {
     console.log('导出记录API被调用，参数:', req.query);
@@ -984,7 +993,7 @@ app.get('/api/waste-records/export/user/:userId', async (req, res) => {
       params.push(user.unit_id);
     }
     
-    // 为普通员工（role_id=1）添加7天时间限制
+    // 为普通员工（role_id=1）添加7天时间限制并限制只能查看自己提交的记录
     if (user.role_id === 1) {
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -992,6 +1001,10 @@ app.get('/api/waste-records/export/user/:userId', async (req, res) => {
       
       sql += ' AND DATE(wr.created_at) >= ?';
       params.push(formattedDate);
+      
+      // 只能查看自己提交的记录
+      sql += ' AND wr.creator_id = ?';
+      params.push(user.id);
     }
     
     // 添加筛选条件
@@ -1030,6 +1043,11 @@ app.get('/api/waste-records/export/user/:userId', async (req, res) => {
       } catch (error) {
         console.error('解析日期范围失败:', error);
       }
+    }
+    
+    if (process) {
+      sql += ' AND wr.process LIKE ?';
+      params.push(`%${process}%`);
     }
     
     // 添加排序
