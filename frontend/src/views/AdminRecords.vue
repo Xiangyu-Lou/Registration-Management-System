@@ -166,17 +166,17 @@
             />
             <el-table-column prop="unit_name" label="单位" min-width="120" />
             <el-table-column prop="waste_type_name" label="废物类型" min-width="120" />
-            <el-table-column prop="remarks" label="备注" min-width="150">
-              <template #default="scope">
-                {{ scope.row.remarks || '无' }}
-              </template>
-            </el-table-column>
+            <el-table-column prop="location" label="产生地点" min-width="120" />
             <el-table-column prop="process" label="产生工序" min-width="120">
               <template #default="scope">
                 {{ scope.row.process || '无' }}
               </template>
             </el-table-column>
-            <el-table-column prop="location" label="产生地点" min-width="120" />
+            <el-table-column prop="remarks" label="备注" min-width="150">
+              <template #default="scope">
+                {{ scope.row.remarks || '无' }}
+              </template>
+            </el-table-column>
             <el-table-column prop="collection_start_time" label="收集开始时间" min-width="160" />
             <el-table-column label="数量(吨)" min-width="100">
               <template #default="scope">
@@ -980,6 +980,7 @@ export default {
   display: flex;
   gap: 10px;
   margin-bottom: 20px;
+  justify-content: flex-end;
 }
 
 .filter-card {
@@ -1008,6 +1009,7 @@ export default {
 .filter-buttons-col {
   display: flex;
   align-items: flex-end;
+  justify-content: flex-end;
 }
 
 @media (max-width: 768px) {

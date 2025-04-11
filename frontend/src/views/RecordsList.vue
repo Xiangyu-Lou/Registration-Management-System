@@ -26,9 +26,6 @@
         <el-button @click="refreshRecords">
           <el-icon><refresh /></el-icon> 刷新
         </el-button>
-        <el-button type="primary" @click="exportRecords" :loading="loading">
-          <el-icon><download /></el-icon> 导出记录
-        </el-button>
       </div>
       
       <!-- 筛选面板 -->
@@ -142,7 +139,7 @@
           <div class="card-header">
             <h3 class="table-title">废物记录列表</h3>
             <div class="card-actions">
-              <el-button type="warning" @click="exportRecords">
+              <el-button type="warning" @click="exportRecords" :loading="loading">
                 <el-icon><download /></el-icon> 导出记录
               </el-button>
             </div>
@@ -154,7 +151,7 @@
             type="info"
             show-icon
             :closable="false"
-            title="提示：只能查看自己提交的近7天内的记录"
+            title="提示：只能查看7天内由自己提交的记录"
             style="margin-bottom: 15px;"
           />
           
@@ -176,17 +173,17 @@
               :index="indexMethod"
             />
             <el-table-column prop="waste_type_name" label="废物类型" min-width="120" />
-            <el-table-column prop="remarks" label="备注" min-width="150">
-              <template #default="scope">
-                {{ scope.row.remarks || '无' }}
-              </template>
-            </el-table-column>
+            <el-table-column prop="location" label="产生地点" min-width="120" />
             <el-table-column prop="process" label="产生工序" min-width="120">
               <template #default="scope">
                 {{ scope.row.process || '无' }}
               </template>
             </el-table-column>
-            <el-table-column prop="location" label="产生地点" min-width="120" />
+            <el-table-column prop="remarks" label="备注" min-width="150">
+              <template #default="scope">
+                {{ scope.row.remarks || '无' }}
+              </template>
+            </el-table-column>
             <el-table-column label="收集开始时间" min-width="160">
               <template #default="scope">
                 {{ parseFormattedDateTime(scope.row.collection_start_time) }}
@@ -197,14 +194,14 @@
                 {{ parseFloat(scope.row.quantity).toFixed(3) }}
               </template>
             </el-table-column>
-            <el-table-column label="记录时间" min-width="160" class="mobile-hidden">
-              <template #default="scope">
-                {{ parseFormattedDateTime(scope.row.created_at) }}
-              </template>
-            </el-table-column>
             <el-table-column label="汇报人" min-width="100" class="mobile-hidden">
               <template #default="scope">
                 {{ scope.row.creator_name || '未知' }}
+              </template>
+            </el-table-column>
+            <el-table-column label="记录时间" min-width="160" class="mobile-hidden">
+              <template #default="scope">
+                {{ parseFormattedDateTime(scope.row.created_at) }}
               </template>
             </el-table-column>
             <el-table-column
