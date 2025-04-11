@@ -1521,6 +1521,7 @@ export default {
   
   .filter-buttons-col {
     margin-top: 15px;
+    justify-content: flex-start;
   }
   
   .filter-actions {
