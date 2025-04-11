@@ -276,7 +276,7 @@ app.get('/api/users', async (req, res) => {
        FROM users u 
        JOIN user_roles r ON u.role_id = r.id 
        LEFT JOIN units un ON u.unit_id = un.id 
-       ORDER BY u.status DESC, u.role_id, u.username`
+       ORDER BY un.name ASC, u.role_id DESC, u.username ASC`
     );
     
     res.json(rows);
@@ -297,7 +297,7 @@ app.get('/api/units/:unitId/users', async (req, res) => {
        JOIN user_roles r ON u.role_id = r.id 
        LEFT JOIN units un ON u.unit_id = un.id 
        WHERE u.unit_id = ? 
-       ORDER BY u.status DESC, u.role_id, u.username`, 
+       ORDER BY u.role_id DESC, u.username ASC`, 
       [unitId]
     );
     
@@ -525,7 +525,7 @@ app.get('/api/units', async (req, res) => {
 // 获取所有废物类型
 app.get('/api/waste-types', async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT * FROM waste_types ORDER BY name');
+    const [rows] = await pool.query('SELECT * FROM waste_types ORDER BY id');
     res.json(rows);
   } catch (error) {
     console.error('获取废物类型错误:', error);

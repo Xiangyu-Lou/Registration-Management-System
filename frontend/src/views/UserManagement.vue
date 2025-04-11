@@ -10,6 +10,19 @@
 
     <div class="content">
       <div class="toolbar">
+        <div class="search-container">
+          <el-input
+            v-model="searchKeyword"
+            placeholder="请输入姓名关键字搜索"
+            clearable
+            @clear="clearSearch"
+            class="search-input"
+          >
+            <template #prefix>
+              <el-icon><search /></el-icon>
+            </template>
+          </el-input>
+        </div>
         <el-button type="primary" @click="openAddDialog">
           <el-icon><plus /></el-icon> 添加用户
         </el-button>
@@ -142,19 +155,20 @@
 </template>
 
 <script>
-import { ref, reactive, onMounted, computed } from 'vue';
+import { ref, reactive, onMounted, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import httpService from '../config/httpService';
 import apiConfig from '../config/api';
-import { ArrowLeft, Plus } from '@element-plus/icons-vue';
+import { ArrowLeft, Plus, Search } from '@element-plus/icons-vue';
 import auth from '../store/auth';
 
 export default {
   name: 'UserManagement',
   components: {
     ArrowLeft,
-    Plus
+    Plus,
+    Search
   },
   setup() {
     const router = useRouter();
@@ -165,6 +179,8 @@ export default {
     const userForm = ref(null);
     const users = ref([]);
     const units = ref([]);
+    const searchKeyword = ref('');
+    const allUsers = ref([]);
     
     // 判断当前用户是否为超级管理员
     const isSuperAdmin = computed(() => {
@@ -247,6 +263,7 @@ export default {
           response = await httpService.get(`${apiConfig.endpoints.units}/${currentUnitId.value}/users`);
         }
         users.value = response.data;
+        allUsers.value = response.data; // 保存完整的用户列表副本
       } catch (error) {
         console.error('Error fetching users:', error);
         ElMessage.error('获取用户列表失败');
@@ -389,9 +406,34 @@ export default {
       router.back();
     };
     
+    // 过滤用户列表
+    const filterUsers = () => {
+      if (!searchKeyword.value.trim()) {
+        // 如果搜索框为空，显示所有用户
+        users.value = allUsers.value;
+      } else {
+        // 按姓名关键字过滤
+        const keyword = searchKeyword.value.toLowerCase();
+        users.value = allUsers.value.filter(user => 
+          user.username.toLowerCase().includes(keyword)
+        );
+      }
+    };
+    
+    // 清除搜索
+    const clearSearch = () => {
+      searchKeyword.value = '';
+      filterUsers();
+    };
+    
     onMounted(() => {
       fetchUsers();
       fetchUnits();
+    });
+    
+    // 监听搜索关键字变化
+    watch(searchKeyword, () => {
+      filterUsers();
     });
     
     return {
@@ -411,7 +453,10 @@ export default {
       handleDelete,
       handleStatusChange,
       submitForm,
-      goBack
+      goBack,
+      searchKeyword,
+      filterUsers,
+      clearSearch
     };
   }
 };
@@ -500,8 +545,37 @@ export default {
 
 .toolbar {
   display: flex;
-  justify-content: flex-end;
-  margin-bottom: 10px;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.search-container {
+  display: flex;
+  align-items: center;
+}
+
+.search-input {
+  width: 250px;
+  transition: all 0.3s;
+}
+
+@media (max-width: 768px) {
+  .toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .search-container {
+    width: 100%;
+    margin-top: 10px;
+  }
+  
+  .search-input {
+    width: 100%;
+  }
 }
 
 .password-hint {
