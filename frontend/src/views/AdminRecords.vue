@@ -186,7 +186,7 @@
             <el-table-column prop="creator_name" label="填报人" min-width="100" />
             <el-table-column prop="created_at" label="记录时间" min-width="160" />
             <el-table-column
-              label="现场照片（清理前）"
+              label="清理前照片"
               min-width="150"
               align="center"
             >
@@ -200,7 +200,7 @@
                     @click="previewPhoto(parsePhotoPath(scope.row.photo_path_before), index)"
                   >
                     <el-image
-                      style="width: 50px; height: 50px"
+                      style="width: 50px; height: 50px; margin: 0 auto;"
                       :src="`${baseUrl}${path}`"
                       fit="cover"
                     ></el-image>
@@ -213,7 +213,7 @@
               </template>
             </el-table-column>
             <el-table-column
-              label="现场照片（清理后）"
+              label="清理后照片"
               min-width="150"
               align="center"
             >
@@ -227,7 +227,7 @@
                     @click="previewPhoto(parsePhotoPath(scope.row.photo_path_after), index)"
                   >
                     <el-image
-                      style="width: 50px; height: 50px"
+                      style="width: 50px; height: 50px; margin: 0 auto;"
                       :src="`${baseUrl}${path}`"
                       fit="cover"
                     ></el-image>
@@ -1053,13 +1053,17 @@ export default {
 
 .photo-preview {
   display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  position: relative;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
 }
 
 .photo-thumbnail-container {
   cursor: pointer;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2px;
 }
 
 .photo-count {
@@ -1226,5 +1230,12 @@ export default {
 /* 确保表格内容居中对齐 */
 :deep(.el-table .cell) {
   text-align: center;
+}
+
+/* 确保表格图片列内容居中 */
+:deep(.el-table .el-table__cell[align="center"] .cell) {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 </style>

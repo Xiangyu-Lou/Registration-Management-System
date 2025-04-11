@@ -208,7 +208,7 @@
               </template>
             </el-table-column>
             <el-table-column
-              label="现场照片（清理前）"
+              label="清理前照片"
               min-width="150"
               align="center"
             >
@@ -222,7 +222,7 @@
                     @click="previewPhoto(parsePhotoPath(scope.row.photo_path_before), index)"
                   >
                     <el-image
-                      style="width: 50px; height: 50px"
+                      style="width: 50px; height: 50px; margin: 0 auto;"
                       :src="`${baseUrl}${path}`"
                       fit="cover"
                     ></el-image>
@@ -235,7 +235,7 @@
               </template>
             </el-table-column>
             <el-table-column
-              label="现场照片（清理后）"
+              label="清理后照片"
               min-width="150"
               align="center"
             >
@@ -249,7 +249,7 @@
                     @click="previewPhoto(parsePhotoPath(scope.row.photo_path_after), index)"
                   >
                     <el-image
-                      style="width: 50px; height: 50px"
+                      style="width: 50px; height: 50px; margin: 0 auto;"
                       :src="`${baseUrl}${path}`"
                       fit="cover"
                     ></el-image>
@@ -1238,9 +1238,19 @@ export default {
   object-fit: cover;
 }
 
+.photo-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
 .photo-thumbnail-container {
   cursor: pointer;
   margin-bottom: 2px;
+  display: flex;
+  justify-content: center;
 }
 
 .photo-count {
@@ -1248,12 +1258,6 @@ export default {
   color: #909399;
   text-align: center;
   margin-top: 2px;
-}
-
-.photo-preview {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
 }
 
 .image-error {
@@ -1559,5 +1563,12 @@ export default {
 :deep(.el-table--border) {
   border: 1px solid #EBEEF5;
   border-radius: 8px;
+}
+
+/* 确保表格图片列内容居中 */
+:deep(.el-table .el-table__cell[align="center"] .cell) {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 </style> 
