@@ -7,7 +7,7 @@ const mysql = require('mysql2/promise');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 // 加载环境变量
-require('dotenv').config();
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 // JWT 密钥
 const JWT_SECRET = process.env.JWT_SECRET || 'please input your secret key in .env file'; // 使用环境变量，如未设置则使用默认值作为后备

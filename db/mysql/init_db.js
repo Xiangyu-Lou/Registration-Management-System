@@ -2,8 +2,15 @@ const mysql = require('mysql2/promise');
 const path = require('path');
 const fs = require('fs');
 const bcrypt = require('bcrypt');
-// 加载环境变量
+// 加载环境变量，指定绝对路径
 require('dotenv').config({ path: path.join(__dirname, '../../.env') });
+
+// 输出环境变量进行调试
+console.log('环境变量加载状态:');
+console.log('DB_HOST:', process.env.DB_HOST);
+console.log('DB_USER:', process.env.DB_USER);
+console.log('DB_PASSWORD:', process.env.DB_PASSWORD ? '已设置' : '未设置');
+console.log('DB_NAME:', process.env.DB_NAME);
 
 // 密码加密函数
 const hashPassword = async (password) => {
@@ -13,13 +20,18 @@ const hashPassword = async (password) => {
 
 // MySQL连接配置 - 从环境变量中读取
 const dbConfig = {
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'Xiangyu',
-  password: process.env.DB_PASSWORD || '990924',
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
 };
+
+// 输出数据库连接配置进行调试
+console.log('数据库连接配置:');
+console.log('host:', dbConfig.host);
+console.log('user:', dbConfig.user);
 
 async function initializeDatabase() {
   let connection;
