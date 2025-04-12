@@ -56,15 +56,28 @@
         
         <el-table-column label="操作" width="240" fixed="right">
           <template #default="scope">
-            <el-button size="small" @click="handleEdit(scope.row)">编辑</el-button>
+            <!-- 编辑按钮：单位管理员不能编辑其他单位管理员 -->
             <el-button 
+              v-if="!(!isSuperAdmin && scope.row.role_id === 2)" 
+              size="small" 
+              @click="handleEdit(scope.row)"
+            >
+              编辑
+            </el-button>
+            
+            <!-- 停用/恢复按钮：单位管理员不能操作其他单位管理员 -->
+            <el-button 
+              v-if="!(!isSuperAdmin && scope.row.role_id === 2)" 
               size="small" 
               :type="scope.row.status === 1 ? 'warning' : 'success'"
               @click="handleStatusChange(scope.row)"
             >
               {{ scope.row.status === 1 ? '停用' : '恢复' }}
             </el-button>
+            
+            <!-- 删除按钮：单位管理员不能删除其他单位管理员 -->
             <el-popconfirm
+              v-if="!(!isSuperAdmin && scope.row.role_id === 2)"
               title="确定要删除此用户吗？"
               @confirm="handleDelete(scope.row)"
             >
