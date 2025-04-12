@@ -77,12 +77,16 @@
 import { ref, reactive, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
+import { ArrowLeft } from '@element-plus/icons-vue';
 import auth from '../store/auth';
 import httpService from '../config/httpService';
 import api from '../config/api';
 
 export default {
   name: 'UserProfile',
+  components: {
+    ArrowLeft
+  },
   
   setup() {
     const router = useRouter();
