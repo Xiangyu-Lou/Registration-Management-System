@@ -670,6 +670,25 @@ app.put('/api/waste-records/:id', verifyToken, upload.fields([
         // 检查是否为特殊的NULL标记
         if (photo_path_before === 'NULL') {
           console.log('收到NULL标记，将收集前照片字段设为null');
+          
+          // 删除旧照片文件
+          if (record.photo_path_before) {
+            try {
+              const oldPhotosBefore = JSON.parse(record.photo_path_before);
+              if (Array.isArray(oldPhotosBefore)) {
+                oldPhotosBefore.forEach(photoPath => {
+                  const fullPath = path.join(__dirname, '..', photoPath);
+                  if (fs.existsSync(fullPath)) {
+                    fs.unlinkSync(fullPath);
+                    console.log(`已删除旧照片(收集前): ${fullPath}`);
+                  }
+                });
+              }
+            } catch (error) {
+              console.error('删除旧照片文件失败:', error);
+            }
+          }
+          
           newPhotoPathBefore = null;
         } else {
           let existingPaths = [];
@@ -678,11 +697,51 @@ app.put('/api/waste-records/:id', verifyToken, upload.fields([
             // 检查是否为空数组
             if (Array.isArray(existingPaths) && existingPaths.length === 0) {
               console.log('收集前照片路径为空数组，将字段设为null');
+              
+              // 删除旧照片文件
+              if (record.photo_path_before) {
+                try {
+                  const oldPhotosBefore = JSON.parse(record.photo_path_before);
+                  if (Array.isArray(oldPhotosBefore)) {
+                    oldPhotosBefore.forEach(photoPath => {
+                      const fullPath = path.join(__dirname, '..', photoPath);
+                      if (fs.existsSync(fullPath)) {
+                        fs.unlinkSync(fullPath);
+                        console.log(`已删除旧照片(收集前): ${fullPath}`);
+                      }
+                    });
+                  }
+                } catch (error) {
+                  console.error('删除旧照片文件失败:', error);
+                }
+              }
+              
               // 设置为null
               newPhotoPathBefore = null;
             } else {
-              // 合并新上传的照片和现有照片
-              const allPhotosBefore = [...newPhotosBefore, ...existingPaths];
+              // 找出已删除的照片并删除文件
+              if (record.photo_path_before) {
+                try {
+                  const oldPhotosBefore = JSON.parse(record.photo_path_before);
+                  if (Array.isArray(oldPhotosBefore)) {
+                    oldPhotosBefore.forEach(oldPath => {
+                      // 如果旧照片路径不在新列表中，则删除该文件
+                      if (!existingPaths.includes(oldPath)) {
+                        const fullPath = path.join(__dirname, '..', oldPath);
+                        if (fs.existsSync(fullPath)) {
+                          fs.unlinkSync(fullPath);
+                          console.log(`已删除已移除的照片(收集前): ${fullPath}`);
+                        }
+                      }
+                    });
+                  }
+                } catch (error) {
+                  console.error('处理已删除照片失败:', error);
+                }
+              }
+              
+              // 合并新上传的照片和现有照片，将新照片放在后面
+              const allPhotosBefore = [...existingPaths, ...newPhotosBefore];
               newPhotoPathBefore = JSON.stringify(allPhotosBefore);
               console.log('合并后的收集前照片路径:', newPhotoPathBefore);
             }
@@ -690,8 +749,32 @@ app.put('/api/waste-records/:id', verifyToken, upload.fields([
             console.error('解析现有收集前照片路径失败:', e);
             existingPaths = photo_path_before ? [photo_path_before] : [];
             
-            // 合并新上传的照片和现有照片
-            const allPhotosBefore = [...newPhotosBefore, ...existingPaths];
+            // 找出已删除的照片并删除文件
+            if (record.photo_path_before) {
+              try {
+                const oldPhotosBefore = Array.isArray(record.photo_path_before) 
+                  ? record.photo_path_before 
+                  : JSON.parse(record.photo_path_before);
+                
+                if (Array.isArray(oldPhotosBefore)) {
+                  oldPhotosBefore.forEach(oldPath => {
+                    // 如果旧照片路径不在新列表中，则删除该文件
+                    if (!existingPaths.includes(oldPath)) {
+                      const fullPath = path.join(__dirname, '..', oldPath);
+                      if (fs.existsSync(fullPath)) {
+                        fs.unlinkSync(fullPath);
+                        console.log(`已删除已移除的照片(收集前): ${fullPath}`);
+                      }
+                    }
+                  });
+                }
+              } catch (error) {
+                console.error('处理已删除照片失败:', error);
+              }
+            }
+            
+            // 合并新上传的照片和现有照片，将新照片放在后面
+            const allPhotosBefore = [...existingPaths, ...newPhotosBefore];
             newPhotoPathBefore = JSON.stringify(allPhotosBefore);
             console.log('合并后的收集前照片路径(解析失败):', newPhotoPathBefore);
           }
@@ -700,6 +783,24 @@ app.put('/api/waste-records/:id', verifyToken, upload.fields([
         // 如果没有现有照片路径，只使用新上传的照片
         newPhotoPathBefore = JSON.stringify(newPhotosBefore);
         console.log('仅使用新上传的收集前照片路径:', newPhotoPathBefore);
+        
+        // 删除旧照片文件
+        if (record.photo_path_before) {
+          try {
+            const oldPhotosBefore = JSON.parse(record.photo_path_before);
+            if (Array.isArray(oldPhotosBefore)) {
+              oldPhotosBefore.forEach(photoPath => {
+                const fullPath = path.join(__dirname, '..', photoPath);
+                if (fs.existsSync(fullPath)) {
+                  fs.unlinkSync(fullPath);
+                  console.log(`已删除旧照片(收集前): ${fullPath}`);
+                }
+              });
+            }
+          } catch (error) {
+            console.error('删除旧照片文件失败:', error);
+          }
+        }
       }
     } else if (photo_path_before) {
       // 如果没有新上传的照片，但有现有照片路径
@@ -708,6 +809,25 @@ app.put('/api/waste-records/:id', verifyToken, upload.fields([
       // 检查是否为特殊的NULL标记
       if (photo_path_before === 'NULL') {
         console.log('收到NULL标记，将收集前照片字段设为null');
+        
+        // 删除旧照片文件
+        if (record.photo_path_before) {
+          try {
+            const oldPhotosBefore = JSON.parse(record.photo_path_before);
+            if (Array.isArray(oldPhotosBefore)) {
+              oldPhotosBefore.forEach(photoPath => {
+                const fullPath = path.join(__dirname, '..', photoPath);
+                if (fs.existsSync(fullPath)) {
+                  fs.unlinkSync(fullPath);
+                  console.log(`已删除旧照片(收集前): ${fullPath}`);
+                }
+              });
+            }
+          } catch (error) {
+            console.error('删除旧照片文件失败:', error);
+          }
+        }
+        
         newPhotoPathBefore = null;
       } else {
         // 检查是否为空数组
@@ -715,9 +835,49 @@ app.put('/api/waste-records/:id', verifyToken, upload.fields([
           const existingPaths = JSON.parse(photo_path_before);
           if (Array.isArray(existingPaths) && existingPaths.length === 0) {
             console.log('收集前照片路径为空数组，将字段设为null');
+            
+            // 删除旧照片文件
+            if (record.photo_path_before) {
+              try {
+                const oldPhotosBefore = JSON.parse(record.photo_path_before);
+                if (Array.isArray(oldPhotosBefore)) {
+                  oldPhotosBefore.forEach(photoPath => {
+                    const fullPath = path.join(__dirname, '..', photoPath);
+                    if (fs.existsSync(fullPath)) {
+                      fs.unlinkSync(fullPath);
+                      console.log(`已删除旧照片(收集前): ${fullPath}`);
+                    }
+                  });
+                }
+              } catch (error) {
+                console.error('删除旧照片文件失败:', error);
+              }
+            }
+            
             // 设置为null
             newPhotoPathBefore = null;
           } else {
+            // 找出已删除的照片并删除文件
+            if (record.photo_path_before) {
+              try {
+                const oldPhotosBefore = JSON.parse(record.photo_path_before);
+                if (Array.isArray(oldPhotosBefore) && Array.isArray(existingPaths)) {
+                  oldPhotosBefore.forEach(oldPath => {
+                    // 如果旧照片路径不在新列表中，则删除该文件
+                    if (!existingPaths.includes(oldPath)) {
+                      const fullPath = path.join(__dirname, '..', oldPath);
+                      if (fs.existsSync(fullPath)) {
+                        fs.unlinkSync(fullPath);
+                        console.log(`已删除已移除的照片(收集前): ${fullPath}`);
+                      }
+                    }
+                  });
+                }
+              } catch (error) {
+                console.error('处理已删除照片失败:', error);
+              }
+            }
+            
             newPhotoPathBefore = photo_path_before;
           }
         } catch (e) {
@@ -741,6 +901,25 @@ app.put('/api/waste-records/:id', verifyToken, upload.fields([
         // 检查是否为特殊的NULL标记
         if (photo_path_after === 'NULL') {
           console.log('收到NULL标记，将收集后照片字段设为null');
+          
+          // 删除旧照片文件
+          if (record.photo_path_after) {
+            try {
+              const oldPhotosAfter = JSON.parse(record.photo_path_after);
+              if (Array.isArray(oldPhotosAfter)) {
+                oldPhotosAfter.forEach(photoPath => {
+                  const fullPath = path.join(__dirname, '..', photoPath);
+                  if (fs.existsSync(fullPath)) {
+                    fs.unlinkSync(fullPath);
+                    console.log(`已删除旧照片(收集后): ${fullPath}`);
+                  }
+                });
+              }
+            } catch (error) {
+              console.error('删除旧照片文件失败:', error);
+            }
+          }
+          
           newPhotoPathAfter = null;
         } else {
           let existingPaths = [];
@@ -749,11 +928,51 @@ app.put('/api/waste-records/:id', verifyToken, upload.fields([
             // 检查是否为空数组
             if (Array.isArray(existingPaths) && existingPaths.length === 0) {
               console.log('收集后照片路径为空数组，将字段设为null');
+              
+              // 删除旧照片文件
+              if (record.photo_path_after) {
+                try {
+                  const oldPhotosAfter = JSON.parse(record.photo_path_after);
+                  if (Array.isArray(oldPhotosAfter)) {
+                    oldPhotosAfter.forEach(photoPath => {
+                      const fullPath = path.join(__dirname, '..', photoPath);
+                      if (fs.existsSync(fullPath)) {
+                        fs.unlinkSync(fullPath);
+                        console.log(`已删除旧照片(收集后): ${fullPath}`);
+                      }
+                    });
+                  }
+                } catch (error) {
+                  console.error('删除旧照片文件失败:', error);
+                }
+              }
+              
               // 设置为null
               newPhotoPathAfter = null;
             } else {
-              // 合并新上传的照片和现有照片
-              const allPhotosAfter = [...newPhotosAfter, ...existingPaths];
+              // 找出已删除的照片并删除文件
+              if (record.photo_path_after) {
+                try {
+                  const oldPhotosAfter = JSON.parse(record.photo_path_after);
+                  if (Array.isArray(oldPhotosAfter)) {
+                    oldPhotosAfter.forEach(oldPath => {
+                      // 如果旧照片路径不在新列表中，则删除该文件
+                      if (!existingPaths.includes(oldPath)) {
+                        const fullPath = path.join(__dirname, '..', oldPath);
+                        if (fs.existsSync(fullPath)) {
+                          fs.unlinkSync(fullPath);
+                          console.log(`已删除已移除的照片(收集后): ${fullPath}`);
+                        }
+                      }
+                    });
+                  }
+                } catch (error) {
+                  console.error('处理已删除照片失败:', error);
+                }
+              }
+              
+              // 合并新上传的照片和现有照片，将新照片放在后面
+              const allPhotosAfter = [...existingPaths, ...newPhotosAfter];
               newPhotoPathAfter = JSON.stringify(allPhotosAfter);
               console.log('合并后的收集后照片路径:', newPhotoPathAfter);
             }
@@ -761,8 +980,32 @@ app.put('/api/waste-records/:id', verifyToken, upload.fields([
             console.error('解析现有收集后照片路径失败:', e);
             existingPaths = photo_path_after ? [photo_path_after] : [];
             
-            // 合并新上传的照片和现有照片
-            const allPhotosAfter = [...newPhotosAfter, ...existingPaths];
+            // 找出已删除的照片并删除文件
+            if (record.photo_path_after) {
+              try {
+                const oldPhotosAfter = Array.isArray(record.photo_path_after) 
+                  ? record.photo_path_after 
+                  : JSON.parse(record.photo_path_after);
+                
+                if (Array.isArray(oldPhotosAfter)) {
+                  oldPhotosAfter.forEach(oldPath => {
+                    // 如果旧照片路径不在新列表中，则删除该文件
+                    if (!existingPaths.includes(oldPath)) {
+                      const fullPath = path.join(__dirname, '..', oldPath);
+                      if (fs.existsSync(fullPath)) {
+                        fs.unlinkSync(fullPath);
+                        console.log(`已删除已移除的照片(收集后): ${fullPath}`);
+                      }
+                    }
+                  });
+                }
+              } catch (error) {
+                console.error('处理已删除照片失败:', error);
+              }
+            }
+            
+            // 合并新上传的照片和现有照片，将新照片放在后面
+            const allPhotosAfter = [...existingPaths, ...newPhotosAfter];
             newPhotoPathAfter = JSON.stringify(allPhotosAfter);
             console.log('合并后的收集后照片路径(解析失败):', newPhotoPathAfter);
           }
@@ -771,6 +1014,24 @@ app.put('/api/waste-records/:id', verifyToken, upload.fields([
         // 如果没有现有照片路径，只使用新上传的照片
         newPhotoPathAfter = JSON.stringify(newPhotosAfter);
         console.log('仅使用新上传的收集后照片路径:', newPhotoPathAfter);
+        
+        // 删除旧照片文件
+        if (record.photo_path_after) {
+          try {
+            const oldPhotosAfter = JSON.parse(record.photo_path_after);
+            if (Array.isArray(oldPhotosAfter)) {
+              oldPhotosAfter.forEach(photoPath => {
+                const fullPath = path.join(__dirname, '..', photoPath);
+                if (fs.existsSync(fullPath)) {
+                  fs.unlinkSync(fullPath);
+                  console.log(`已删除旧照片(收集后): ${fullPath}`);
+                }
+              });
+            }
+          } catch (error) {
+            console.error('删除旧照片文件失败:', error);
+          }
+        }
       }
     } else if (photo_path_after) {
       // 如果没有新上传的照片，但有现有照片路径
@@ -779,6 +1040,25 @@ app.put('/api/waste-records/:id', verifyToken, upload.fields([
       // 检查是否为特殊的NULL标记
       if (photo_path_after === 'NULL') {
         console.log('收到NULL标记，将收集后照片字段设为null');
+        
+        // 删除旧照片文件
+        if (record.photo_path_after) {
+          try {
+            const oldPhotosAfter = JSON.parse(record.photo_path_after);
+            if (Array.isArray(oldPhotosAfter)) {
+              oldPhotosAfter.forEach(photoPath => {
+                const fullPath = path.join(__dirname, '..', photoPath);
+                if (fs.existsSync(fullPath)) {
+                  fs.unlinkSync(fullPath);
+                  console.log(`已删除旧照片(收集后): ${fullPath}`);
+                }
+              });
+            }
+          } catch (error) {
+            console.error('删除旧照片文件失败:', error);
+          }
+        }
+        
         newPhotoPathAfter = null;
       } else {
         // 检查是否为空数组
@@ -786,9 +1066,49 @@ app.put('/api/waste-records/:id', verifyToken, upload.fields([
           const existingPaths = JSON.parse(photo_path_after);
           if (Array.isArray(existingPaths) && existingPaths.length === 0) {
             console.log('收集后照片路径为空数组，将字段设为null');
+            
+            // 删除旧照片文件
+            if (record.photo_path_after) {
+              try {
+                const oldPhotosAfter = JSON.parse(record.photo_path_after);
+                if (Array.isArray(oldPhotosAfter)) {
+                  oldPhotosAfter.forEach(photoPath => {
+                    const fullPath = path.join(__dirname, '..', photoPath);
+                    if (fs.existsSync(fullPath)) {
+                      fs.unlinkSync(fullPath);
+                      console.log(`已删除旧照片(收集后): ${fullPath}`);
+                    }
+                  });
+                }
+              } catch (error) {
+                console.error('删除旧照片文件失败:', error);
+              }
+            }
+            
             // 设置为null
             newPhotoPathAfter = null;
           } else {
+            // 找出已删除的照片并删除文件
+            if (record.photo_path_after) {
+              try {
+                const oldPhotosAfter = JSON.parse(record.photo_path_after);
+                if (Array.isArray(oldPhotosAfter) && Array.isArray(existingPaths)) {
+                  oldPhotosAfter.forEach(oldPath => {
+                    // 如果旧照片路径不在新列表中，则删除该文件
+                    if (!existingPaths.includes(oldPath)) {
+                      const fullPath = path.join(__dirname, '..', oldPath);
+                      if (fs.existsSync(fullPath)) {
+                        fs.unlinkSync(fullPath);
+                        console.log(`已删除已移除的照片(收集后): ${fullPath}`);
+                      }
+                    }
+                  });
+                }
+              } catch (error) {
+                console.error('处理已删除照片失败:', error);
+              }
+            }
+            
             newPhotoPathAfter = photo_path_after;
           }
         } catch (e) {
