@@ -119,10 +119,10 @@ const processUploadedFiles = (req, res, next) => {
 
 // 数据库连接配置
 const dbConfig = {
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'Xiangyu',
-  password: process.env.DB_PASSWORD || '990924',
-  database: process.env.DB_NAME || 'waste_management',
+  host: process.env.DB_HOST || 'your_database_host',
+  user: process.env.DB_USER || 'your_database_username',
+  password: process.env.DB_PASSWORD || 'your_database_password',
+  database: process.env.DB_NAME || 'your_database_name',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
