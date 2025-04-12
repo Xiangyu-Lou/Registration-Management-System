@@ -47,6 +47,26 @@ sudo apt install nginx
 git clone git@github.com:Xiangyu-Lou/Registration-Management-System.git
 cd Registration-Management-System
 ```
+
+### 1.5 Configure environment variables
+
+```bash
+# Create .env file in the project root directory
+vim .env
+
+# Input the following content
+# Database configuration
+DB_HOST=localhost
+DB_USER=  # Replace with your MySQL username
+DB_PASSWORD=  # Replace with your MySQL password
+DB_NAME=waste_management
+
+# Other configurations
+PORT=3000
+JWT_SECRET=  # Replace with your JWT secret key
+UPLOAD_DIR=uploads 
+```
+
 ## 2. Deploy the Backend
 
 ### 2.1 Install Dependencies

@@ -6,13 +6,15 @@ const fs = require('fs');
 const mysql = require('mysql2/promise');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+// 加载环境变量
+require('dotenv').config();
 
 // JWT 密钥
-const JWT_SECRET = 'your-secret-key'; // 在生产环境中应该使用环境变量
+const JWT_SECRET = process.env.JWT_SECRET || 'please input your secret key in .env file'; // 使用环境变量，如未设置则使用默认值作为后备
 
 // 创建Express应用
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // 中间件配置
 app.use(cors({
@@ -117,10 +119,10 @@ const processUploadedFiles = (req, res, next) => {
 
 // 数据库连接配置
 const dbConfig = {
-  host: 'localhost',
-  user: 'Xiangyu',
-  password: '990924',
-  database: 'waste_management',
+  host: process.env.DB_HOST || 'localhost',
+  user: process.env.DB_USER || 'Xiangyu',
+  password: process.env.DB_PASSWORD || '990924',
+  database: process.env.DB_NAME || 'waste_management',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,

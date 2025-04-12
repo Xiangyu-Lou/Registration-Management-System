@@ -45,6 +45,25 @@ sudo apt install nginx
 git clone git@github.com:Xiangyu-Lou/Registration-Management-System.git
 cd Registration-Management-System
 ```
+
+### 1.5 配置环境变量
+
+```bash
+# 在项目根目录下创建 .env 文件
+vim .env
+
+# 输入以下内容
+# 数据库配置
+DB_HOST=localhost
+DB_USER=  # 替换为您的MySQL用户名
+DB_PASSWORD=  # 替换为您的MySQL密码
+DB_NAME=waste_management
+
+# 其他配置
+PORT=3000
+JWT_SECRET=  # 替换为您的JWT密钥
+UPLOAD_DIR=uploads 
+```
 ## 2. 部署后端
 
 ### 2.1 安装依赖

@@ -2,6 +2,8 @@ const mysql = require('mysql2/promise');
 const path = require('path');
 const fs = require('fs');
 const bcrypt = require('bcrypt');
+// 加载环境变量
+require('dotenv').config({ path: path.join(__dirname, '../../.env') });
 
 // 密码加密函数
 const hashPassword = async (password) => {
@@ -9,11 +11,11 @@ const hashPassword = async (password) => {
   return await bcrypt.hash(password, saltRounds);
 };
 
-// MySQL连接配置
+// MySQL连接配置 - 从环境变量中读取
 const dbConfig = {
-  host: 'localhost',
-  user: 'your_username', // 你的用户名
-  password: 'your_password', // 你的密码
+  host: process.env.DB_HOST || 'localhost',
+  user: process.env.DB_USER || 'Xiangyu',
+  password: process.env.DB_PASSWORD || '990924',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
@@ -34,9 +36,12 @@ async function initializeDatabase() {
     
     console.log('成功连接到MySQL服务器');
     
+    // 从环境变量获取数据库名称
+    const dbName = process.env.DB_NAME || 'waste_management';
+    
     // 创建数据库
-    await createDbConnection.execute(`CREATE DATABASE IF NOT EXISTS waste_management`);
-    console.log(`数据库 waste_management 已创建或已存在`);
+    await createDbConnection.execute(`CREATE DATABASE IF NOT EXISTS ${dbName}`);
+    console.log(`数据库 ${dbName} 已创建或已存在`);
     
     // 关闭创建数据库的连接
     await createDbConnection.end();
@@ -44,9 +49,9 @@ async function initializeDatabase() {
     // 连接到新创建的数据库
     connection = await mysql.createConnection({
       ...dbConfig,
-      database: 'waste_management'
+      database: dbName
     });
-    console.log(`成功连接到数据库 waste_management`);
+    console.log(`成功连接到数据库 ${dbName}`);
     
     // 创建user_roles表
     await connection.execute(`
