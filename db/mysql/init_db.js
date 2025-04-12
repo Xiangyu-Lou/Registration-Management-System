@@ -101,7 +101,7 @@ async function initializeDatabase() {
         collection_start_time DATETIME NOT NULL,
         photo_path_before VARCHAR(500),
         photo_path_after VARCHAR(500),
-        quantity DECIMAL(10, 3) NOT NULL,
+        quantity DECIMAL(10, 3),
         created_at DATETIME NOT NULL,
         creator_id INT,
         remarks TEXT,

@@ -17,7 +17,7 @@
         <el-form-item label="用户" prop="phone">
           <el-input 
             v-model="form.phone" 
-            placeholder="请输入手机号" 
+            placeholder="请输入用户名" 
           />
         </el-form-item>
         
@@ -76,8 +76,8 @@ export default {
     // 验证规则
     const rules = computed(() => {
       const phoneRules = [
-        { required: true, message: '请输入手机号', trigger: 'submit' },
-        { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号格式', trigger: 'submit' }
+        { required: true, message: '请输入用户名', trigger: 'submit' },
+        { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的格式', trigger: 'submit' }
       ];
       
       const passwordRules = [

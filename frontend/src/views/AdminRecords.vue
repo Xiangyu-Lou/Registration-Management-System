@@ -103,23 +103,33 @@
               <el-col :xs="24" :sm="12" :md="10" :lg="8" :xl="8">
                 <el-form-item label="数量范围(吨)">
                   <div class="quantity-range">
-                    <el-input-number 
-                      v-model="filterForm.minQuantity" 
-                      :min="0"
-                      :precision="3"
-                      :step="0.001"
-                      placeholder="最小值"
-                      style="width: 47%"
-                    />
+                    <div class="input-with-clear">
+                      <el-input-number 
+                        v-model="filterForm.minQuantity" 
+                        :min="0"
+                        :precision="3"
+                        :step="0.001"
+                        placeholder="最小值"
+                        style="width: 100%"
+                      />
+                      <el-icon v-if="filterForm.minQuantity !== null" class="clear-icon" @click="filterForm.minQuantity = null">
+                        <CircleClose />
+                      </el-icon>
+                    </div>
                     <span class="range-separator">至</span>
-                    <el-input-number 
-                      v-model="filterForm.maxQuantity" 
-                      :min="filterForm.minQuantity || 0"
-                      :precision="3"
-                      :step="0.001"
-                      placeholder="最大值"
-                      style="width: 47%"
-                    />
+                    <div class="input-with-clear">
+                      <el-input-number 
+                        v-model="filterForm.maxQuantity" 
+                        :min="filterForm.minQuantity || 0"
+                        :precision="3"
+                        :step="0.001"
+                        placeholder="最大值"
+                        style="width: 100%"
+                      />
+                      <el-icon v-if="filterForm.maxQuantity !== null" class="clear-icon" @click="filterForm.maxQuantity = null">
+                        <CircleClose />
+                      </el-icon>
+                    </div>
                   </div>
                 </el-form-item>
               </el-col>
@@ -127,7 +137,7 @@
               <!-- 筛选按钮 -->
               <el-col :xs="24" :sm="24" :md="4" :lg="8" :xl="8" class="filter-buttons-col">
                 <div class="filter-actions">
-                  <el-button type="primary" @click="applyFilter">筛选</el-button>
+                  <el-button type="primary" @click="applyFilter">刷新筛选</el-button>
                   <el-button @click="resetFilter">重置</el-button>
                 </div>
               </el-col>
@@ -141,8 +151,14 @@
           <div class="card-header">
             <h3 class="table-title">所有废物记录</h3>
             <div class="card-actions">
-              <el-button type="warning" @click="exportRecords">
-                <el-icon><download /></el-icon> 导出记录
+              <el-button type="warning" @click="exportWithoutImages" :loading="loading">
+                <el-icon><download /></el-icon> 无照片
+              </el-button>
+              <el-button type="warning" @click="exportWithImages" :loading="loading">
+                <el-icon><download /></el-icon> 包含首张照片
+              </el-button>
+              <el-button type="warning" @click="exportWithAllImages" :loading="loading">
+                <el-icon><download /></el-icon> 包含全部照片
               </el-button>
             </div>
           </div>
@@ -180,7 +196,7 @@
             <el-table-column prop="collection_start_time" label="收集开始时间" min-width="160" />
             <el-table-column label="数量(吨)" min-width="100">
               <template #default="scope">
-                {{ parseFloat(scope.row.quantity).toFixed(3) }}
+                {{ scope.row.quantity !== null && scope.row.quantity !== undefined ? parseFloat(scope.row.quantity).toFixed(3) : '' }}
               </template>
             </el-table-column>
             <el-table-column prop="creator_name" label="填报人" min-width="100" />
@@ -290,11 +306,11 @@
 </template>
 
 <script>
-import { ref, onMounted, computed, reactive, onUnmounted } from 'vue';
+import { ref, onMounted, computed, reactive, onUnmounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox, ElImageViewer, ElLoading } from 'element-plus';
 import axios from 'axios';
-import { Plus, Refresh, User, ArrowDown, ArrowUp, Download, Loading } from '@element-plus/icons-vue';
+import { Plus, Refresh, User, ArrowDown, ArrowUp, Download, Loading, CircleClose } from '@element-plus/icons-vue';
 import auth from '../store/auth';
 import { exportToExcelWithImages, exportToExcel } from '../utils/exportUtils';
 import apiConfig from '../config/api';
@@ -346,7 +362,8 @@ export default {
     ArrowUp,
     Download,
     ElImageViewer,
-    Loading
+    Loading,
+    CircleClose
   },
   setup() {
     const router = useRouter();
@@ -397,6 +414,26 @@ export default {
       process: '',
     });
     
+    // 添加监听器，在任何筛选条件变化时实时更新
+    const debounceTimer = ref(null);
+    watch([
+      () => filterForm.unitId,
+      () => filterForm.dateRange,
+      () => filterForm.wasteTypeId,
+      () => filterForm.minQuantity,
+      () => filterForm.maxQuantity,
+      () => filterForm.location,
+      () => filterForm.process
+    ], () => {
+      // 当用户更改筛选条件时，自动重新获取数据
+      // 添加防抖动处理，避免频繁请求
+      if (debounceTimer.value) clearTimeout(debounceTimer.value);
+      debounceTimer.value = setTimeout(() => {
+        page.value = 1;
+        fetchRecords();
+      }, 300); // 300毫秒的延迟
+    });
+    
     // 过滤后的记录
     const filteredRecords = computed(() => {
       return records.value.filter(record => {
@@ -412,11 +449,13 @@ export default {
         
         // 检查数量范围
         if (filterForm.minQuantity !== null && filterForm.minQuantity !== '' && 
+            record.quantity !== null && record.quantity !== undefined &&
             parseFloat(record.quantity) < filterForm.minQuantity) {
           return false;
         }
         
         if (filterForm.maxQuantity !== null && filterForm.maxQuantity !== '' && 
+            record.quantity !== null && record.quantity !== undefined &&
             parseFloat(record.quantity) > filterForm.maxQuantity) {
           return false;
         }
@@ -619,38 +658,10 @@ export default {
       ElMessage.info('筛选条件已重置');
     };
     
-    // 导出筛选后的记录为Excel
-    const exportRecords = async () => {
-      try {
-        // 先弹出选择对话框
-        await ElMessageBox.confirm(
-          '请选择导出格式',
-          '导出选项',
-          {
-            confirmButtonText: '带图片导出',
-            cancelButtonText: '不带图片导出',
-            distinguishCancelAndClose: true,
-            type: 'info'
-          }
-        ).then(async () => {
-          // 用户选择带图片导出
-          await exportWithImages();
-        }).catch(action => {
-          if (action === 'cancel') {
-            // 用户选择不带图片导出
-            exportWithoutImages();
-          }
-        });
-      } catch (error) {
-        console.error('导出过程发生错误:', error);
-        ElMessage.error('导出失败: ' + (error.message || '未知错误'));
-      }
-    };
-    
-    // 带图片导出
+    // 带图片导出 (包含首张照片)
     const exportWithImages = async () => {
       try {
-        // 先显示提示消息
+        // 先弹出选择对话框
         ElMessage({
           message: '导出大量包含图片的记录所需时间较长，请耐心等待',
           type: 'info',
@@ -706,12 +717,13 @@ export default {
           return {
             '单位': record.unit_name,
             '废物类型': record.waste_type_name,
-            '备注': record.remarks || '无',
-            '产生工序': record.process || '无',
             '产生地点': record.location,
-            '数量(kg)': record.quantity,
+            '产生工序': record.process || '无',
+            '备注': record.remarks || '无',
             '收集开始时间': formatDateTime(record.collection_start_time),
+            '数量(吨)': record.quantity,
             '填报人': record.creator_name || '系统',
+            '记录时间': formatDateTime(record.created_at),
             '清理前照片': beforePhotos.length > 0 ? beforePhotos[0] : '',  // 使用第一张图片的路径
             '清理后照片': afterPhotos.length > 0 ? afterPhotos[0] : ''    // 使用第一张图片的路径
           };
@@ -727,12 +739,13 @@ export default {
         const exportHeaders = [
           { text: '单位', field: '单位' },
           { text: '废物类型', field: '废物类型' },
-          { text: '备注', field: '备注' },
-          { text: '产生工序', field: '产生工序' },
           { text: '产生地点', field: '产生地点' },
-          { text: '数量(kg)', field: '数量(kg)' },
+          { text: '产生工序', field: '产生工序' },          
+          { text: '备注', field: '备注' },
           { text: '收集开始时间', field: '收集开始时间' },
+          { text: '数量(吨)', field: '数量(吨)' },
           { text: '填报人', field: '填报人' },
+          { text: '记录时间', field: '记录时间' },
           { text: '清理前照片', field: '清理前照片', isImage: true },
           { text: '清理后照片', field: '清理后照片', isImage: true }
         ];
@@ -747,6 +760,147 @@ export default {
         };
         
         // 执行带图片的导出
+        const result = await exportToExcelWithImages(exportData, fileName, exportHeaders, baseUrl, onProgress);
+        
+        // 关闭加载提示
+        loadingInstance.close();
+        
+        if (result) {
+          ElMessage.success('导出成功');
+        } else {
+          ElMessage.error('导出失败，请重试');
+        }
+      } catch (error) {
+        console.error('导出记录失败:', error);
+        ElMessage.error('导出失败: ' + (error.message || '未知错误'));
+      } finally {
+        loading.value = false;
+        // 确保加载提示被关闭
+        ElLoading.service().close();
+      }
+    };
+    
+    // 带全部照片导出
+    const exportWithAllImages = async () => {
+      try {
+        // 先显示提示消息
+        ElMessage({
+          message: '导出大量包含全部图片的记录所需时间较长，请耐心等待',
+          type: 'info',
+          duration: 5000
+        });
+        
+        // 创建全屏加载
+        const loadingInstance = ElLoading.service({
+          lock: true,
+          text: '正在导出记录，请稍候...',
+          background: 'rgba(0, 0, 0, 0.7)'
+        });
+        
+        loading.value = true;
+        
+        // 准备筛选条件
+        const queryParams = {
+          wasteTypeId: filterForm.wasteTypeId ? filterForm.wasteTypeId : undefined,
+          minQuantity: filterForm.minQuantity ? filterForm.minQuantity : undefined,
+          maxQuantity: filterForm.maxQuantity ? filterForm.maxQuantity : undefined,
+          location: filterForm.location || undefined,
+          process: filterForm.process || undefined,
+          dateRange: filterForm.dateRange ? JSON.stringify(filterForm.dateRange) : undefined,
+          unitId: filterForm.unitId ? filterForm.unitId : undefined
+        };
+        
+        console.log('导出记录的筛选条件:', queryParams);
+        
+        // 调用后端API获取完整的记录数据
+        const { data } = await axios.get(
+          `${apiConfig.getUrl(apiConfig.endpoints.exportWasteRecords)}/${auth.state.user.id}`,
+          { params: queryParams }
+        );
+        
+        console.log(`从后端获取到 ${data.length} 条记录用于导出`);
+        
+        if (data.length === 0) {
+          loadingInstance.close();
+          ElMessage.warning('没有符合条件的记录可导出');
+          loading.value = false;
+          return;
+        }
+        
+        // 更新加载文本
+        loadingInstance.setText(`准备导出 ${data.length} 条记录的全部照片...`);
+        
+        // 准备导出数据
+        const exportData = data.map(record => {
+          // 解析所有照片路径
+          const beforePhotos = parsePhotoPath(record.photo_path_before);
+          const afterPhotos = parsePhotoPath(record.photo_path_after);
+          
+          // 准备基本数据
+          const recordData = {
+            '单位': record.unit_name,
+            '废物类型': record.waste_type_name,
+            '产生工序': record.process || '无',
+            '产生地点': record.location,
+            '备注': record.remarks || '无',
+            '收集开始时间': formatDateTime(record.collection_start_time),
+            '数量(吨)': record.quantity,
+            '填报人': record.creator_name || '系统',
+            '记录时间': formatDateTime(record.created_at),
+          };
+          
+          // 添加最多5张清理前照片
+          for (let i = 0; i < 5; i++) {
+            recordData[`清理前照片${i+1}`] = i < beforePhotos.length ? beforePhotos[i] : '';
+          }
+          
+          // 添加最多5张清理后照片
+          for (let i = 0; i < 5; i++) {
+            recordData[`清理后照片${i+1}`] = i < afterPhotos.length ? afterPhotos[i] : '';
+          }
+          
+          return recordData;
+        });
+        
+        // 设置文件名
+        const unitName = filterForm.unitId 
+          ? units.value.find(u => u.id === filterForm.unitId)?.name || '未知单位'
+          : '全部单位';
+        const fileName = `固体废物记录_全部照片_${unitName}`;
+        
+        // 设置表头，添加isImage标志
+        const exportHeaders = [
+          { text: '单位', field: '单位' },
+          { text: '废物类型', field: '废物类型' },
+          { text: '产生工序', field: '产生工序' },
+          { text: '产生地点', field: '产生地点' },
+          { text: '备注', field: '备注' },
+          { text: '收集开始时间', field: '收集开始时间' },
+          { text: '数量(吨)', field: '数量(吨)' },
+          { text: '填报人', field: '填报人' },
+          { text: '记录时间', field: '记录时间' },
+        ];
+        
+        // 添加清理前照片表头
+        for (let i = 0; i < 5; i++) {
+          exportHeaders.push({ text: `清理前照片${i+1}`, field: `清理前照片${i+1}`, isImage: true });
+        }
+        
+        // 添加清理后照片表头
+        for (let i = 0; i < 5; i++) {
+          exportHeaders.push({ text: `清理后照片${i+1}`, field: `清理后照片${i+1}`, isImage: true });
+        }
+        
+        // 获取服务器的基础URL
+        const baseUrl = window.location.origin;
+        
+        // 设置进度回调函数
+        const onProgress = (current, total) => {
+          const percent = Math.round((current / total) * 100);
+          loadingInstance.setText(`正在导出全部照片：${percent}% (${current}/${total})`);
+        };
+        
+        // 执行带全部图片的导出
         const result = await exportToExcelWithImages(exportData, fileName, exportHeaders, baseUrl, onProgress);
         
         // 关闭加载提示
@@ -810,12 +964,13 @@ export default {
         const exportData = data.map(record => ({
           '单位': record.unit_name,
           '废物类型': record.waste_type_name,
-          '备注': record.remarks || '无',
           '产生工序': record.process || '无',
           '产生地点': record.location,
-          '数量(kg)': record.quantity,
+          '备注': record.remarks || '无',
           '收集开始时间': formatDateTime(record.collection_start_time),
+          '数量(吨)': record.quantity,
           '填报人': record.creator_name || '系统',
+          '记录时间': formatDateTime(record.created_at),
           '清理前照片': record.photo_path_before ? '有' : '无',
           '清理后照片': record.photo_path_after ? '有' : '无'
         }));
@@ -830,12 +985,13 @@ export default {
         const exportHeaders = [
           { text: '单位', field: '单位' },
           { text: '废物类型', field: '废物类型' },
-          { text: '备注', field: '备注' },
-          { text: '产生工序', field: '产生工序' },
           { text: '产生地点', field: '产生地点' },
-          { text: '数量(kg)', field: '数量(kg)' },
+          { text: '产生工序', field: '产生工序' },
+          { text: '备注', field: '备注' },
           { text: '收集开始时间', field: '收集开始时间' },
+          { text: '数量(吨)', field: '数量(吨)' },
           { text: '填报人', field: '填报人' },
+          { text: '记录时间', field: '记录时间' },
           { text: '清理前照片', field: '清理前照片' },
           { text: '清理后照片', field: '清理后照片' }
         ];
@@ -932,7 +1088,9 @@ export default {
       filterForm,
       applyFilter,
       resetFilter,
-      exportRecords,
+      exportWithImages,
+      exportWithAllImages,
+      exportWithoutImages,
       parsePhotoPath,
       getPhotosByType,
       refreshRecords,
@@ -940,7 +1098,6 @@ export default {
       goToUserManagement,
       editRecord,
       confirmDelete,
-      // 图片预览相关
       showViewer,
       previewImages,
       previewIndex,
@@ -953,7 +1110,8 @@ export default {
       loadingMore,
       handleScroll,
       indexMethod,
-      tableHeight
+      tableHeight,
+      debounceTimer
     };
   }
 };
@@ -1030,6 +1188,28 @@ export default {
 
 .range-separator {
   padding: 0 5px;
+}
+
+.input-with-clear {
+  position: relative;
+  width: 47%;
+  display: flex;
+  align-items: center;
+}
+
+.clear-icon {
+  position: absolute;
+  right: 45px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #909399;
+  font-size: 14px;
+  cursor: pointer;
+  z-index: 10;
+}
+
+.clear-icon:hover {
+  color: #409EFF;
 }
 
 .records-card {

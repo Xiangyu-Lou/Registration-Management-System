@@ -335,7 +335,7 @@ export default {
       location: '',
       collectionDate: '',
       collectionTime: '',
-      quantity: 0,
+      quantity: undefined,
       recordId: null,
       creatorId: auth.state.user?.id || null,
       photo_path_before: '',
@@ -384,7 +384,7 @@ export default {
         { required: false }
       ],
       quantity: [
-        { required: true, message: '请输入收集数量', trigger: 'change' }
+        { required: false, message: '请输入收集数量', trigger: 'change' }
       ]
     };
 
@@ -1125,7 +1125,12 @@ export default {
             
             formData.append('collectionDate', form.collectionDate);
             formData.append('collectionTime', form.collectionTime);
-            formData.append('quantity', form.quantity);
+            
+            // 只有当quantity有值时才添加到formData
+            if (form.quantity !== undefined && form.quantity !== null && form.quantity !== '') {
+              formData.append('quantity', form.quantity);
+            }
+            
             formData.append('remarks', form.remarks || '');
             
             // 处理照片 - 根据后端逻辑，如果有新上传的照片，后端会删除所有旧照片

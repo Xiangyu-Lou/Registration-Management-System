@@ -319,7 +319,7 @@ export default {
         { required: false }
       ],
       quantity: [
-        { required: true, message: '请输入收集数量', trigger: 'change' }
+        { required: false, message: '请输入收集数量', trigger: 'change' }
       ]
     };
 
@@ -861,7 +861,11 @@ export default {
               formData.append('collectionDate', form.collectionDate);
               formData.append('collectionTime', form.collectionTime);
             }
-            formData.append('quantity', form.quantity);
+            
+            // 只有当quantity有值时才添加到formData
+            if (form.quantity !== undefined && form.quantity !== null && form.quantity !== '') {
+              formData.append('quantity', form.quantity);
+            }
             
             // 添加备注字段
             formData.append('remarks', form.remarks || '');

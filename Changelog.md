@@ -1,5 +1,44 @@
 # Registration-Management-System Changelog
 
+## 2024-04-12
+
+### ✨ 新功能 (Features)
+
+*   **产生工序字段**:
+    *   在废物填报 (`WasteForm.vue`) 和编辑 (`EditRecord.vue`) 页面添加了"产生工序"字段，包含预设选项 ('作业现场', '清罐清理', '报废清理', '管线刺漏', '历史遗留', '日常维护', '封井退出') 和"其他"自定义输入。
+    *   数据库 `waste_records` 表已添加 `process VARCHAR(100)` 字段 (`db/mysql/init_db.js`)。
+    *   前后端API (`server.js`, `WasteForm.vue`, `EditRecord.vue`) 均已更新以支持此字段的存储、读取和验证。
+*   **导出全部照片**:
+    *   新增"包含全部照片"的导出选项 (`RecordsList.vue`, `AdminRecords.vue`)，可导出记录中最多10张（清理前5张，清理后5张）照片到Excel。
+    *   Excel表头相应更新，为每张照片创建单独列（例如，`清理前照片1`, `清理后照片2`...）。
+    *   更新了导出对话框/按钮以包含此新选项。
+
+### 🐛 Bug修复与调整 (Bug Fixes & Adjustments)
+
+*   **收集数量可选**:
+    *   "收集数量(吨)"字段在填报 (`WasteForm.vue`) 和编辑 (`EditRecord.vue`) 时不再是必填项。
+    *   数据库 `waste_records` 表 `quantity` 字段允许为空 (NULL) (`db/mysql/init_db.js`)。
+    *   修复了记录列表 (`RecordsList.vue`, `AdminRecords.vue`) 中数量为空时显示 `NaN` 的问题，现在显示为空白。
+    *   调整了列表 (`RecordsList.vue`, `AdminRecords.vue`) 中的筛选逻辑以正确处理空数量值。
+    *   新增记录时 (`EditRecord.vue`)，数量字段默认为空 (`undefined`)，不再是 `0`。
+    *   后端API (`server.js` POST/PUT `/api/waste-records`) 现在能正确处理 `undefined`/空字符串的数量值，并将其存为 `NULL`。
+*   **权限调整**:
+    *   普通员工 (role_id=1) 查看记录的时间限制从 7 天缩短为 48 小时 (后端 `server.js` API `/api/waste-records/user/:userId`, 前端 `RecordsList.vue` 提示信息和日期选择器限制)。
+    *   明确并确认单位管理员 (role_id=2) 可以查看和编辑其单位内的所有记录，不受创建者限制 (后端 `server.js` 逻辑确认, 前端 `RecordsList.vue` `canEdit` 函数调整)。
+*   **导出功能**:
+    *   统一了所有导出文件（带/不带图片，员工/管理员视图）的字段内容和列顺序，使其与记录列表视图 (`RecordsList.vue`, `AdminRecords.vue`) 一致，包括添加了"产生工序"和"记录时间"。
+    *   修复了导出字段单位不一致的问题（kg -> 吨）。
+
+### 🎨 UI/UX 优化 (UI/UX Improvements)
+
+*   **实时筛选**: 记录列表 (`RecordsList.vue`, `AdminRecords.vue`) 的筛选条件（包括废物类型、地点、工序、数量范围、收集时间）现在支持实时更新结果（带300ms防抖），无需手动点击按钮。
+*   **筛选按钮**:
+    *   筛选按钮文本从"筛选"更新为"刷新筛选"。
+    *   为数量范围筛选框 (`RecordsList.vue`, `AdminRecords.vue`) 添加了清除按钮（小叉号），方便单独清除最小值/最大值。调整了图标位置使其更美观。
+*   **导出按钮**:
+    *   将原"导出记录"按钮 (`RecordsList.vue`, `AdminRecords.vue`) 替换为三个独立的导出选项按钮："无照片"、"包含首张照片"、"包含全部照片"。
+    *   统一了导出按钮的尺寸 (`RecordsList.vue`, `AdminRecords.vue`)，使其与其他操作按钮（如"新增填报"）一致。
+
 ## 2024-03-09 System Optimization Upgrade
 
 ### User Interface Improvements

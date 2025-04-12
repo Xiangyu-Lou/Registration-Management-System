@@ -542,9 +542,16 @@ app.post('/api/waste-records', verifyToken, upload.fields([
     const { unitId, wasteTypeId, location, collectionDate, collectionTime, quantity, remarks, process } = req.body;
     
     // 验证必填字段
-    if (!unitId || !wasteTypeId || !location || !collectionDate || !collectionTime || !quantity || !process) {
-      return res.status(400).json({ error: '所有字段都是必填的' });
+    if (!unitId || !wasteTypeId || !location || !process) {
+      return res.status(400).json({ error: '单位、废物类型、位置和产生工序是必填字段' });
     }
+
+    // 处理quantity字段，如果是undefined或空字符串，则设为null
+    const quantityValue = quantity === undefined || quantity === 'undefined' || quantity === '' ? null : quantity;
+    
+    // 处理照片路径
+    let photo_path_before = null;
+    let photo_path_after = null;
     
     // 验证单位是否存在
     const [unitRows] = await pool.query('SELECT * FROM units WHERE id = ?', [unitId]);
@@ -559,11 +566,7 @@ app.post('/api/waste-records', verifyToken, upload.fields([
     }
     
     // 格式化收集时间
-    const collectionStartTime = `${collectionDate} ${collectionTime}`;
-    
-    // 处理照片上传
-    let photo_path_before = null;
-    let photo_path_after = null;
+    const collectionStartTime = collectionDate && collectionTime ? `${collectionDate} ${collectionTime}` : null;
     
     // 处理收集前照片
     if (req.files.photo_before && req.files.photo_before.length > 0) {
@@ -591,7 +594,7 @@ app.post('/api/waste-records', verifyToken, upload.fields([
       `INSERT INTO waste_records 
       (unit_id, waste_type_id, location, collection_start_time, photo_path_before, photo_path_after, quantity, created_at, creator_id, remarks, process)
       VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?)`,
-      [unitId, wasteTypeId, location, collectionStartTime, photo_path_before, photo_path_after, quantity, userId, remarks, process]
+      [unitId, wasteTypeId, location, collectionStartTime, photo_path_before, photo_path_after, quantityValue, userId, remarks, process]
     );
     
     res.status(201).json({
@@ -645,6 +648,9 @@ app.put('/api/waste-records/:id', verifyToken, upload.fields([
     }
     
     const record = rows[0];
+    
+    // 处理quantity字段，如果是undefined或空字符串，则设为null
+    const quantityValue = quantity === undefined || quantity === 'undefined' || quantity === '' ? null : quantity;
     
     // 处理照片
     let newPhotoPathBefore = record.photo_path_before;
@@ -801,7 +807,7 @@ app.put('/api/waste-records/:id', verifyToken, upload.fields([
        SET unit_id = ?, waste_type_id = ?, location = ?, collection_start_time = ?, 
        photo_path_before = ?, photo_path_after = ?, quantity = ?, remarks = ?, process = ?
        WHERE id = ?`,
-      [unitId, wasteTypeId, location, collectionStartTime, newPhotoPathBefore, newPhotoPathAfter, quantity, remarks, process, id]
+      [unitId, wasteTypeId, location, collectionStartTime, newPhotoPathBefore, newPhotoPathAfter, quantityValue, remarks, process, id]
     );
     
     res.json({
@@ -871,13 +877,13 @@ app.get('/api/waste-records/user/:userId', async (req, res) => {
       params.push(user.unit_id);
     }
     
-    // 为普通员工（role_id=1）添加7天时间限制并限制只能查看自己提交的记录
+    // 为普通员工（role_id=1）添加48小时时间限制并限制只能查看自己提交的记录
     if (user.role_id === 1) {
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      const formattedDate = sevenDaysAgo.toISOString().split('T')[0]; // 格式如 YYYY-MM-DD
+      const hours48Ago = new Date();
+      hours48Ago.setHours(hours48Ago.getHours() - 48);
+      const formattedDate = hours48Ago.toISOString().slice(0, 19).replace('T', ' '); // 格式如 YYYY-MM-DD HH:MM:SS
       
-      baseSql += ' AND DATE(wr.created_at) >= ?';
+      baseSql += ' AND wr.created_at >= ?';
       params.push(formattedDate);
       
       // 只能查看自己提交的记录
@@ -993,13 +999,13 @@ app.get('/api/waste-records/export/user/:userId', async (req, res) => {
       params.push(user.unit_id);
     }
     
-    // 为普通员工（role_id=1）添加7天时间限制并限制只能查看自己提交的记录
+    // 为普通员工（role_id=1）添加48小时时间限制并限制只能查看自己提交的记录
     if (user.role_id === 1) {
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      const formattedDate = sevenDaysAgo.toISOString().split('T')[0]; // 格式如 YYYY-MM-DD
+      const hours48Ago = new Date();
+      hours48Ago.setHours(hours48Ago.getHours() - 48);
+      const formattedDate = hours48Ago.toISOString().slice(0, 19).replace('T', ' '); // 格式如 YYYY-MM-DD HH:MM:SS
       
-      sql += ' AND DATE(wr.created_at) >= ?';
+      sql += ' AND wr.created_at >= ?';
       params.push(formattedDate);
       
       // 只能查看自己提交的记录
