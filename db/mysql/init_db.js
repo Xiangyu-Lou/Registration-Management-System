@@ -158,7 +158,8 @@ async function initializeDatabase() {
         ('高青'),
         ('滨博'),
         ('桓台'),
-        ('胜兴')
+        ('胜兴'),
+        ('其他')
       `);
       console.log('已插入单位数据');
     } else {
