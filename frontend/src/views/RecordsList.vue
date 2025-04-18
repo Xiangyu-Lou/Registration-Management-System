@@ -274,7 +274,7 @@
                 <span v-else>无</span>
               </template>
             </el-table-column>
-            <el-table-column label="操作" min-width="120" fixed="right">
+            <el-table-column label="操作" min-width="120">
               <template #default="scope">
                 <div class="operation-buttons">
                   <el-button 
