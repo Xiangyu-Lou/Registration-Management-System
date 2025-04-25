@@ -854,7 +854,7 @@ export default {
             if (form.location === '其他' && customLocation.value.trim()) {
               formData.append('location', customLocation.value.trim());
             } else {
-              formData.append('location', form.location);
+            formData.append('location', form.location);
             }
             
             // 组合日期和时间，如果有的话
@@ -865,7 +865,7 @@ export default {
             
             // 只有当quantity有值时才添加到formData
             if (form.quantity !== undefined && form.quantity !== null && form.quantity !== '') {
-              formData.append('quantity', form.quantity);
+            formData.append('quantity', form.quantity);
             }
             
             // 添加备注字段

@@ -102,28 +102,28 @@
                 <el-form-item label="数量范围(吨)">
                   <div class="quantity-range">
                     <div class="input-with-clear">
-                      <el-input-number 
-                        v-model="filterForm.minQuantity" 
-                        :min="0"
-                        :precision="3"
-                        :step="0.001"
-                        placeholder="最小值"
+                    <el-input-number 
+                      v-model="filterForm.minQuantity" 
+                      :min="0"
+                      :precision="3"
+                      :step="0.001"
+                      placeholder="最小值"
                         style="width: 100%"
-                      />
+                    />
                       <el-icon v-if="filterForm.minQuantity !== null" class="clear-icon" @click="filterForm.minQuantity = null">
                         <CircleClose />
                       </el-icon>
                     </div>
                     <span class="range-separator">至</span>
                     <div class="input-with-clear">
-                      <el-input-number 
-                        v-model="filterForm.maxQuantity" 
-                        :min="filterForm.minQuantity || 0"
-                        :precision="3"
-                        :step="0.001"
-                        placeholder="最大值"
+                    <el-input-number 
+                      v-model="filterForm.maxQuantity" 
+                      :min="filterForm.minQuantity || 0"
+                      :precision="3"
+                      :step="0.001"
+                      placeholder="最大值"
                         style="width: 100%"
-                      />
+                    />
                       <el-icon v-if="filterForm.maxQuantity !== null" class="clear-icon" @click="filterForm.maxQuantity = null">
                         <CircleClose />
                       </el-icon>
@@ -134,10 +134,10 @@
               
               <!-- 筛选按钮 -->
               <el-col :xs="24" :sm="12" :md="8" :lg="12" :xl="12" class="filter-buttons-col">
-                <div class="filter-actions">
+            <div class="filter-actions">
                   <el-button type="primary" @click="applyFilter">刷新筛选</el-button>
-                  <el-button @click="resetFilter">重置</el-button>
-                </div>
+              <el-button @click="resetFilter">重置</el-button>
+            </div>
               </el-col>
             </el-row>
           </el-form>
@@ -162,24 +162,23 @@
           </div>
           
           <!-- 基层员工提示信息 -->
-          <el-alert
+          <!-- <el-alert
             v-if="isBasicEmployee"
             type="info"
             show-icon
             :closable="false"
             title="提示：只能查看48小时内由自己提交的记录"
             style="margin-bottom: 15px;"
-          />
+          /> -->
           
           <el-table 
-            :data="filteredRecords" 
+            :data="records" 
             style="width: 100%" 
             border 
             v-loading="loading"
             stripe
             class="responsive-table"
             :height="tableHeight"
-            @scroll="handleScroll"
           >
             <el-table-column 
               type="index" 
@@ -298,12 +297,23 @@
                 </div>
               </template>
             </el-table-column>
+            <template #append>
+              <div v-if="loadingMore" class="loading-row">
+                <el-icon class="loading"><loading /></el-icon>
+                正在加载...
+              </div>
+              
+              <div v-else-if="hasMore && records.length > 0" class="load-more-row">
+                <el-button type="primary" @click="loadMore" :disabled="loadingMore" size="small">
+                  点击加载更多 <el-icon><arrow-down /></el-icon>
+                </el-button>
+              </div>
+              
+              <div v-else-if="records.length > 0" class="no-more-row">
+                已全部加载
+              </div>
+            </template>
           </el-table>
-          
-          <div v-if="loadingMore" class="loading-more">
-            <el-icon class="loading"><loading /></el-icon>
-            加载更多...
-          </div>
           
           <div class="empty-block" v-if="records.length === 0 && !loading">
             <el-empty description="暂无废物记录" />
@@ -320,10 +330,6 @@
           </div>
         </el-card>
       </div>
-    </div>
-
-    <div class="footer">
-      <p>&copy; 2025 危险废物管理系统</p>
     </div>
 
     <!-- 添加独立的图片预览组件 -->
@@ -432,57 +438,6 @@ export default {
       }, 300); // 300毫秒的延迟
     });
     
-    // 筛选记录
-    const filteredRecords = computed(() => {
-      return records.value.filter(record => {
-        // 筛选废物类型
-        if (filterForm.wasteTypeId && record.waste_type_id !== filterForm.wasteTypeId) {
-          return false;
-        }
-        
-        // 筛选数量范围
-        if (filterForm.minQuantity !== null && filterForm.minQuantity !== undefined && 
-            record.quantity !== null && record.quantity !== undefined &&
-            parseFloat(record.quantity) < filterForm.minQuantity) {
-          return false;
-        }
-        
-        if (filterForm.maxQuantity !== null && filterForm.maxQuantity !== undefined && 
-            record.quantity !== null && record.quantity !== undefined &&
-            parseFloat(record.quantity) > filterForm.maxQuantity) {
-          return false;
-        }
-        
-        // 筛选地点
-        if (filterForm.location && !record.location.includes(filterForm.location)) {
-          return false;
-        }
-        
-        // 筛选工序
-        if (filterForm.process && !record.process.includes(filterForm.process)) {
-          return false;
-        }
-        
-        // 筛选日期范围
-        if (filterForm.dateRange && filterForm.dateRange.length === 2) {
-          const startDate = new Date(filterForm.dateRange[0]);
-          startDate.setHours(0, 0, 0); // 设置为当天开始时间
-          
-          const endDate = new Date(filterForm.dateRange[1]);
-          endDate.setHours(23, 59, 59); // 设置为当天结束时间
-          
-          const recordDate = new Date(record.collection_start_time);
-          if (recordDate < startDate || recordDate > endDate) {
-            return false;
-          }
-        }
-        
-        // 注意：移除了普通员工只能看到7天内记录的前端限制，因为这已经在后端实现
-        
-        return true;
-      });
-    });
-    
     // 判断是否为管理员
     const isAdmin = computed(() => {
       return auth.isAdmin();
@@ -556,8 +511,8 @@ export default {
     
     // 计算序号方法
     const indexMethod = (index) => {
-      // 考虑当前页码和每页记录数，计算实际序号
-      return (page.value - 1) * pageSize.value + index + 1;
+      // 直接返回索引+1，不依赖页码
+      return index + 1;
     };
     
     // 确认删除
@@ -693,7 +648,7 @@ export default {
         const unit = response.data.find(u => u.id === parseInt(props.unitId));
         if (unit) {
           unitName.value = unit.name;
-        }
+          }
       } catch (error) {
         console.error('Error fetching unit name:', error);
         ElMessage.error('获取单位信息失败');
@@ -720,11 +675,12 @@ export default {
         const params = {
           page: page.value,
           pageSize: pageSize.value,
-          wasteTypeId: filterForm.wasteTypeId,
-          minQuantity: filterForm.minQuantity,
-          maxQuantity: filterForm.maxQuantity,
-          location: filterForm.location,
-          process: filterForm.process,
+          wasteTypeId: filterForm.wasteTypeId || undefined,
+          minQuantity: filterForm.minQuantity || undefined,
+          maxQuantity: filterForm.maxQuantity || undefined,
+          location: filterForm.location || undefined,
+          process: filterForm.process || undefined,
+          unitId: props.unitId ? parseInt(props.unitId) : undefined
         };
         
         // 如果有日期范围筛选，添加到参数
@@ -732,9 +688,18 @@ export default {
           params.dateRange = JSON.stringify(filterForm.dateRange);
         }
         
-        console.log('请求废物记录，参数:', params);
-        const response = await httpService.get(`${apiConfig.endpoints.wasteRecords}/user/${auth.state.user.id}`, { params });
-        console.log('获取到废物记录响应:', response.data);
+        console.log('【筛选】请求废物记录，参数:', JSON.stringify(params, null, 2));
+        // 使用apiConfig.getUrl确保URL正确
+        const apiUrl = apiConfig.getUrl(`${apiConfig.endpoints.wasteRecords}/user/${auth.state.user.id}`);
+        console.log('【筛选】请求URL:', apiUrl);
+        
+        const response = await axios.get(apiUrl, { params });
+        console.log('【筛选】获取到废物记录响应:', response.data);
+        
+        if (!response.data || !response.data.records) {
+          console.error('【筛选】响应数据格式错误:', response.data);
+          throw new Error('响应数据格式错误');
+        }
         
         // 使用已有的parseFormattedDateTime函数格式化日期
         const formattedRecords = response.data.records.map(record => ({
@@ -742,6 +707,8 @@ export default {
           created_at: parseFormattedDateTime(record.created_at),
           collection_start_time: parseFormattedDateTime(record.collection_start_time)
         }));
+        
+        console.log(`【筛选】获取到${formattedRecords.length}条记录`);
         
         if (isLoadMore) {
           records.value = [...records.value, ...formattedRecords];
@@ -754,7 +721,7 @@ export default {
           page.value++;
         }
       } catch (error) {
-        console.error('获取废物记录失败:', error);
+        console.error('【筛选】获取废物记录失败:', error);
         ElMessage.error('获取废物记录失败: ' + (error.message || '未知错误'));
       } finally {
         loading.value = false;
@@ -762,38 +729,34 @@ export default {
       }
     };
     
-    // 处理滚动加载更多
-    const handleScroll = async (e) => {
-      // 修复解构赋值问题，确保e.target存在且包含所需属性
-      if (!e || !e.target) return;
+    // 加载更多记录
+    const loadMore = () => {
+      console.log('手动触发加载更多');
       
-      const scrollHeight = e.target.scrollHeight || 0;
-      const scrollTop = e.target.scrollTop || 0;
-      const clientHeight = e.target.clientHeight || 0;
+      // 记录当前滚动位置
+      const tableBody = document.querySelector('.el-table__body-wrapper');
+      const scrollPos = tableBody ? tableBody.scrollTop : 0;
       
-      // 当滚动到底部时加载更多
-      if (scrollHeight - scrollTop - clientHeight < 50 && hasMore.value && !loadingMore.value) {
-        page.value++;
-        await fetchRecords(true);
-      }
-    };
-
-    // 添加disabledDate函数
-    const disabledDate = (date) => {
-      if (!isAdmin.value && !isUnitAdmin.value) {
-        const today = new Date();
-        const hours48Ago = new Date(today);
-        hours48Ago.setHours(today.getHours() - 48);
-        return date < hours48Ago || date > today;
-      }
-      return false;
+      return fetchRecords(true).then(() => {
+        console.log('加载完成，当前记录数:', records.value.length);
+        
+        // 恢复之前的滚动位置，防止页面跳动
+        setTimeout(() => {
+          if (tableBody) {
+            tableBody.scrollTop = scrollPos;
+          }
+        }, 10);
+      }).catch(error => {
+        console.error('加载失败:', error);
+        ElMessage.error('加载更多数据失败');
+      });
     };
 
     // 判断是否为基层员工
     const isBasicEmployee = computed(() => {
       return !isAdmin.value && !isUnitAdmin.value;
     });
-
+    
     // 带图片导出 (包含首张照片)
     const exportWithImages = async () => {
       try {
@@ -972,14 +935,14 @@ export default {
           
           // 准备基本数据
           const recordData = {
-            '单位': record.unit_name,
-            '废物类型': record.waste_type_name,
+          '单位': record.unit_name,
+          '废物类型': record.waste_type_name,
             '产生工序': record.process || '无',
-            '产生地点': record.location,
+          '产生地点': record.location,
             '备注': record.remarks || '无',
-            '收集开始时间': parseFormattedDateTime(record.collection_start_time),
+          '收集开始时间': parseFormattedDateTime(record.collection_start_time),
             '数量(吨)': record.quantity,
-            '填报人': record.creator_name || '系统',
+          '填报人': record.creator_name || '系统',
             '记录时间': parseFormattedDateTime(record.created_at),
           };
           
@@ -1075,7 +1038,7 @@ export default {
           dateRange: filterForm.dateRange ? JSON.stringify(filterForm.dateRange) : undefined,
           unitId: props.unitId ? parseInt(props.unitId) : undefined
         };
-        
+
         // 调用后端API获取完整的记录数据
         const { data } = await axios.get(
           `${apiConfig.getUrl(apiConfig.endpoints.exportWasteRecords)}/${auth.state.user.id}`,
@@ -1146,9 +1109,19 @@ export default {
       }
     };
 
+    // 添加disabledDate函数
+    const disabledDate = (date) => {
+      if (!isAdmin.value && !isUnitAdmin.value) {
+        const today = new Date();
+        const hours48Ago = new Date(today);
+        hours48Ago.setHours(today.getHours() - 48);
+        return date < hours48Ago || date > today;
+      }
+      return false;
+    };
+
     return {
       records,
-      filteredRecords,
       loading,
       unitName,
       wasteTypes,
@@ -1180,7 +1153,7 @@ export default {
       previewIndex,
       previewPhoto,
       closeViewer,
-      handleScroll,
+      handleResize,
       // 照片路径解析
       parsePhotoPath,
       baseUrl,
@@ -1196,6 +1169,8 @@ export default {
       tableHeight,  // 添加到返回值中
       // 判断是否为基层员工
       isBasicEmployee,
+      // 加载更多记录
+      loadMore,
     };
   }
 };
@@ -1467,21 +1442,6 @@ export default {
   justify-content: center;
 }
 
-.footer {
-  background-color: #f5f7fa;
-  padding: 10px; /* 减小内边距 */
-  text-align: center;
-  color: #606266;
-}
-
-.loading-more {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 10px;
-  color: #909399;
-}
-
 .loading {
   animation: rotating 2s linear infinite;
   margin-right: 5px;
@@ -1747,6 +1707,52 @@ export default {
 
 /* 确保表格图片列内容居中 */
 :deep(.el-table .el-table__cell[align="center"] .cell) {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* 装载更多行样式 */
+.loading-more {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 10px;
+  color: #909399;
+}
+
+/* 添加加载更多按钮样式 */
+.load-more-row {
+  height: 55px;
+  text-align: center;
+  background-color: #f5f7fa;
+  line-height: 55px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* 加载中行样式 */
+.loading-row {
+  height: 55px;
+  text-align: center;
+  background-color: #f5f7fa;
+  line-height: 55px;
+  color: #409EFF;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* 没有更多数据行样式 */
+.no-more-row {
+  height: 55px;
+  text-align: center;
+  background-color: #f5f7fa;
+  line-height: 55px;
+  color: #909399;
+  font-size: 14px;
   display: flex;
   justify-content: center;
   align-items: center;

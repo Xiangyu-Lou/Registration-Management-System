@@ -80,7 +80,7 @@
             style="margin-top: 10px; height: 40px;"
           />
         </el-form-item>
-        
+
         <el-form-item label="备注" prop="remarks">
           <el-input 
             v-model="form.remarks" 
@@ -495,7 +495,7 @@ export default {
         
         // 处理产生地点 - 如果地点不在预设选项中，则设为"其他"并填写自定义地点
         if (locationOptions.value.includes(recordData.location)) {
-          form.location = recordData.location;
+        form.location = recordData.location;
         } else {
           form.location = '其他';
           customLocation.value = recordData.location;
@@ -1121,7 +1121,7 @@ export default {
             if (form.location === '其他' && customLocation.value.trim()) {
               formData.append('location', customLocation.value.trim());
             } else {
-              formData.append('location', form.location);
+            formData.append('location', form.location);
             }
             
             formData.append('collectionDate', form.collectionDate);
@@ -1129,7 +1129,7 @@ export default {
             
             // 只有当quantity有值时才添加到formData
             if (form.quantity !== undefined && form.quantity !== null && form.quantity !== '') {
-              formData.append('quantity', form.quantity);
+            formData.append('quantity', form.quantity);
             }
             
             formData.append('remarks', form.remarks || '');

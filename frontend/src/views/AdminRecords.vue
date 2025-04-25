@@ -163,125 +163,141 @@
             </div>
           </div>
           
-          <el-table 
-            :data="filteredRecords" 
-            style="width: 100%" 
-            border 
-            v-loading="loading"
-            stripe
-            class="responsive-table"
-            :height="tableHeight"
-            @scroll="handleScroll"
-          >
-            <el-table-column 
-              type="index" 
-              label="序号" 
-              width="70" 
-              align="center"
-              :index="indexMethod"
-            />
-            <el-table-column prop="unit_name" label="单位" min-width="120" />
-            <el-table-column prop="waste_type_name" label="废物类型" min-width="120" />
-            <el-table-column prop="location" label="产生地点" min-width="120" />
-            <el-table-column prop="process" label="产生工序" min-width="120">
-              <template #default="scope">
-                {{ scope.row.process || '无' }}
-              </template>
-            </el-table-column>
-            <el-table-column prop="remarks" label="备注" min-width="150">
-              <template #default="scope">
-                {{ scope.row.remarks || '无' }}
-              </template>
-            </el-table-column>
-            <el-table-column prop="collection_start_time" label="收集开始时间" min-width="160" />
-            <el-table-column label="数量(吨)" min-width="100">
-              <template #default="scope">
-                {{ scope.row.quantity !== null && scope.row.quantity !== undefined ? parseFloat(scope.row.quantity).toFixed(3) : '' }}
-              </template>
-            </el-table-column>
-            <el-table-column prop="creator_name" label="填报人" min-width="100" />
-            <el-table-column prop="created_at" label="记录时间" min-width="160" />
-            <el-table-column
-              label="清理前照片"
-              min-width="150"
-              align="center"
+          <!-- 简化表格容器结构 -->
+          <div class="table-wrapper" ref="tableContainer">
+            <el-table 
+              ref="tableRef"
+              :data="filteredRecords" 
+              style="width: 100%" 
+              border 
+              v-loading="loading"
+              stripe
+              class="responsive-table"
+              :height="tableHeight"
             >
-              <template #default="scope">
-                <div v-if="scope.row.photo_path_before" class="photo-preview">
-                  <!-- 多张照片显示 -->
-                  <div 
-                    v-for="(path, index) in parsePhotoPath(scope.row.photo_path_before)" 
-                    :key="index"
-                    class="photo-thumbnail-container"
-                    @click="previewPhoto(parsePhotoPath(scope.row.photo_path_before), index)"
-                  >
-                    <el-image
-                      style="width: 50px; height: 50px; margin: 0 auto;"
-                      :src="`${baseUrl}${path}`"
-                      fit="cover"
-                    ></el-image>
+              <el-table-column 
+                type="index" 
+                label="序号" 
+                width="70" 
+                align="center"
+                :index="indexMethod"
+              />
+              <el-table-column prop="unit_name" label="单位" min-width="120" />
+              <el-table-column prop="waste_type_name" label="废物类型" min-width="120" />
+              <el-table-column prop="location" label="产生地点" min-width="120" />
+              <el-table-column prop="process" label="产生工序" min-width="120">
+                <template #default="scope">
+                  {{ scope.row.process || '无' }}
+                </template>
+              </el-table-column>
+              <el-table-column prop="remarks" label="备注" min-width="150">
+                <template #default="scope">
+                  {{ scope.row.remarks || '无' }}
+                </template>
+              </el-table-column>
+              <el-table-column prop="collection_start_time" label="收集开始时间" min-width="160" />
+              <el-table-column label="数量(吨)" min-width="100">
+                <template #default="scope">
+                  {{ scope.row.quantity !== null && scope.row.quantity !== undefined ? parseFloat(scope.row.quantity).toFixed(3) : '' }}
+                </template>
+              </el-table-column>
+              <el-table-column prop="creator_name" label="填报人" min-width="100" />
+              <el-table-column prop="created_at" label="记录时间" min-width="160" />
+              <el-table-column
+                label="清理前照片"
+                min-width="150"
+                align="center"
+              >
+                <template #default="scope">
+                  <div v-if="scope.row.photo_path_before" class="photo-preview">
+                    <!-- 多张照片显示 -->
+                    <div 
+                      v-for="(path, index) in parsePhotoPath(scope.row.photo_path_before)" 
+                      :key="index"
+                      class="photo-thumbnail-container"
+                      @click="previewPhoto(parsePhotoPath(scope.row.photo_path_before), index)"
+                    >
+                      <el-image
+                        style="width: 50px; height: 50px; margin: 0 auto;"
+                        :src="`${baseUrl}${path}`"
+                        fit="cover"
+                      ></el-image>
+                    </div>
+                    <div v-if="parsePhotoPath(scope.row.photo_path_before).length > 1" class="photo-count">
+                      {{ parsePhotoPath(scope.row.photo_path_before).length }}张
+                    </div>
                   </div>
-                  <div v-if="parsePhotoPath(scope.row.photo_path_before).length > 1" class="photo-count">
-                    {{ parsePhotoPath(scope.row.photo_path_before).length }}张
+                  <span v-else>无</span>
+                </template>
+              </el-table-column>
+              <el-table-column
+                label="清理后照片"
+                min-width="150"
+                align="center"
+              >
+                <template #default="scope">
+                  <div v-if="scope.row.photo_path_after" class="photo-preview">
+                    <!-- 多张照片显示 -->
+                    <div 
+                      v-for="(path, index) in parsePhotoPath(scope.row.photo_path_after)" 
+                      :key="index"
+                      class="photo-thumbnail-container"
+                      @click="previewPhoto(parsePhotoPath(scope.row.photo_path_after), index)"
+                    >
+                      <el-image
+                        style="width: 50px; height: 50px; margin: 0 auto;"
+                        :src="`${baseUrl}${path}`"
+                        fit="cover"
+                      ></el-image>
+                    </div>
+                    <div v-if="parsePhotoPath(scope.row.photo_path_after).length > 1" class="photo-count">
+                      {{ parsePhotoPath(scope.row.photo_path_after).length }}张
+                    </div>
                   </div>
+                  <span v-else>无</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="操作" min-width="120" fixed="right">
+                <template #default="scope">
+                  <div class="operation-buttons">
+                    <el-button 
+                      type="primary" 
+                      size="small" 
+                      @click="editRecord(scope.row.id)"
+                      text
+                    >
+                      编辑
+                    </el-button>
+                    <el-button 
+                      type="danger" 
+                      size="small" 
+                      @click="confirmDelete(scope.row)"
+                      text
+                    >
+                      删除
+                    </el-button>
+                  </div>
+                </template>
+              </el-table-column>
+              
+              <!-- 添加一个额外的表格行(插槽)来放置加载更多按钮 -->
+              <template #append>
+                <div v-if="loadingMore" class="loading-row">
+                  <el-icon class="loading"><loading /></el-icon>
+                  正在加载...
                 </div>
-                <span v-else>无</span>
-              </template>
-            </el-table-column>
-            <el-table-column
-              label="清理后照片"
-              min-width="150"
-              align="center"
-            >
-              <template #default="scope">
-                <div v-if="scope.row.photo_path_after" class="photo-preview">
-                  <!-- 多张照片显示 -->
-                  <div 
-                    v-for="(path, index) in parsePhotoPath(scope.row.photo_path_after)" 
-                    :key="index"
-                    class="photo-thumbnail-container"
-                    @click="previewPhoto(parsePhotoPath(scope.row.photo_path_after), index)"
-                  >
-                    <el-image
-                      style="width: 50px; height: 50px; margin: 0 auto;"
-                      :src="`${baseUrl}${path}`"
-                      fit="cover"
-                    ></el-image>
-                  </div>
-                  <div v-if="parsePhotoPath(scope.row.photo_path_after).length > 1" class="photo-count">
-                    {{ parsePhotoPath(scope.row.photo_path_after).length }}张
-                  </div>
-                </div>
-                <span v-else>无</span>
-              </template>
-            </el-table-column>
-            <el-table-column label="操作" min-width="120" fixed="right">
-              <template #default="scope">
-                <div class="operation-buttons">
-                  <el-button 
-                    type="primary" 
-                    size="small" 
-                    @click="editRecord(scope.row.id)"
-                    text
-                  >
-                    编辑
+                
+                <div v-else-if="hasMore && records.length > 0" class="load-more-row">
+                  <el-button type="primary" @click="loadMore" :disabled="loadingMore" size="small">
+                    点击加载更多 <el-icon><arrow-down /></el-icon>
                   </el-button>
-                  <el-button 
-                    type="danger" 
-                    size="small" 
-                    @click="confirmDelete(scope.row)"
-                    text
-                  >
-                    删除
-                  </el-button>
+                </div>
+                
+                <div v-else-if="records.length > 0" class="no-more-row">
+                  已全部加载
                 </div>
               </template>
-            </el-table-column>
-          </el-table>
-          
-          <div v-if="loadingMore" class="loading-more">
-            <el-icon class="loading"><loading /></el-icon>
-            加载更多...
+            </el-table>
           </div>
           
           <div class="empty-block" v-if="records.length === 0 && !loading">
@@ -289,10 +305,6 @@
           </div>
         </el-card>
       </div>
-    </div>
-
-    <div class="footer">
-      <p>&copy; 2025 固体废物管理系统</p>
     </div>
 
     <!-- 添加独立的图片预览组件 -->
@@ -377,14 +389,16 @@ export default {
     const baseUrl = apiConfig.baseURL;
     
     // 添加表格高度动态计算
-    const tableHeight = ref(750); // 增加默认高度
+    const tableHeight = ref(750); // 增加表格高度为750px
+    const tableContainer = ref(null); // 添加对表格容器的引用
 
-    // 计算表格高度的函数
+    // 计算表格高度的函数 - 修改为计算表格内容的高度
     const calculateTableHeight = () => {
-      // 窗口高度的85%，但最小为700px
+      // 设置表格高度为窗口高度的65%，但最小650px，最大850px
       const windowHeight = window.innerHeight;
-      const calculatedHeight = Math.max(windowHeight * 0.85, 700);
+      const calculatedHeight = Math.min(Math.max(windowHeight * 0.85, 650), 900);
       tableHeight.value = calculatedHeight;
+      console.log('设置表格高度:', calculatedHeight);
     };
 
     // 窗口大小变化时重新计算表格高度
@@ -399,10 +413,14 @@ export default {
     
     // 添加分页相关的响应式变量
     const page = ref(1);
+    const currentPage = ref(1); // 添加currentPage变量跟踪当前显示的页码
     const pageSize = ref(20);
     const hasMore = ref(true);
     const loadingMore = ref(false);
     
+    // 在setup函数中添加tableRef
+    const tableRef = ref(null); // 添加对表格的引用
+
     // 筛选表单
     const filterForm = reactive({
       unitId: null,
@@ -520,11 +538,15 @@ export default {
         fetchWasteTypes(),
         fetchRecords()
       ]);
+      
+      // 移除滚动监听设置
     });
     
     onUnmounted(() => {
       // 组件卸载时移除事件监听
       window.removeEventListener('resize', handleResize);
+      
+      // 移除滚动监听 - 不再需要
     });
     
     // 获取单位列表
@@ -550,12 +572,17 @@ export default {
     };
 
     const fetchRecords = async (isLoadMore = false) => {
+      console.log(`开始加载数据，是否加载更多: ${isLoadMore}`);
+      
       if (!isLoadMore) {
         loading.value = true;
         page.value = 1;
+        currentPage.value = 1; // 重置当前页码
         records.value = [];
+        console.log('初始化加载: 重置页码和记录');
       } else {
         loadingMore.value = true;
+        console.log(`加载更多: 当前page=${page.value}, currentPage=${currentPage.value}`);
       }
       
       try {
@@ -569,6 +596,8 @@ export default {
           process: filterForm.process,
         };
         
+        console.log('发送请求参数:', params);
+        
         // Only add dateRange if it exists and has both start and end dates
         if (filterForm.dateRange && filterForm.dateRange.length === 2) {
           params.dateRange = JSON.stringify(filterForm.dateRange);
@@ -579,6 +608,11 @@ export default {
           { params }
         );
         
+        console.log('服务器返回数据:', {
+          recordsCount: response.data.records.length,
+          hasMore: response.data.hasMore
+        });
+        
         // 格式化日期
         const formattedRecords = response.data.records.map(record => ({
           ...record,
@@ -588,13 +622,20 @@ export default {
         
         if (isLoadMore) {
           records.value = [...records.value, ...formattedRecords];
+          console.log(`追加${formattedRecords.length}条记录，现在总共有${records.value.length}条记录`);
         } else {
           records.value = formattedRecords;
+          console.log(`加载了${formattedRecords.length}条新记录`);
         }
         
         hasMore.value = response.data.hasMore;
+        console.log(`服务器是否有更多数据: ${hasMore.value}`);
+        
         if (hasMore.value) {
           page.value++;
+          console.log(`有更多数据，下一页将是: page=${page.value}`);
+        } else {
+          console.log('没有更多数据了');
         }
       } catch (error) {
         console.error('获取废物记录失败:', error);
@@ -602,6 +643,7 @@ export default {
       } finally {
         loading.value = false;
         loadingMore.value = false;
+        console.log(`加载完成，状态: loading=${loading.value}, loadingMore=${loadingMore.value}`);
       }
     };
 
@@ -1057,25 +1099,33 @@ export default {
       showViewer.value = false;
     };
 
-    // 添加滚动加载处理函数
-    const handleScroll = async (e) => {
-      const element = e.target;
-      // 添加安全检查，确保element存在且有必要的属性
-      if (
-        element && 
-        element.scrollHeight && 
-        !loadingMore.value &&
-        hasMore.value &&
-        element.scrollHeight - element.scrollTop - element.clientHeight < 100
-      ) {
-        await fetchRecords(true);
-      }
+    // 删除滚动监听相关函数，只保留手动加载功能
+    const loadMore = () => {
+      console.log('手动触发加载更多');
+      
+      // 记录当前滚动位置
+      const tableBody = document.querySelector('.el-table__body-wrapper');
+      const scrollPos = tableBody ? tableBody.scrollTop : 0;
+      
+      return fetchRecords(true).then(() => {
+        console.log('加载完成，当前记录数:', records.value.length);
+        
+        // 恢复之前的滚动位置，防止页面跳动
+        setTimeout(() => {
+          if (tableBody) {
+            tableBody.scrollTop = scrollPos;
+          }
+        }, 10);
+      }).catch(error => {
+        console.error('加载失败:', error);
+        ElMessage.error('加载更多数据失败');
+      });
     };
 
     // 计算序号方法
     const indexMethod = (index) => {
-      // 考虑当前页码和每页记录数，计算实际序号
-      return (page.value - 1) * pageSize.value + index + 1;
+      // 直接使用数组中的位置作为序号，不依赖于页数
+      return index + 1;
     };
 
     return {
@@ -1105,13 +1155,16 @@ export default {
       closeViewer,
       baseUrl,
       page,
+      currentPage,
       pageSize,
       hasMore,
       loadingMore,
-      handleScroll,
       indexMethod,
       tableHeight,
-      debounceTimer
+      debounceTimer,
+      tableRef,
+      loadMore,
+      tableContainer,
     };
   }
 };
@@ -1214,6 +1267,7 @@ export default {
 
 .records-card {
   margin-bottom: 20px;
+  min-height: 800px; /* 确保卡片有足够的高度 */
 }
 
 .card-header {
@@ -1230,7 +1284,9 @@ export default {
 
 .responsive-table {
   width: 100%;
+  min-height: 650px; /* 设置表格最小高度 */
   overflow-x: auto;
+  margin-bottom: 0;
 }
 
 .photo-preview {
@@ -1277,83 +1333,70 @@ export default {
   }
 }
 
-.footer {
-  text-align: center;
-  padding: 20px 0;
-  color: #909399;
-}
-
 .operation-buttons {
   display: flex;
   gap: 10px;
 }
-</style>
 
-<style>
-/* 修复Element Plus图片预览组件的z-index问题 */
-.el-image-viewer__wrapper {
-  z-index: 2147483647 !important; /* 使用最大可能的z-index值 */
-  position: fixed !important;
+/* 表格容器简化样式 */
+.table-wrapper {
+  position: relative;
+  width: 100%;
+  height: auto;
+  min-height: 700px; /* 确保表格容器有足够的高度 */
+  border-radius: 4px;
+  overflow: hidden;
 }
 
-/* 确保图片预览的遮罩层也在最上层 */
-.el-image-viewer__mask {
-  z-index: 2147483646 !important;
-  position: fixed !important;
+/* 加载更多行样式 */
+.load-more-row {
+  height: 55px;
+  text-align: center;
+  background-color: #f5f7fa;
+  line-height: 55px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-/* 确保图片预览的操作按钮在最上层 */
-.el-image-viewer__btn {
-  z-index: 2147483647 !important;
-  position: fixed !important;
-}
-
-/* 确保图片预览的关闭按钮在最上层 */
-.el-image-viewer__close {
-  z-index: 2147483647 !important;
-  position: fixed !important;
-}
-
-/* 确保图片预览的图片在最上层 */
-.el-image-viewer__img {
-  z-index: 2147483646 !important;
-  position: relative !important;
-}
-
-/* 确保图片预览的操作栏在最上层 */
-.el-image-viewer__actions {
-  z-index: 2147483647 !important;
-  position: fixed !important;
-}
-
-/* 确保图片预览的缩放按钮在最上层 */
-.el-image-viewer__actions__inner {
-  z-index: 2147483647 !important;
-  position: relative !important;
-}
-
-/* 全局样式，确保表头样式能够正确显示 */
-.el-table__header th {
-  background: linear-gradient(to bottom, #409EFF, #1E88E5) !important;
-  color: white !important;
-}
-
-.el-table__header th .cell {
-  color: white !important;
-  font-weight: bold !important;
-}
-</style>
-
-<style scoped>
-/* 表格标题样式 */
-.card-header h3 {
-  font-size: 18px;
-  font-weight: bold;
+/* 加载中行样式 */
+.loading-row {
+  height: 55px;
+  text-align: center;
+  background-color: #f5f7fa;
+  line-height: 55px;
   color: #409EFF;
-  margin: 0;
-  padding-bottom: 10px;
-  border-bottom: 2px solid #409EFF;
-  display: inline-block;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* 没有更多数据行样式 */
+.no-more-row {
+  height: 55px;
+  text-align: center;
+  background-color: #f5f7fa;
+  line-height: 55px;
+  color: #909399;
+  font-size: 14px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* 响应式表格样式 */
+.responsive-table {
+  width: 100%;
+  overflow-x: auto;
+  margin-bottom: 0;
+}
+
+/* 确保表格内部滚动 */
+:deep(.el-table__body-wrapper) {
+  overflow-y: auto;
+  overflow-x: auto;
+  min-height: 600px; /* 设置表格主体最小高度 */
 }
 
 /* Element Plus 表格样式覆盖 */
@@ -1419,5 +1462,69 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
+}
+
+/* 表格标题样式 */
+.card-header h3 {
+  font-size: 18px;
+  font-weight: bold;
+  color: #409EFF;
+  margin: 0;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #409EFF;
+  display: inline-block;
+}
+
+/* 修复Element Plus图片预览组件的z-index问题 */
+.el-image-viewer__wrapper {
+  z-index: 2147483647 !important; /* 使用最大可能的z-index值 */
+  position: fixed !important;
+}
+
+/* 确保图片预览的遮罩层也在最上层 */
+.el-image-viewer__mask {
+  z-index: 2147483646 !important;
+  position: fixed !important;
+}
+
+/* 确保图片预览的操作按钮在最上层 */
+.el-image-viewer__btn {
+  z-index: 2147483647 !important;
+  position: fixed !important;
+}
+
+/* 确保图片预览的关闭按钮在最上层 */
+.el-image-viewer__close {
+  z-index: 2147483647 !important;
+  position: fixed !important;
+}
+
+/* 确保图片预览的图片在最上层 */
+.el-image-viewer__img {
+  z-index: 2147483646 !important;
+  position: relative !important;
+}
+
+/* 确保图片预览的操作栏在最上层 */
+.el-image-viewer__actions {
+  z-index: 2147483647 !important;
+  position: fixed !important;
+}
+
+/* 确保图片预览的缩放按钮在最上层 */
+.el-image-viewer__actions__inner {
+  z-index: 2147483647 !important;
+  position: relative !important;
+}
+
+/* 全局样式，确保表头样式能够正确显示 */
+.el-table__header th {
+  background: linear-gradient(to bottom, #409EFF, #1E88E5) !important;
+  color: white !important;
+}
+
+.el-table__header th .cell {
+  color: white !important;
+  font-weight: bold !important;
 }
 </style>
