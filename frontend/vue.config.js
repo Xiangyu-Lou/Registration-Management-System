@@ -30,6 +30,11 @@ module.exports = defineConfig({
       splitChunks: {
         chunks: 'all'
       }
+    },
+    // 添加哈希值到文件名，强制浏览器重新加载资源
+    output: {
+      filename: 'js/[name].[contenthash:8].js',
+      chunkFilename: 'js/[name].[contenthash:8].js'
     }
   }
 })
