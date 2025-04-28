@@ -13,7 +13,7 @@
 
     <div class="content">
       <div class="unit-info">
-        <h2>{{ unitName }} - 固体废物记录</h2>
+        <h2>{{ unitName }} 固体废物记录</h2>
       </div>
       
       <div class="actions">

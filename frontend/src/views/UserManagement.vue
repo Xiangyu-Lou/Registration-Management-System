@@ -115,12 +115,13 @@
           <el-select v-model="form.roleId" placeholder="请选择角色" style="width: 100%">
             <!-- 如果是超级管理员，可以添加所有类型用户 -->
             <el-option v-if="isSuperAdmin" :value="3" label="超级管理员" />
+            <el-option v-if="isSuperAdmin" :value="4" label="监督人员" />
             <el-option :value="2" label="单位管理员" />
             <el-option :value="1" label="基层员工" />
           </el-select>
         </el-form-item>
         
-        <el-form-item label="单位" prop="unitId" v-if="form.roleId !== 3">
+        <el-form-item label="单位" prop="unitId" v-if="form.roleId !== 3 && form.roleId !== 4">
           <el-select 
             v-model="form.unitId" 
             placeholder="请选择单位" 
@@ -197,7 +198,7 @@ export default {
     
     // 判断当前用户是否为超级管理员
     const isSuperAdmin = computed(() => {
-      return auth.state.isLoggedIn && auth.state.user.role_id === 3;
+      return auth.state.isLoggedIn && (auth.state.user.role_id === 3 || auth.state.user.role_id === 4);
     });
     
     // 当前登录用户的单位ID
@@ -229,7 +230,14 @@ export default {
         { required: true, message: '请选择角色', trigger: 'change' }
       ],
       unitId: [
-        { required: true, message: '请选择单位', trigger: 'change' }
+        { 
+          required: function() {
+            // 超级管理员和监督人员不需要选择单位
+            return form.roleId !== 3 && form.roleId !== 4;
+          }, 
+          message: '请选择单位', 
+          trigger: 'change' 
+        }
       ],
       password: [
         { 

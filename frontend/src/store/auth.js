@@ -112,12 +112,17 @@ const logout = () => {
 
 // 判断是否为超级管理员
 const isAdmin = () => {
-  return state.isLoggedIn && state.user && state.user.role_id === 3;
+  return state.isLoggedIn && state.user && (state.user.role_id === 3 || state.user.role_id === 4);
 };
 
 // 判断是否为单位管理员
 const isUnitAdmin = () => {
   return state.isLoggedIn && state.user && state.user.role_id === 2;
+};
+
+// 判断是否为监督人员
+const isSupervisor = () => {
+  return state.isLoggedIn && state.user && state.user.role_id === 4;
 };
 
 // 获取当前用户ID
@@ -156,6 +161,7 @@ export default {
   logout,
   isAdmin,
   isUnitAdmin,
+  isSupervisor,
   getUserId,
   getUnitId,
   updateUserInfo

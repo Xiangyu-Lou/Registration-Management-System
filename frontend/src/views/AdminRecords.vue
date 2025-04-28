@@ -9,7 +9,7 @@
         <el-button type="primary" @click="addNewRecord">
           <el-icon><plus /></el-icon> 新增填报
         </el-button>
-        <el-button type="success" @click="goToUserManagement">
+        <el-button v-if="isSuperAdmin" type="success" @click="goToUserManagement">
           <el-icon><user /></el-icon> 人员管理
         </el-button>
         <el-button @click="refreshRecords">
@@ -32,7 +32,7 @@
           <el-form :model="filterForm" label-width="100px" class="filter-form">
             <el-row :gutter="20">
               <!-- 所属单位 -->
-              <el-col :xs="24" :sm="12" :md="8" :lg="6" :xl="6">
+              <el-col :xs="24" :sm="12" :md="5" :lg="5" :xl="5">
                 <el-form-item label="所属单位">
                   <el-select v-model="filterForm.unitId" placeholder="选择单位" style="width: 100%" clearable>
                     <el-option 
@@ -46,7 +46,7 @@
               </el-col>
               
               <!-- 废物类型 -->
-              <el-col :xs="24" :sm="12" :md="8" :lg="6" :xl="6">
+              <el-col :xs="24" :sm="12" :md="5" :lg="5" :xl="5">
                 <el-form-item label="废物类型">
                   <el-select v-model="filterForm.wasteTypeId" placeholder="选择废物类型" style="width: 100%" clearable>
                     <el-option 
@@ -60,7 +60,7 @@
               </el-col>
               
               <!-- 产生地点 -->
-              <el-col :xs="24" :sm="12" :md="8" :lg="6" :xl="6">
+              <el-col :xs="24" :sm="12" :md="5" :lg="5" :xl="5">
                 <el-form-item label="产生地点">
                   <el-input 
                     v-model="filterForm.location" 
@@ -71,7 +71,7 @@
               </el-col>
               
               <!-- 产生工序 -->
-              <el-col :xs="24" :sm="12" :md="8" :lg="6" :xl="6">
+              <el-col :xs="24" :sm="12" :md="5" :lg="5" :xl="5">
                 <el-form-item label="产生工序">
                   <el-input 
                     v-model="filterForm.process" 
@@ -80,11 +80,27 @@
                   />
                 </el-form-item>
               </el-col>
+              
+              <!-- 添加监督人员数据筛选按钮（改用switch） -->
+              <el-col :xs="24" :sm="12" :md="4" :lg="4" :xl="4" v-if="isSuperAdmin">
+                <el-form-item label="监督数据">
+                  <el-switch
+                    v-model="filterForm.showSupervised"
+                    active-text="显示"
+                    inactive-text="隐藏"
+                    active-color="#13ce66"
+                    inactive-color="#ff4949"
+                    :active-value="true"
+                    :inactive-value="false"
+                    style="width: 100%"
+                  />
+                </el-form-item>
+              </el-col>
             </el-row>
             
             <el-row :gutter="20">
               <!-- 收集时间范围 -->
-              <el-col :xs="24" :sm="12" :md="10" :lg="8" :xl="8">
+              <el-col :xs="24" :sm="24" :md="10" :lg="10" :xl="10">
                 <el-form-item label="收集时间">
                   <el-date-picker
                     v-model="filterForm.dateRange"
@@ -100,7 +116,7 @@
               </el-col>
               
               <!-- 数量范围 -->
-              <el-col :xs="24" :sm="12" :md="10" :lg="8" :xl="8">
+              <el-col :xs="24" :sm="24" :md="8" :lg="8" :xl="8">
                 <el-form-item label="数量范围(吨)">
                   <div class="quantity-range">
                     <div class="input-with-clear">
@@ -135,7 +151,7 @@
               </el-col>
               
               <!-- 筛选按钮 -->
-              <el-col :xs="24" :sm="24" :md="4" :lg="8" :xl="8" class="filter-buttons-col">
+              <el-col :xs="24" :sm="24" :md="6" :lg="6" :xl="6" class="filter-buttons-col">
                 <div class="filter-actions">
                   <el-button type="primary" @click="applyFilter">刷新筛选</el-button>
                   <el-button @click="resetFilter">重置</el-button>
@@ -431,6 +447,7 @@ export default {
       maxQuantity: null,
       location: '',
       process: '',
+      showSupervised: true, // 新增字段，默认为true，表示显示监督人员录入的数据
     });
     
     // 添加监听器，在任何筛选条件变化时实时更新
@@ -442,7 +459,8 @@ export default {
       () => filterForm.minQuantity,
       () => filterForm.maxQuantity,
       () => filterForm.location,
-      () => filterForm.process
+      () => filterForm.process,
+      () => filterForm.showSupervised
     ], () => {
       // 当用户更改筛选条件时，自动重新获取数据
       // 添加防抖动处理，避免频繁请求
@@ -522,8 +540,15 @@ export default {
     };
 
     onMounted(async () => {
-      // 验证用户是否为超级管理员
-      if (!auth.state.isLoggedIn || auth.state.user.role_id !== 3) {
+      // 验证用户是否为超级管理员或监督人员
+      if (auth.state.user.role_id === 3 || auth.state.user.role_id === 4) {
+        // 获取单位列表（超级管理员和监督人员可以查看）
+        await fetchUnits();
+        // 获取废物类型列表
+        await fetchWasteTypes();
+        // 获取废物记录
+        fetchRecords();
+      } else {
         ElMessage.error('权限不足');
         router.push('/login');
         return;
@@ -595,6 +620,7 @@ export default {
           maxQuantity: filterForm.maxQuantity,
           location: filterForm.location,
           process: filterForm.process,
+          showSupervised: filterForm.showSupervised, // 添加新的参数
         };
         
         console.log('发送请求参数:', params);
@@ -667,7 +693,7 @@ export default {
 
     // 添加新记录
     const addNewRecord = () => {
-      if (auth.state.user.role_id === 3) {
+      if (auth.state.user.role_id === 3 || auth.state.user.role_id === 4) {
         router.push('/record/new');
       } else {
         router.push(`/unit/${auth.state.user.unit_id}`);
@@ -697,6 +723,7 @@ export default {
       filterForm.maxQuantity = null;
       filterForm.location = '';
       filterForm.process = '';
+      filterForm.showSupervised = true; // 重置时恢复默认值
       await fetchRecords();
       ElMessage.info('筛选条件已重置');
     };
@@ -728,7 +755,8 @@ export default {
           location: filterForm.location || undefined,
           process: filterForm.process || undefined,
           dateRange: filterForm.dateRange ? JSON.stringify(filterForm.dateRange) : undefined,
-          unitId: filterForm.unitId ? filterForm.unitId : undefined
+          unitId: filterForm.unitId ? filterForm.unitId : undefined,
+          showSupervised: filterForm.showSupervised, // 添加监督人员数据筛选参数
         };
         
         console.log('导出记录的筛选条件:', queryParams);
@@ -850,7 +878,8 @@ export default {
           location: filterForm.location || undefined,
           process: filterForm.process || undefined,
           dateRange: filterForm.dateRange ? JSON.stringify(filterForm.dateRange) : undefined,
-          unitId: filterForm.unitId ? filterForm.unitId : undefined
+          unitId: filterForm.unitId ? filterForm.unitId : undefined,
+          showSupervised: filterForm.showSupervised, // 添加监督人员数据筛选参数
         };
         
         console.log('导出记录的筛选条件:', queryParams);
@@ -984,7 +1013,8 @@ export default {
           location: filterForm.location || undefined,
           process: filterForm.process || undefined,
           dateRange: filterForm.dateRange ? JSON.stringify(filterForm.dateRange) : undefined,
-          unitId: filterForm.unitId ? filterForm.unitId : undefined
+          unitId: filterForm.unitId ? filterForm.unitId : undefined,
+          showSupervised: filterForm.showSupervised, // 添加监督人员数据筛选参数
         };
         
         // 调用后端API获取完整的记录数据
@@ -1129,6 +1159,11 @@ export default {
       return index + 1;
     };
 
+    // 判断是否为超级管理员（只有role_id=3才是真正的超级管理员）
+    const isSuperAdmin = computed(() => {
+      return auth.state.isLoggedIn && auth.state.user.role_id === 3;
+    });
+
     return {
       records,
       filteredRecords,
@@ -1166,6 +1201,7 @@ export default {
       tableRef,
       loadMore,
       tableContainer,
+      isSuperAdmin,
     };
   }
 };
@@ -1224,46 +1260,90 @@ export default {
   justify-content: flex-end;
 }
 
+/* 添加switch组件的样式 */
+:deep(.el-switch) {
+  margin-left: 5px;
+}
+
+:deep(.el-switch__label) {
+  font-size: 13px;
+  color: #606266;
+}
+
+:deep(.el-switch__label--right) {
+  margin-left: 6px;
+}
+
+:deep(.el-switch__label--left) {
+  margin-right: 6px;
+}
+
+:deep(.el-switch__core) {
+  width: 50px !important;
+  height: 24px !important;
+  border-radius: 12px;
+}
+
+:deep(.el-switch.is-checked .el-switch__core::after) {
+  margin-left: -22px;
+}
+
+:deep(.el-switch__core::after) {
+  width: 20px;
+  height: 20px;
+  top: 1px;
+}
+
+/* 优化筛选表单的整体样式 */
+.filter-form {
+  padding: 5px 0;
+}
+
+.filter-form-container {
+  margin-bottom: 10px;
+  padding: 0 10px;
+}
+
+/* 调整按钮容器的样式 */
+.filter-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  align-items: flex-end;
+  height: 100%;
+  margin-top: 4px;
+}
+
+/* 针对小屏幕调整按钮样式 */
 @media (max-width: 768px) {
   .filter-buttons-col {
-    margin-top: 15px;
+    margin-top: 10px;
   }
   
   .filter-actions {
-    justify-content: flex-start;
+    justify-content: center;
+  }
+  
+  /* 在小屏幕上，让按钮占据更多空间 */
+  :deep(.el-button) {
+    padding: 10px 20px;
+    font-size: 14px;
   }
 }
 
-.quantity-range {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+/* 调整表单项的样式，使其更紧凑 */
+:deep(.el-form-item) {
+  margin-bottom: 12px;
 }
 
-.range-separator {
-  padding: 0 5px;
-}
-
-.input-with-clear {
-  position: relative;
-  width: 47%;
-  display: flex;
-  align-items: center;
-}
-
-.clear-icon {
-  position: absolute;
-  right: 45px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #909399;
+:deep(.el-form-item__label) {
+  line-height: 32px;
+  padding-right: 8px;
   font-size: 14px;
-  cursor: pointer;
-  z-index: 10;
 }
 
-.clear-icon:hover {
-  color: #409EFF;
+:deep(.el-form-item__content) {
+  line-height: 32px;
 }
 
 .records-card {
@@ -1527,5 +1607,37 @@ export default {
 .el-table__header th .cell {
   color: white !important;
   font-weight: bold !important;
+}
+
+.quantity-range {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.range-separator {
+  padding: 0 5px;
+}
+
+.input-with-clear {
+  position: relative;
+  width: 47%;
+  display: flex;
+  align-items: center;
+}
+
+.clear-icon {
+  position: absolute;
+  right: 45px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #909399;
+  font-size: 14px;
+  cursor: pointer;
+  z-index: 10;
+}
+
+.clear-icon:hover {
+  color: #409EFF;
 }
 </style>

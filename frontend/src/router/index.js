@@ -88,16 +88,16 @@ router.beforeEach((to, from, next) => {
     return;
   }
   
-  // 如果路由需要超级管理员权限但用户不是超级管理员
-  if (requiresSuperAdmin && auth.state.isLoggedIn && auth.state.user.role_id !== 3) {
-    // 如果用户已登录但不是超级管理员，重定向到其单位页面
+  // 如果路由需要超级管理员权限但用户不是超级管理员或监督人员
+  if (requiresSuperAdmin && auth.state.isLoggedIn && auth.state.user.role_id !== 3 && auth.state.user.role_id !== 4) {
+    // 如果用户已登录但不是超级管理员或监督人员，重定向到其单位页面
     next({ name: 'WasteForm', params: { id: auth.state.user.unit_id } });
     return;
   }
   
   // 如果路由需要管理员权限但用户不是管理员
-  if (requiresManager && auth.state.isLoggedIn && auth.state.user.role_id === 1) {
-    // 普通员工不能访问管理员页面
+  if (requiresManager && auth.state.isLoggedIn && (auth.state.user.role_id === 1 || auth.state.user.role_id === 4)) {
+    // 普通员工和监督人员不能访问管理员页面
     next({ name: 'WasteForm', params: { id: auth.state.user.unit_id } });
     return;
   }
@@ -106,6 +106,8 @@ router.beforeEach((to, from, next) => {
   if (to.name === 'Login' && auth.state.isLoggedIn) {
     if (auth.state.user.role_id === 3) {
       next({ name: 'AdminRecords' }); // 超级管理员到管理页面
+    } else if (auth.state.user.role_id === 4) {
+      next({ name: 'EditRecord', params: { id: null } }); // 监督人员直接进入新增记录页面
     } else if (auth.state.user.role_id === 2) {
       next({ name: 'WasteForm', params: { id: auth.state.user.unit_id } }); // 单位管理员直接进入填报页面
     } else {
@@ -119,6 +121,9 @@ router.beforeEach((to, from, next) => {
     if (auth.state.user.role_id === 3) {
       next({ name: 'AdminRecords' });
       return;
+    } else if (auth.state.user.role_id === 4) {
+      next({ name: 'EditRecord', params: { id: null } }); // 监督人员直接进入新增记录页面
+      return;
     } else if (auth.state.user.role_id === 2) {
       next({ name: 'WasteForm', params: { id: auth.state.user.unit_id } });
       return;
@@ -130,7 +135,7 @@ router.beforeEach((to, from, next) => {
   
   // 检查用户是否尝试访问不属于自己单位的页面
   if (to.name === 'WasteForm' && auth.state.isLoggedIn && 
-      auth.state.user.role_id !== 3 && // 不是超级管理员
+      auth.state.user.role_id !== 3 && auth.state.user.role_id !== 4 && // 不是超级管理员或监督人员
       auth.state.user.unit_id !== parseInt(to.params.id)) {
     // 如果用户尝试访问其他单位，重定向到自己的单位
     next({ name: 'WasteForm', params: { id: auth.state.user.unit_id } });

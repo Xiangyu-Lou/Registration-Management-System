@@ -12,6 +12,26 @@ require('dotenv').config({ path: path.join(__dirname, '../.env') });
 // JWT 密钥
 const JWT_SECRET = process.env.JWT_SECRET || 'please input your secret key in .env file'; // 使用环境变量，如未设置则使用默认值作为后备
 
+// 检查是否为监督人员
+const checkForSupervisor = (req, res, next) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) {
+    return res.status(401).json({ error: '未授权' });
+  }
+  
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    // 检查用户是否为监督人员
+    if (decoded.role_id === 4) { // 监督人员不能访问用户管理
+      return res.status(403).json({ error: '没有权限访问用户管理' });
+    }
+    // 不是监督人员，继续执行
+    next();
+  } catch (error) {
+    return res.status(401).json({ error: '无效的令牌' });
+  }
+};
+
 // 创建Express应用
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -270,7 +290,7 @@ const verifyToken = (req, res, next) => {
 };
 
 // 获取所有用户（用于管理员）
-app.get('/api/users', async (req, res) => {
+app.get('/api/users', checkForSupervisor, async (req, res) => {
   try {
     // 获取用户的角色和单位信息
     const [rows] = await pool.query(
@@ -289,7 +309,7 @@ app.get('/api/users', async (req, res) => {
 });
 
 // 获取指定单位的用户（用于单位管理员）
-app.get('/api/units/:unitId/users', async (req, res) => {
+app.get('/api/units/:unitId/users', checkForSupervisor, async (req, res) => {
   const { unitId } = req.params;
   
   try {
@@ -311,7 +331,7 @@ app.get('/api/units/:unitId/users', async (req, res) => {
 });
 
 // 添加新用户
-app.post('/api/users', async (req, res) => {
+app.post('/api/users', checkForSupervisor, async (req, res) => {
   const { username, phone, password, roleId, unitId } = req.body;
   
   // 验证必填字段
@@ -319,7 +339,7 @@ app.post('/api/users', async (req, res) => {
     return res.status(400).json({ error: '用户名、手机号和角色是必填项' });
   }
   
-  // 必要的参数验证
+  // 必要的参数验证 - 员工和单位管理员必须指定单位，超级管理员和监督人员不需要
   if ((roleId == 1 || roleId == 2) && !unitId) {
     return res.status(400).json({ error: '员工和单位管理员必须指定单位' });
   }
@@ -359,7 +379,7 @@ app.post('/api/users', async (req, res) => {
 });
 
 // 更新用户信息
-app.put('/api/users/:id', async (req, res) => {
+app.put('/api/users/:id', checkForSupervisor, async (req, res) => {
   const { id } = req.params;
   const { username, phone, password, roleId, unitId } = req.body;
   
@@ -368,7 +388,7 @@ app.put('/api/users/:id', async (req, res) => {
     return res.status(400).json({ error: '用户名、手机号和角色是必填项' });
   }
   
-  // 必要的参数验证
+  // 必要的参数验证 - 员工和单位管理员必须指定单位，超级管理员和监督人员不需要
   if ((roleId == 1 || roleId == 2) && !unitId) {
     return res.status(400).json({ error: '员工和单位管理员必须指定单位' });
   }
@@ -419,7 +439,7 @@ app.put('/api/users/:id', async (req, res) => {
 });
 
 // 删除用户
-app.delete('/api/users/:id', async (req, res) => {
+app.delete('/api/users/:id', checkForSupervisor, async (req, res) => {
   const { id } = req.params;
   
   try {
@@ -449,7 +469,7 @@ app.delete('/api/users/:id', async (req, res) => {
 });
 
 // 修改用户状态（停用/恢复）
-app.put('/api/users/:id/status', async (req, res) => {
+app.put('/api/users/:id/status', checkForSupervisor, async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
   
@@ -478,8 +498,8 @@ app.put('/api/users/:id/status', async (req, res) => {
   }
 });
 
-// 获取用户详情
-app.get('/api/users/:id', async (req, res) => {
+// 获取单个用户信息
+app.get('/api/users/:id', checkForSupervisor, async (req, res) => {
   const { id } = req.params;
   
   try {
@@ -585,18 +605,28 @@ app.post('/api/waste-records', verifyToken, upload.fields([
     // 获取当前用户信息
     const userId = req.body.creator_id || (req.user ? req.user.id : null);
     
+    // 检查用户是否为监督人员
+    let isSupervisedValue = null;
+    if (userId) {
+      const [userRows] = await pool.query('SELECT role_id FROM users WHERE id = ?', [userId]);
+      if (userRows.length > 0 && userRows[0].role_id === 4) { // 监督人员
+        isSupervisedValue = 1;
+      }
+    }
+
     console.log('处理废物记录提交:', {
       body: req.body,
       userId,
-      user: req.user
+      user: req.user,
+      isSupervisedValue
     });
     
     // 插入记录
     const [result] = await pool.query(
       `INSERT INTO waste_records 
-      (unit_id, waste_type_id, location, collection_start_time, photo_path_before, photo_path_after, quantity, created_at, creator_id, remarks, process)
-      VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?)`,
-      [unitId, wasteTypeId, location, collectionStartTime, photo_path_before, photo_path_after, quantityValue, userId, remarks, process]
+      (unit_id, waste_type_id, location, collection_start_time, photo_path_before, photo_path_after, quantity, created_at, creator_id, remarks, process, is_supervised)
+      VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?)`,
+      [unitId, wasteTypeId, location, collectionStartTime, photo_path_before, photo_path_after, quantityValue, userId, remarks, process, isSupervisedValue]
     );
     
     res.status(201).json({
@@ -614,17 +644,39 @@ app.get('/api/waste-records/:unitId', async (req, res) => {
   const { unitId } = req.params;
   
   try {
-    const [rows] = await pool.query(
-      `SELECT wr.*, u.name as unit_name, wt.name as waste_type_name,
-       IFNULL(creator.username, creator.phone) as creator_name
-       FROM waste_records wr
-       JOIN units u ON wr.unit_id = u.id
-       JOIN waste_types wt ON wr.waste_type_id = wt.id
-       LEFT JOIN users creator ON wr.creator_id = creator.id
-       WHERE wr.unit_id = ?
-       ORDER BY wr.created_at DESC`,
-      [unitId]
-    );
+    // 从请求头中获取token以判断用户角色
+    const token = req.headers.authorization?.split(' ')[1];
+    let isAdmin = false; // 是否为超级管理员
+    
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        isAdmin = decoded.role_id === 3; // 只有超级管理员可以看到所有数据
+      } catch (err) {
+        console.error('Token验证失败:', err);
+      }
+    }
+    
+    let query = `
+      SELECT wr.*, u.name as unit_name, wt.name as waste_type_name,
+      IFNULL(creator.username, creator.phone) as creator_name
+      FROM waste_records wr
+      JOIN units u ON wr.unit_id = u.id
+      JOIN waste_types wt ON wr.waste_type_id = wt.id
+      LEFT JOIN users creator ON wr.creator_id = creator.id
+      WHERE wr.unit_id = ?
+    `;
+    
+    const params = [unitId];
+    
+    // 如果不是超级管理员，则不显示监督数据
+    if (!isAdmin) {
+      query += ' AND (wr.is_supervised IS NULL OR wr.is_supervised != 1)';
+    }
+    
+    query += ' ORDER BY wr.created_at DESC';
+    
+    const [rows] = await pool.query(query, params);
     
     res.json(rows);
   } catch (error) {
@@ -1123,13 +1175,25 @@ app.put('/api/waste-records/:id', verifyToken, upload.fields([
     // 格式化收集时间
     const collectionStartTime = `${collectionDate} ${collectionTime}`;
     
+    // 获取当前用户ID
+    const userId = req.user ? req.user.id : null;
+
+    // 检查用户是否为监督人员，如果是且当前记录不是监督数据，则将其标记为监督数据
+    let isSupervisedValue = record.is_supervised;
+    if (userId && isSupervisedValue !== 1) {
+      const [userRows] = await pool.query('SELECT role_id FROM users WHERE id = ?', [userId]);
+      if (userRows.length > 0 && userRows[0].role_id === 4) { // 监督人员
+        isSupervisedValue = 1;
+      }
+    }
+
     // 更新记录
     await pool.query(
       `UPDATE waste_records 
        SET unit_id = ?, waste_type_id = ?, location = ?, collection_start_time = ?, 
-       photo_path_before = ?, photo_path_after = ?, quantity = ?, remarks = ?, process = ?
+       photo_path_before = ?, photo_path_after = ?, quantity = ?, remarks = ?, process = ?, is_supervised = ?
        WHERE id = ?`,
-      [unitId, wasteTypeId, location, collectionStartTime, newPhotoPathBefore, newPhotoPathAfter, quantityValue, remarks, process, id]
+      [unitId, wasteTypeId, location, collectionStartTime, newPhotoPathBefore, newPhotoPathAfter, quantityValue, remarks, process, isSupervisedValue, id]
     );
     
     res.json({
@@ -1172,7 +1236,7 @@ app.get('/api/waste-records/detail/:id', async (req, res) => {
 // 获取用户创建的废物记录（支持分页）
 app.get('/api/waste-records/user/:userId', async (req, res) => {
   const { userId } = req.params;
-  const { page = 1, pageSize = 20, wasteTypeId, minQuantity, maxQuantity, location, dateRange, process } = req.query;
+  const { page = 1, pageSize = 20, wasteTypeId, minQuantity, maxQuantity, location, dateRange, process, showSupervised } = req.query;
   
   try {
     // 获取用户信息以确定其权限
@@ -1194,9 +1258,23 @@ app.get('/api/waste-records/user/:userId', async (req, res) => {
     const params = [];
     
     // 根据用户角色添加权限过滤
-    if (user.role_id !== 3) { // 不是超级管理员
+    if (user.role_id !== 3 && user.role_id !== 4) { // 不是超级管理员或监督人员
       baseSql += ' AND wr.unit_id = ?';
       params.push(user.unit_id);
+      
+      // 单位管理员不能查看监督数据
+      if (user.role_id === 2) {
+        baseSql += ' AND (wr.is_supervised IS NULL OR wr.is_supervised != 1)';
+      }
+    } else if (user.role_id === 3 && showSupervised === 'false') {
+      // 超级管理员特殊处理：如果showSupervised为false，则不显示监督人员录入的数据
+      baseSql += ' AND (wr.is_supervised IS NULL OR wr.is_supervised != 1)';
+    }
+    
+    // 监督人员只能查看自己提交的记录
+    if (user.role_id === 4) {
+      baseSql += ' AND wr.creator_id = ?';
+      params.push(user.id);
     }
     
     // 为普通员工（role_id=1）添加48小时时间限制并限制只能查看自己提交的记录
@@ -1290,7 +1368,7 @@ app.get('/api/waste-records/user/:userId', async (req, res) => {
 // 导出用户的废物记录（获取所有符合条件的记录）
 app.get('/api/waste-records/export/user/:userId', async (req, res) => {
   const { userId } = req.params;
-  const { wasteTypeId, minQuantity, maxQuantity, location, dateRange, unitId, process } = req.query;
+  const { wasteTypeId, minQuantity, maxQuantity, location, dateRange, unitId, process, showSupervised } = req.query;
   
   try {
     console.log('导出记录API被调用，参数:', req.query);
@@ -1316,9 +1394,23 @@ app.get('/api/waste-records/export/user/:userId', async (req, res) => {
     const params = [];
     
     // 根据用户角色添加权限过滤
-    if (user.role_id !== 3) { // 不是超级管理员
+    if (user.role_id !== 3 && user.role_id !== 4) { // 不是超级管理员或监督人员
       sql += ' AND wr.unit_id = ?';
       params.push(user.unit_id);
+      
+      // 单位管理员不能查看监督数据
+      if (user.role_id === 2) {
+        sql += ' AND (wr.is_supervised IS NULL OR wr.is_supervised != 1)';
+      }
+    } else if (user.role_id === 3 && showSupervised === 'false') {
+      // 超级管理员特殊处理：如果showSupervised为false，则不显示监督人员录入的数据
+      sql += ' AND (wr.is_supervised IS NULL OR wr.is_supervised != 1)';
+    }
+    
+    // 监督人员只能查看自己提交的记录
+    if (user.role_id === 4) {
+      sql += ' AND wr.creator_id = ?';
+      params.push(user.id);
     }
     
     // 为普通员工（role_id=1）添加48小时时间限制并限制只能查看自己提交的记录
@@ -1336,7 +1428,7 @@ app.get('/api/waste-records/export/user/:userId', async (req, res) => {
     }
     
     // 添加筛选条件
-    if (unitId && user.role_id === 3) { // 只有超级管理员可以按单位筛选
+    if (unitId && (user.role_id === 3 || user.role_id === 4)) { // 只有超级管理员或监督人员可以按单位筛选
       sql += ' AND wr.unit_id = ?';
       params.push(unitId);
     }

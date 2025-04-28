@@ -123,6 +123,7 @@ async function initializeDatabase() {
         creator_id INT,
         remarks TEXT,
         process VARCHAR(100),
+        is_supervised TINYINT(1) DEFAULT NULL COMMENT '是否为监督数据: 1-是',
         FOREIGN KEY (unit_id) REFERENCES units(id),
         FOREIGN KEY (waste_type_id) REFERENCES waste_types(id),
         FOREIGN KEY (creator_id) REFERENCES users(id)
@@ -137,7 +138,8 @@ async function initializeDatabase() {
         INSERT INTO user_roles (id, name) VALUES 
         (1, '基层员工'),
         (2, '单位管理员'),
-        (3, '超级管理员')
+        (3, '超级管理员'),
+        (4, '监督人员')
       `);
       console.log('已插入用户角色数据');
     } else {
@@ -174,13 +176,13 @@ async function initializeDatabase() {
     const niuzhuangId = units[0].id;
     
     // 插入用户测试数据（检查是否已存在）
-    const [userRows] = await connection.execute('SELECT COUNT(*) as count FROM users WHERE phone IN (?, ?, ?)', 
-      ['13800000001', '13800000002', '13800000003']);
+    const [userRows] = await connection.execute('SELECT COUNT(*) as count FROM users WHERE phone IN (?, ?, ?, ?)', 
+      ['13800000001', '13800000002', '13800000003', '13800000004']);
     
-    if (userRows[0].count < 3) {
+    if (userRows[0].count < 4) {
       // 先清空现有测试用户
-      await connection.execute(`DELETE FROM users WHERE phone IN (?, ?, ?)`, 
-        ['13800000001', '13800000002', '13800000003']);
+      await connection.execute(`DELETE FROM users WHERE phone IN (?, ?, ?, ?)`, 
+        ['13800000001', '13800000002', '13800000003', '13800000004']);
       
       // 加密密码
       const password = await hashPassword('1');
@@ -190,8 +192,9 @@ async function initializeDatabase() {
         INSERT INTO users (username, phone, password, role_id, unit_id, status) VALUES 
         ('牛庄员工', '13800000001', ?, 1, ?, 1),
         ('牛庄管理员', '13800000002', ?, 2, ?, 1),
-        ('超级管理员', '13800000003', ?, 3, NULL, 1)
-      `, [password, niuzhuangId, password, niuzhuangId, password]);
+        ('超级管理员', '13800000003', ?, 3, NULL, 1),
+        ('监督人员', '13800000004', ?, 4, NULL, 1)
+      `, [password, niuzhuangId, password, niuzhuangId, password, password]);
       console.log('已插入用户测试数据');
     } else {
       console.log('用户测试数据已存在，跳过插入');

@@ -267,7 +267,7 @@ export default {
     
     // 检查用户是否为超级管理员
     const isAdmin = computed(() => {
-      return auth.state.isLoggedIn && auth.state.user.role_id === 3;
+      return auth.state.isLoggedIn && (auth.state.user.role_id === 3 || auth.state.user.role_id === 4);
     });
 
     // 初始化表单，将日期和时间分开

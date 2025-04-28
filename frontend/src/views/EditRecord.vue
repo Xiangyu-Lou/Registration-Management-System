@@ -22,7 +22,7 @@
         v-loading="loading"
       >
         <!-- 如果是超级管理员且是新增记录，显示单位选择 -->
-        <el-form-item label="单位" prop="unitId" v-if="isSuperAdmin && isNew">
+        <el-form-item label="单位" prop="unitId" v-if="isAdmin && isNew">
           <el-select v-model="form.unitId" placeholder="请选择单位" style="width: 100%">
             <el-option 
               v-for="unit in units" 
@@ -64,7 +64,7 @@
         </el-form-item>
 
         <el-form-item label="产生地点" prop="location">
-          <el-select v-model="form.location" :placeholder="isSuperAdmin && !unitName ? '请先选择单位' : '请选择废物产生地点'" style="width: 100%" :disabled="isSuperAdmin && !unitName">
+          <el-select v-model="form.location" :placeholder="isAdmin && !unitName ? '请先选择单位' : '请选择废物产生地点'" style="width: 100%" :disabled="isAdmin && !unitName">
             <el-option 
               v-for="option in locationOptions" 
               :key="option" 
@@ -324,9 +324,9 @@ export default {
       return !route.params.id || route.params.id === 'new';
     });
     
-    // 是否为超级管理员
-    const isSuperAdmin = computed(() => {
-      return auth.state.isLoggedIn && auth.state.user.role_id === 3;
+    // 检查用户是否为超级管理员
+    const isAdmin = computed(() => {
+      return auth.state.isLoggedIn && (auth.state.user.role_id === 3 || auth.state.user.role_id === 4);
     });
     
     // 表单数据
@@ -397,14 +397,14 @@ export default {
         await fetchWasteTypes();
         
         // 如果是超级管理员，获取所有单位
-        if (isSuperAdmin.value) {
+        if (isAdmin.value) {
           await fetchUnits();
         }
         
         // 如果是新增记录
         if (isNew.value) {
           // 新增记录默认使用当前用户的单位（非超级管理员）
-          if (!isSuperAdmin.value && auth.state.user) {
+          if (!isAdmin.value && auth.state.user) {
             form.unitId = auth.state.user.unit_id;
             await fetchUnitName(form.unitId);
           }
@@ -1313,7 +1313,7 @@ export default {
 
     // 返回上一页
     const goBack = () => {
-      if (isSuperAdmin.value) {
+      if (isAdmin.value) {
         router.push('/admin-records');
       } else {
         router.push({ 
@@ -1351,7 +1351,7 @@ export default {
       showViewer,
       previewIndex,
       isNew,
-      isSuperAdmin,
+      isAdmin,
       parsePhotoPath,
       handlePhotoBeforeChange,
       handlePhotoBeforeRemove,
