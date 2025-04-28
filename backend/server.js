@@ -613,7 +613,7 @@ app.post('/api/waste-records', verifyToken, upload.fields([
         isSupervisedValue = 1;
       }
     }
-
+    
     console.log('处理废物记录提交:', {
       body: req.body,
       userId,
@@ -659,12 +659,12 @@ app.get('/api/waste-records/:unitId', async (req, res) => {
     
     let query = `
       SELECT wr.*, u.name as unit_name, wt.name as waste_type_name,
-      IFNULL(creator.username, creator.phone) as creator_name
-      FROM waste_records wr
-      JOIN units u ON wr.unit_id = u.id
-      JOIN waste_types wt ON wr.waste_type_id = wt.id
-      LEFT JOIN users creator ON wr.creator_id = creator.id
-      WHERE wr.unit_id = ?
+       IFNULL(creator.username, creator.phone) as creator_name
+       FROM waste_records wr
+       JOIN units u ON wr.unit_id = u.id
+       JOIN waste_types wt ON wr.waste_type_id = wt.id
+       LEFT JOIN users creator ON wr.creator_id = creator.id
+       WHERE wr.unit_id = ?
     `;
     
     const params = [unitId];
@@ -1186,7 +1186,7 @@ app.put('/api/waste-records/:id', verifyToken, upload.fields([
         isSupervisedValue = 1;
       }
     }
-
+    
     // 更新记录
     await pool.query(
       `UPDATE waste_records 

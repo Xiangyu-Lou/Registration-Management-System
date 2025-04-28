@@ -1,11 +1,15 @@
 <template>
   <div class="edit-record-container">
     <div class="header">
-      <div class="back-button" @click="goBack">
-        <el-icon><arrow-left /></el-icon> 返回
+      <div v-if="!isSupervisor" class="back-button" @click="goBack">
+        <el-icon><arrow-left /></el-icon> 查看记录
       </div>
+      <div v-else></div>
       <h1>{{ isNew ? '新增废物记录' : '编辑废物记录' }}</h1>
-      <div></div>
+      <div v-if="isSupervisor" class="back-button supervisor-back-button" @click="goBack">
+        查看记录
+      </div>
+      <div v-else></div>
     </div>
 
     <div class="content">
@@ -327,6 +331,11 @@ export default {
     // 检查用户是否为超级管理员
     const isAdmin = computed(() => {
       return auth.state.isLoggedIn && (auth.state.user.role_id === 3 || auth.state.user.role_id === 4);
+    });
+    
+    // 检查用户是否为监督人员
+    const isSupervisor = computed(() => {
+      return auth.state.isLoggedIn && auth.state.user.role_id === 4;
     });
     
     // 表单数据
@@ -1352,6 +1361,7 @@ export default {
       previewIndex,
       isNew,
       isAdmin,
+      isSupervisor,
       parsePhotoPath,
       handlePhotoBeforeChange,
       handlePhotoBeforeRemove,
@@ -1446,6 +1456,10 @@ export default {
   transform: translateY(-2px);
   box-shadow: 0 5px 10px rgba(0, 0, 0, 0.25);
   border-color: rgba(255, 255, 255, 0.8);
+}
+
+.supervisor-back-button {
+  justify-content: center;
 }
 
 .content {

@@ -1272,8 +1272,8 @@ export default {
 
 :deep(.el-switch__label--right) {
   margin-left: 6px;
-}
-
+  }
+  
 :deep(.el-switch__label--left) {
   margin-right: 6px;
 }
@@ -1322,12 +1322,12 @@ export default {
   
   .filter-actions {
     justify-content: center;
-  }
-  
+}
+
   /* 在小屏幕上，让按钮占据更多空间 */
   :deep(.el-button) {
     padding: 10px 20px;
-    font-size: 14px;
+  font-size: 14px;
   }
 }
 
