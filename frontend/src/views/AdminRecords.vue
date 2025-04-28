@@ -559,13 +559,12 @@ export default {
       // 添加窗口大小变化事件监听
       window.addEventListener('resize', handleResize);
       
-      await Promise.all([
-        fetchUnits(),
-        fetchWasteTypes(),
-        fetchRecords()
-      ]);
-      
-      // 移除滚动监听设置
+      // 避免重复调用 fetchRecords
+      // await Promise.all([
+      //   fetchUnits(),
+      //   fetchWasteTypes(),
+      //   fetchRecords()
+      // ]);
     });
     
     onUnmounted(() => {
@@ -620,7 +619,7 @@ export default {
           maxQuantity: filterForm.maxQuantity,
           location: filterForm.location,
           process: filterForm.process,
-          showSupervised: filterForm.showSupervised, // 添加新的参数
+          showSupervised: filterForm.showSupervised ? 'true' : 'false', // 转换为字符串
         };
         
         console.log('发送请求参数:', params);
@@ -756,7 +755,7 @@ export default {
           process: filterForm.process || undefined,
           dateRange: filterForm.dateRange ? JSON.stringify(filterForm.dateRange) : undefined,
           unitId: filterForm.unitId ? filterForm.unitId : undefined,
-          showSupervised: filterForm.showSupervised, // 添加监督人员数据筛选参数
+          showSupervised: filterForm.showSupervised ? 'true' : 'false', // 转换为字符串
         };
         
         console.log('导出记录的筛选条件:', queryParams);
@@ -879,7 +878,7 @@ export default {
           process: filterForm.process || undefined,
           dateRange: filterForm.dateRange ? JSON.stringify(filterForm.dateRange) : undefined,
           unitId: filterForm.unitId ? filterForm.unitId : undefined,
-          showSupervised: filterForm.showSupervised, // 添加监督人员数据筛选参数
+          showSupervised: filterForm.showSupervised ? 'true' : 'false', // 转换为字符串
         };
         
         console.log('导出记录的筛选条件:', queryParams);
@@ -1014,7 +1013,7 @@ export default {
           process: filterForm.process || undefined,
           dateRange: filterForm.dateRange ? JSON.stringify(filterForm.dateRange) : undefined,
           unitId: filterForm.unitId ? filterForm.unitId : undefined,
-          showSupervised: filterForm.showSupervised, // 添加监督人员数据筛选参数
+          showSupervised: filterForm.showSupervised ? 'true' : 'false', // 转换为字符串
         };
         
         // 调用后端API获取完整的记录数据
