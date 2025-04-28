@@ -36,5 +36,26 @@ module.exports = defineConfig({
       filename: 'js/[name].[contenthash:8].js',
       chunkFilename: 'js/[name].[contenthash:8].js'
     }
+  },
+  // 添加HTML配置，禁用长期缓存
+  chainWebpack: config => {
+    // 添加响应头，防止浏览器缓存HTML文件
+    config.plugin('html').tap(args => {
+      args[0].meta = {
+        'Cache-Control': { 
+          'http-equiv': 'Cache-Control',
+          'content': 'no-cache, no-store, must-revalidate'
+        },
+        'Pragma': { 
+          'http-equiv': 'Pragma',
+          'content': 'no-cache' 
+        },
+        'Expires': { 
+          'http-equiv': 'Expires',
+          'content': '0'
+        }
+      };
+      return args;
+    });
   }
 })

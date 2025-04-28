@@ -85,6 +85,20 @@ const login = async (phone, password, rememberMe = false) => {
       sessionStorage.setItem('token', token);
     }
     
+    // 添加清除缓存逻辑，确保加载最新资源
+    try {
+      if ('caches' in window) {
+        // 清除缓存的资源
+        caches.keys().then(cacheNames => {
+          cacheNames.forEach(cacheName => {
+            caches.delete(cacheName);
+          });
+        });
+      }
+    } catch (e) {
+      console.warn('清除缓存失败:', e);
+    }
+    
     return { success: true, user };
   } catch (error) {
     // 只设置错误状态，不显示错误消息
