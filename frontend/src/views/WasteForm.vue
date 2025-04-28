@@ -43,7 +43,7 @@
               :value="option" 
             />
           </el-select>
-          <!-- 自定义产生工序输入框 -->
+          <!-- 自定义产生工序输入 -->
           <el-input 
             v-if="form.process === '其他'" 
             v-model="customProcess" 

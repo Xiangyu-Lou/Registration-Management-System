@@ -25,7 +25,7 @@
         class="record-form"
         v-loading="loading"
       >
-        <!-- 如果是超级管理员且是新增记录，显示单位选择 -->
+        <!-- 如果用户是超级管理员且是新增记录，显示单位选择 -->
         <el-form-item label="单位" prop="unitId" v-if="isAdmin && isNew">
           <el-select v-model="form.unitId" placeholder="请选择单位" style="width: 100%">
             <el-option 

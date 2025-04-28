@@ -102,7 +102,7 @@ export default {
       confirmPassword: ''
     });
     
-    // 表单验证规则
+    // 表单验证
     const rules = reactive({
       username: [
         { required: true, message: '请输入用户名', trigger: 'blur' },

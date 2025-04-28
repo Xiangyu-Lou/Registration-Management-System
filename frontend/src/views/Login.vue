@@ -70,7 +70,7 @@ export default {
     const form = reactive({
       phone: '',
       password: '',
-      rememberMe: false // 添加记住登录选项
+      rememberMe: false
     });
     
     // 验证规则

@@ -28,7 +28,7 @@
         </el-button>
       </div>
       
-      <!-- 筛选面板 -->
+      <!-- 筛选条件面板 -->
       <el-card class="filter-card">
         <div class="filter-header">
           <h3>筛选条件</h3>

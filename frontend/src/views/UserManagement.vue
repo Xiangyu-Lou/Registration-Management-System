@@ -65,7 +65,7 @@
               编辑
             </el-button>
             
-            <!-- 停用/恢复按钮：单位管理员不能操作其他单位管理员 -->
+            <!-- 停用/恢复按钮：单位管理员无权操作其他单位管理员 -->
             <el-button 
               v-if="!(!isSuperAdmin && scope.row.role_id === 2)" 
               size="small" 

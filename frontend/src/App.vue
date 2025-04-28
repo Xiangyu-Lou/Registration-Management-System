@@ -17,7 +17,7 @@ export default {
   setup() {
     const route = useRoute();
     
-    // 仅在非登录页面显示头部
+    // 仅在非登录页面显示
     const showHeader = computed(() => {
       return route.path !== '/login';
     });
