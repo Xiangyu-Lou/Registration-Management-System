@@ -31,7 +31,18 @@
         </el-form-item>
         
         <el-form-item>
+          <div class="login-notice">
+            <el-alert
+              title="系统升级公告"
+              type="info"
+              description="为了确保您能够使用最新版本，记住登录功能已临时禁用。登录后请刷新页面获取最新内容。"
+              :closable="false"
+              show-icon
+            />
+          </div>
+          <!-- 记住登录功能已被禁用
           <el-checkbox v-model="form.rememberMe">记住登录</el-checkbox>
+          -->
         </el-form-item>
         
         <el-form-item>
@@ -121,10 +132,13 @@ export default {
         // 添加调试信息
         console.log('开始处理登录操作...');
         
+        // 强制设置记住登录为false
+        form.rememberMe = false;
+        
         const result = await auth.login(
           form.phone,
           form.password,
-          form.rememberMe
+          false // 禁用记住登录功能
         );
         
         console.log('登录响应:', result);
@@ -229,6 +243,10 @@ export default {
   text-align: center;
   margin-top: 15px;
   font-size: 14px;
+}
+
+.login-notice {
+  margin-bottom: 15px;
 }
 
 /* 移动端适配 */

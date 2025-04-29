@@ -24,7 +24,7 @@ export default {
     });
     
     // 应用版本号，每次更新时要手动修改
-    const APP_VERSION = '1.0.0';
+    const APP_VERSION = '1.0.1';
     const VERSION_KEY = 'app_version';
 
     onMounted(() => {

@@ -18,14 +18,8 @@ const state = reactive({
 
 // 从localStorage获取已保存的用户信息和token
 const init = () => {
-  // 暂时禁用从localStorage获取数据
-  // const savedUser = localStorage.getItem('user');
-  // const savedToken = localStorage.getItem('token');
-  
-  // 仅从sessionStorage获取数据
-  const savedUser = sessionStorage.getItem('user');
-  const savedToken = sessionStorage.getItem('token');
-  
+  const savedUser = localStorage.getItem('user');
+  const savedToken = localStorage.getItem('token');
   if (savedUser && savedToken) {
     try {
       const user = JSON.parse(savedUser);
@@ -38,10 +32,8 @@ const init = () => {
       }
     } catch (e) {
       console.error('Error parsing saved user data:', e);
-      // localStorage.removeItem('user');
-      // localStorage.removeItem('token');
-      sessionStorage.removeItem('user');
-      sessionStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('token');
     }
   }
 };
@@ -83,15 +75,19 @@ const login = async (phone, password, rememberMe = false) => {
       httpService.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     }
     
-    // 暂时禁用记住登录功能，统一使用sessionStorage
-    // if (rememberMe) {
-    //   localStorage.setItem('user', JSON.stringify(user));
-    //   localStorage.setItem('token', token);
-    // } else {
-      // 所有登录都只保存在 sessionStorage 中
+    // 如果选择记住登录，保存到localStorage
+    if (rememberMe) {
+      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('token', token);
+    } else {
+      // 否则只保存在 sessionStorage 中
       sessionStorage.setItem('user', JSON.stringify(user));
       sessionStorage.setItem('token', token);
-    // }
+      
+      // 确保清除localStorage中可能存在的数据
+      localStorage.removeItem('user');
+      localStorage.removeItem('token');
+    }
     
     // 添加清除缓存逻辑，确保加载最新资源
     try {
