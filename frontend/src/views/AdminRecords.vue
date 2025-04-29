@@ -198,15 +198,15 @@
                 align="center"
                 :index="indexMethod"
               />
-              <el-table-column prop="unit_name" label="单位" min-width="120" />
-              <el-table-column prop="waste_type_name" label="废物类型" min-width="120" />
-              <el-table-column prop="location" label="产生地点" min-width="120" />
-              <el-table-column prop="process" label="产生工序" min-width="120">
+              <el-table-column prop="unit_name" label="单位" min-width="100" />
+              <el-table-column prop="waste_type_name" label="废物类型" min-width="100" />
+              <el-table-column prop="location" label="产生地点" min-width="100" />
+              <el-table-column prop="process" label="产生工序" min-width="100">
                 <template #default="scope">
                   {{ scope.row.process || '无' }}
                 </template>
               </el-table-column>
-              <el-table-column prop="remarks" label="备注" min-width="150">
+              <el-table-column prop="remarks" label="备注" min-width="120">
                 <template #default="scope">
                   {{ scope.row.remarks || '无' }}
                 </template>
@@ -221,7 +221,7 @@
               <el-table-column prop="created_at" label="记录时间" min-width="160" />
               <el-table-column
                 label="清理前照片"
-                min-width="150"
+                min-width="140"
                 align="center"
               >
                 <template #default="scope">
@@ -248,7 +248,7 @@
               </el-table-column>
               <el-table-column
                 label="清理后照片"
-                min-width="150"
+                min-width="140"
                 align="center"
               >
                 <template #default="scope">
@@ -274,7 +274,7 @@
                 </template>
               </el-table-column>
               <!-- <el-table-column label="操作" min-width="120" fixed="right"> -->
-              <el-table-column label="操作" min-width="120">
+              <el-table-column label="操作" min-width="130">
                 <template #default="scope">
                   <div class="operation-buttons">
                     <el-button 
