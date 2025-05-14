@@ -1236,7 +1236,7 @@ app.get('/api/waste-records/detail/:id', async (req, res) => {
 // 获取用户创建的废物记录（支持分页）
 app.get('/api/waste-records/user/:userId', async (req, res) => {
   const { userId } = req.params;
-  const { page = 1, pageSize = 20, wasteTypeId, minQuantity, maxQuantity, location, dateRange, process, showSupervised } = req.query;
+  const { page = 1, pageSize = 20, wasteTypeId, minQuantity, maxQuantity, location, dateRange, process, showSupervised, unitId } = req.query;
   
   try {
     // 获取用户信息以确定其权限
@@ -1292,6 +1292,12 @@ app.get('/api/waste-records/user/:userId', async (req, res) => {
     }
     
     // 添加筛选条件
+    // 添加单位筛选条件 - 对超级管理员和监督人员有效
+    if (unitId && (user.role_id === 3 || user.role_id === 4)) {
+      baseSql += ' AND wr.unit_id = ?';
+      params.push(unitId);
+    }
+    
     if (wasteTypeId) {
       baseSql += ' AND wr.waste_type_id = ?';
       params.push(wasteTypeId);

@@ -473,26 +473,14 @@ export default {
     
     // 过滤后的记录
     const filteredRecords = computed(() => {
-      console.log('开始本地筛选，记录数:', records.value.length);
-      console.log('筛选条件:', {
-        unitId: filterForm.unitId,
-        wasteTypeId: filterForm.wasteTypeId,
-        dateRange: filterForm.dateRange,
-        location: filterForm.location,
-        process: filterForm.process,
-        minQuantity: filterForm.minQuantity,
-        maxQuantity: filterForm.maxQuantity
-      });
-      
       return records.value.filter(record => {
         // 检查单位
-        if (filterForm.unitId && parseInt(record.unit_id) !== parseInt(filterForm.unitId)) {
-          console.log(`记录 ${record.id} 单位不匹配: ${record.unit_id} (${typeof record.unit_id}) !== ${filterForm.unitId} (${typeof filterForm.unitId})`);
+        if (filterForm.unitId && record.unit_id !== filterForm.unitId) {
           return false;
         }
         
         // 检查废物类型
-        if (filterForm.wasteTypeId && parseInt(record.waste_type_id) !== parseInt(filterForm.wasteTypeId)) {
+        if (filterForm.wasteTypeId && record.waste_type_id !== filterForm.wasteTypeId) {
           return false;
         }
         
@@ -626,8 +614,7 @@ export default {
         const params = {
           page: page.value,
           pageSize: pageSize.value,
-          unitId: filterForm.unitId ? parseInt(filterForm.unitId) : undefined,
-          wasteTypeId: filterForm.wasteTypeId ? parseInt(filterForm.wasteTypeId) : undefined,
+          wasteTypeId: filterForm.wasteTypeId,
           minQuantity: filterForm.minQuantity,
           maxQuantity: filterForm.maxQuantity,
           location: filterForm.location,
@@ -636,18 +623,14 @@ export default {
         };
         
         console.log('发送请求参数:', params);
-        console.log('单位筛选参数:', filterForm.unitId);
         
-        // 只有在日期范围存在且有开始和结束日期时添加
+        // Only add dateRange if it exists and has both start and end dates
         if (filterForm.dateRange && filterForm.dateRange.length === 2) {
           params.dateRange = JSON.stringify(filterForm.dateRange);
         }
         
-        const requestUrl = `${apiConfig.getUrl(apiConfig.endpoints.wasteRecords)}/user/${auth.state.user.id}`;
-        console.log('请求URL:', requestUrl);
-        
         const response = await axios.get(
-          requestUrl,
+          `${apiConfig.getUrl(apiConfig.endpoints.wasteRecords)}/user/${auth.state.user.id}`,
           { params }
         );
         
@@ -765,13 +748,13 @@ export default {
         
         // 准备筛选条件
         const queryParams = {
-          wasteTypeId: filterForm.wasteTypeId ? parseInt(filterForm.wasteTypeId) : undefined,
+          wasteTypeId: filterForm.wasteTypeId ? filterForm.wasteTypeId : undefined,
           minQuantity: filterForm.minQuantity ? filterForm.minQuantity : undefined,
           maxQuantity: filterForm.maxQuantity ? filterForm.maxQuantity : undefined,
           location: filterForm.location || undefined,
           process: filterForm.process || undefined,
           dateRange: filterForm.dateRange ? JSON.stringify(filterForm.dateRange) : undefined,
-          unitId: filterForm.unitId ? parseInt(filterForm.unitId) : undefined,
+          unitId: filterForm.unitId ? filterForm.unitId : undefined,
           showSupervised: filterForm.showSupervised ? 'true' : 'false', // 转换为字符串
         };
         
@@ -888,13 +871,13 @@ export default {
         
         // 准备筛选条件
         const queryParams = {
-          wasteTypeId: filterForm.wasteTypeId ? parseInt(filterForm.wasteTypeId) : undefined,
+          wasteTypeId: filterForm.wasteTypeId ? filterForm.wasteTypeId : undefined,
           minQuantity: filterForm.minQuantity ? filterForm.minQuantity : undefined,
           maxQuantity: filterForm.maxQuantity ? filterForm.maxQuantity : undefined,
           location: filterForm.location || undefined,
           process: filterForm.process || undefined,
           dateRange: filterForm.dateRange ? JSON.stringify(filterForm.dateRange) : undefined,
-          unitId: filterForm.unitId ? parseInt(filterForm.unitId) : undefined,
+          unitId: filterForm.unitId ? filterForm.unitId : undefined,
           showSupervised: filterForm.showSupervised ? 'true' : 'false', // 转换为字符串
         };
         
@@ -1023,13 +1006,13 @@ export default {
         
         // 准备筛选条件
         const queryParams = {
-          wasteTypeId: filterForm.wasteTypeId ? parseInt(filterForm.wasteTypeId) : undefined,
+          wasteTypeId: filterForm.wasteTypeId ? filterForm.wasteTypeId : undefined,
           minQuantity: filterForm.minQuantity ? filterForm.minQuantity : undefined,
           maxQuantity: filterForm.maxQuantity ? filterForm.maxQuantity : undefined,
           location: filterForm.location || undefined,
           process: filterForm.process || undefined,
           dateRange: filterForm.dateRange ? JSON.stringify(filterForm.dateRange) : undefined,
-          unitId: filterForm.unitId ? parseInt(filterForm.unitId) : undefined,
+          unitId: filterForm.unitId ? filterForm.unitId : undefined,
           showSupervised: filterForm.showSupervised ? 'true' : 'false', // 转换为字符串
         };
         
