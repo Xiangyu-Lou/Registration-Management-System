@@ -620,6 +620,7 @@ export default {
           location: filterForm.location,
           process: filterForm.process,
           showSupervised: filterForm.showSupervised ? 'true' : 'false', // 转换为字符串
+          unitId: filterForm.unitId ? filterForm.unitId : undefined // 使用与导出功能一致的格式
         };
         
         console.log('发送请求参数:', params);
