@@ -775,69 +775,107 @@ export default {
           loading.value = false;
           return;
         }
-        
-        // 更新加载文本
-        loadingInstance.setText(`准备导出 ${data.length} 条记录...`);
-        
-        // 准备导出数据
-        const exportData = data.map(record => {
-          // 解析图片路径
-          const beforePhotos = parsePhotoPath(record.photo_path_before);
-          const afterPhotos = parsePhotoPath(record.photo_path_after);
-          
-          return {
-            '单位': record.unit_name,
-            '废物类型': record.waste_type_name,
-            '产生地点': record.location,
-            '产生工序': record.process || '无',
-            '备注': record.remarks || '无',
-            '收集开始时间': formatDateTime(record.collection_start_time),
-            '数量(吨)': record.quantity,
-            '填报人': record.creator_name || '系统',
-            '记录时间': formatDateTime(record.created_at),
-            '清理前照片': beforePhotos.length > 0 ? beforePhotos[0] : '',  // 使用第一张图片的路径
-            '清理后照片': afterPhotos.length > 0 ? afterPhotos[0] : ''    // 使用第一张图片的路径
-          };
-        });
-        
-        // 设置文件名
+
+        // 设置文件名基础部分
         const unitName = filterForm.unitId 
           ? units.value.find(u => u.id === filterForm.unitId)?.name || '未知单位'
           : '全部单位';
-        const fileName = `固体废物记录_${unitName}`;
+        const baseFileName = `固体废物记录_${unitName}`;
         
-        // 设置表头
-        const exportHeaders = [
-          { text: '单位', field: '单位' },
-          { text: '废物类型', field: '废物类型' },
-          { text: '产生地点', field: '产生地点' },
-          { text: '产生工序', field: '产生工序' },          
-          { text: '备注', field: '备注' },
-          { text: '收集开始时间', field: '收集开始时间' },
-          { text: '数量(吨)', field: '数量(吨)' },
-          { text: '填报人', field: '填报人' },
-          { text: '记录时间', field: '记录时间' },
-          { text: '清理前照片', field: '清理前照片', isImage: true },
-          { text: '清理后照片', field: '清理后照片', isImage: true }
-        ];
+        // 设置导出限制 - 带图片导出最多200条每文件
+        const BATCH_SIZE = 200;
+        const totalRecords = data.length;
+        const batchCount = Math.ceil(totalRecords / BATCH_SIZE);
         
-        // 获取服务器的基础URL
-        const baseUrl = window.location.origin;
+        // 更新加载文本
+        if(batchCount > 1) {
+          loadingInstance.setText(`数据较多(${totalRecords}条)，将拆分为${batchCount}个文件导出...`);
+          ElMessage.info(`数据较多(${totalRecords}条)，将拆分为${batchCount}个文件导出`);
+        } else {
+          loadingInstance.setText(`准备导出 ${totalRecords} 条记录...`);
+        }
+
+        let successCount = 0;
         
-        // 设置进度回调函数
-        const onProgress = (current, total) => {
-          const percent = Math.round((current / total) * 100);
-          loadingInstance.setText(`正在导出：${percent}% (${current}/${total})`);
-        };
-        
-        // 执行带图片的导出
-        const result = await exportToExcelWithImages(exportData, fileName, exportHeaders, baseUrl, onProgress);
-        
+        // 分批处理数据
+        for(let batchIndex = 0; batchIndex < batchCount; batchIndex++) {
+          // 计算当前批次的起始和结束索引
+          const startIndex = batchIndex * BATCH_SIZE;
+          const endIndex = Math.min((batchIndex + 1) * BATCH_SIZE, totalRecords);
+          const batchData = data.slice(startIndex, endIndex);
+          
+          // 为批次设置文件名
+          const fileName = batchCount > 1 
+            ? `${baseFileName}_第${batchIndex + 1}部分(共${batchCount}部分)`
+            : baseFileName;
+          
+          // 更新加载文本
+          loadingInstance.setText(`正在处理第${batchIndex + 1}/${batchCount}批次，${startIndex + 1}-${endIndex}条记录...`);
+          
+          // 准备导出数据
+          const exportData = batchData.map(record => {
+            // 解析图片路径
+            const beforePhotos = parsePhotoPath(record.photo_path_before);
+            const afterPhotos = parsePhotoPath(record.photo_path_after);
+            
+            return {
+              '单位': record.unit_name,
+              '废物类型': record.waste_type_name,
+              '产生地点': record.location,
+              '产生工序': record.process || '无',
+              '备注': record.remarks || '无',
+              '收集开始时间': formatDateTime(record.collection_start_time),
+              '数量(吨)': record.quantity,
+              '填报人': record.creator_name || '系统',
+              '记录时间': formatDateTime(record.created_at),
+              '清理前照片': beforePhotos.length > 0 ? beforePhotos[0] : '',  // 使用第一张图片的路径
+              '清理后照片': afterPhotos.length > 0 ? afterPhotos[0] : ''    // 使用第一张图片的路径
+            };
+          });
+          
+          // 设置表头
+          const exportHeaders = [
+            { text: '单位', field: '单位' },
+            { text: '废物类型', field: '废物类型' },
+            { text: '产生地点', field: '产生地点' },
+            { text: '产生工序', field: '产生工序' },          
+            { text: '备注', field: '备注' },
+            { text: '收集开始时间', field: '收集开始时间' },
+            { text: '数量(吨)', field: '数量(吨)' },
+            { text: '填报人', field: '填报人' },
+            { text: '记录时间', field: '记录时间' },
+            { text: '清理前照片', field: '清理前照片', isImage: true },
+            { text: '清理后照片', field: '清理后照片', isImage: true }
+          ];
+          
+          // 获取服务器的基础URL
+          const baseUrl = window.location.origin;
+          
+          // 设置进度回调函数
+          const onProgress = (current, total) => {
+            const percent = Math.round((current / total) * 100);
+            loadingInstance.setText(`正在导出第${batchIndex + 1}/${batchCount}部分：${percent}% (${current}/${total})`);
+          };
+          
+          // 执行带图片的导出
+          const result = await exportToExcelWithImages(exportData, fileName, exportHeaders, baseUrl, onProgress);
+          
+          if (result) {
+            successCount++;
+          }
+        }
+
         // 关闭加载提示
         loadingInstance.close();
         
-        if (result) {
-          ElMessage.success('导出成功');
+        if (successCount === batchCount) {
+          if (batchCount > 1) {
+            ElMessage.success(`成功导出${batchCount}个文件`);
+          } else {
+            ElMessage.success('导出成功');
+          }
+        } else if (successCount > 0) {
+          ElMessage.warning(`部分导出成功，完成了${successCount}/${batchCount}个文件`);
         } else {
           ElMessage.error('导出失败，请重试');
         }
@@ -899,87 +937,125 @@ export default {
           return;
         }
         
-        // 更新加载文本
-        loadingInstance.setText(`准备导出 ${data.length} 条记录的全部照片...`);
-        
-        // 准备导出数据
-        const exportData = data.map(record => {
-          // 解析所有照片路径
-          const beforePhotos = parsePhotoPath(record.photo_path_before);
-          const afterPhotos = parsePhotoPath(record.photo_path_after);
-          
-          // 准备基本数据
-          const recordData = {
-            '单位': record.unit_name,
-            '废物类型': record.waste_type_name,
-            '产生工序': record.process || '无',
-            '产生地点': record.location,
-            '备注': record.remarks || '无',
-            '收集开始时间': formatDateTime(record.collection_start_time),
-            '数量(吨)': record.quantity,
-            '填报人': record.creator_name || '系统',
-            '记录时间': formatDateTime(record.created_at),
-          };
-          
-          // 添加最多5张清理前照片
-          for (let i = 0; i < 5; i++) {
-            recordData[`清理前照片${i+1}`] = i < beforePhotos.length ? beforePhotos[i] : '';
-          }
-          
-          // 添加最多5张清理后照片
-          for (let i = 0; i < 5; i++) {
-            recordData[`清理后照片${i+1}`] = i < afterPhotos.length ? afterPhotos[i] : '';
-          }
-          
-          return recordData;
-        });
-        
-        // 设置文件名
+        // 设置文件名基础部分
         const unitName = filterForm.unitId 
           ? units.value.find(u => u.id === filterForm.unitId)?.name || '未知单位'
           : '全部单位';
-        const fileName = `固体废物记录_全部照片_${unitName}`;
+        const baseFileName = `固体废物记录_全部照片_${unitName}`;
+
+        // 设置导出限制 - 带全部图片导出最多100条每文件
+        const BATCH_SIZE = 100;
+        const totalRecords = data.length;
+        const batchCount = Math.ceil(totalRecords / BATCH_SIZE);
         
-        // 设置表头，添加isImage标志
-        const exportHeaders = [
-          { text: '单位', field: '单位' },
-          { text: '废物类型', field: '废物类型' },
-          { text: '产生工序', field: '产生工序' },
-          { text: '产生地点', field: '产生地点' },
-          { text: '备注', field: '备注' },
-          { text: '收集开始时间', field: '收集开始时间' },
-          { text: '数量(吨)', field: '数量(吨)' },
-          { text: '填报人', field: '填报人' },
-          { text: '记录时间', field: '记录时间' },
-        ];
-        
-        // 添加清理前照片表头
-        for (let i = 0; i < 5; i++) {
-          exportHeaders.push({ text: `清理前照片${i+1}`, field: `清理前照片${i+1}`, isImage: true });
+        // 更新加载文本
+        if(batchCount > 1) {
+          loadingInstance.setText(`数据较多(${totalRecords}条)，将拆分为${batchCount}个文件导出...`);
+          ElMessage.info(`数据较多(${totalRecords}条)，将拆分为${batchCount}个文件导出`);
+        } else {
+          loadingInstance.setText(`准备导出 ${totalRecords} 条记录的全部照片...`);
         }
+
+        let successCount = 0;
         
-        // 添加清理后照片表头
-        for (let i = 0; i < 5; i++) {
-          exportHeaders.push({ text: `清理后照片${i+1}`, field: `清理后照片${i+1}`, isImage: true });
+        // 分批处理数据
+        for(let batchIndex = 0; batchIndex < batchCount; batchIndex++) {
+          // 计算当前批次的起始和结束索引
+          const startIndex = batchIndex * BATCH_SIZE;
+          const endIndex = Math.min((batchIndex + 1) * BATCH_SIZE, totalRecords);
+          const batchData = data.slice(startIndex, endIndex);
+          
+          // 为批次设置文件名
+          const fileName = batchCount > 1 
+            ? `${baseFileName}_第${batchIndex + 1}部分(共${batchCount}部分)`
+            : baseFileName;
+          
+          // 更新加载文本
+          loadingInstance.setText(`正在处理第${batchIndex + 1}/${batchCount}批次，${startIndex + 1}-${endIndex}条记录...`);
+
+          // 准备导出数据
+          const exportData = batchData.map(record => {
+            // 解析所有照片路径
+            const beforePhotos = parsePhotoPath(record.photo_path_before);
+            const afterPhotos = parsePhotoPath(record.photo_path_after);
+            
+            // 准备基本数据
+            const recordData = {
+              '单位': record.unit_name,
+              '废物类型': record.waste_type_name,
+              '产生工序': record.process || '无',
+              '产生地点': record.location,
+              '备注': record.remarks || '无',
+              '收集开始时间': formatDateTime(record.collection_start_time),
+              '数量(吨)': record.quantity,
+              '填报人': record.creator_name || '系统',
+              '记录时间': formatDateTime(record.created_at),
+            };
+            
+            // 添加最多5张清理前照片
+            for (let i = 0; i < 5; i++) {
+              recordData[`清理前照片${i+1}`] = i < beforePhotos.length ? beforePhotos[i] : '';
+            }
+            
+            // 添加最多5张清理后照片
+            for (let i = 0; i < 5; i++) {
+              recordData[`清理后照片${i+1}`] = i < afterPhotos.length ? afterPhotos[i] : '';
+            }
+            
+            return recordData;
+          });
+          
+          // 设置表头，添加isImage标志
+          const exportHeaders = [
+            { text: '单位', field: '单位' },
+            { text: '废物类型', field: '废物类型' },
+            { text: '产生工序', field: '产生工序' },
+            { text: '产生地点', field: '产生地点' },
+            { text: '备注', field: '备注' },
+            { text: '收集开始时间', field: '收集开始时间' },
+            { text: '数量(吨)', field: '数量(吨)' },
+            { text: '填报人', field: '填报人' },
+            { text: '记录时间', field: '记录时间' },
+          ];
+          
+          // 添加清理前照片表头
+          for (let i = 0; i < 5; i++) {
+            exportHeaders.push({ text: `清理前照片${i+1}`, field: `清理前照片${i+1}`, isImage: true });
+          }
+          
+          // 添加清理后照片表头
+          for (let i = 0; i < 5; i++) {
+            exportHeaders.push({ text: `清理后照片${i+1}`, field: `清理后照片${i+1}`, isImage: true });
+          }
+          
+          // 获取服务器的基础URL
+          const baseUrl = window.location.origin;
+          
+          // 设置进度回调函数
+          const onProgress = (current, total) => {
+            const percent = Math.round((current / total) * 100);
+            loadingInstance.setText(`正在导出第${batchIndex + 1}/${batchCount}部分：${percent}% (${current}/${total})`);
+          };
+          
+          // 执行带全部图片的导出
+          const result = await exportToExcelWithImages(exportData, fileName, exportHeaders, baseUrl, onProgress);
+          
+          if (result) {
+            successCount++;
+          }
         }
-        
-        // 获取服务器的基础URL
-        const baseUrl = window.location.origin;
-        
-        // 设置进度回调函数
-        const onProgress = (current, total) => {
-          const percent = Math.round((current / total) * 100);
-          loadingInstance.setText(`正在导出全部照片：${percent}% (${current}/${total})`);
-        };
-        
-        // 执行带全部图片的导出
-        const result = await exportToExcelWithImages(exportData, fileName, exportHeaders, baseUrl, onProgress);
         
         // 关闭加载提示
         loadingInstance.close();
         
-        if (result) {
-          ElMessage.success('导出成功');
+        if (successCount === batchCount) {
+          if (batchCount > 1) {
+            ElMessage.success(`成功导出${batchCount}个文件`);
+          } else {
+            ElMessage.success('导出成功');
+          }
+        } else if (successCount > 0) {
+          ElMessage.warning(`部分导出成功，完成了${successCount}/${batchCount}个文件`);
         } else {
           ElMessage.error('导出失败，请重试');
         }
@@ -1029,54 +1105,92 @@ export default {
           loading.value = false;
           return;
         }
-        
-        // 更新加载文本
-        loadingInstance.setText(`准备导出 ${data.length} 条记录...`);
-        
-        // 准备导出数据
-        const exportData = data.map(record => ({
-          '单位': record.unit_name,
-          '废物类型': record.waste_type_name,
-          '产生工序': record.process || '无',
-          '产生地点': record.location,
-          '备注': record.remarks || '无',
-          '收集开始时间': formatDateTime(record.collection_start_time),
-          '数量(吨)': record.quantity,
-          '填报人': record.creator_name || '系统',
-          '记录时间': formatDateTime(record.created_at),
-          '清理前照片': record.photo_path_before ? '有' : '无',
-          '清理后照片': record.photo_path_after ? '有' : '无'
-        }));
-        
-        // 设置文件名
+
+        // 设置文件名基础部分  
         const unitName = filterForm.unitId 
           ? units.value.find(u => u.id === filterForm.unitId)?.name || '未知单位'
           : '全部单位';
-        const fileName = `固体废物记录_${unitName}`;
+        const baseFileName = `固体废物记录_${unitName}`;
         
-        // 设置表头
-        const exportHeaders = [
-          { text: '单位', field: '单位' },
-          { text: '废物类型', field: '废物类型' },
-          { text: '产生地点', field: '产生地点' },
-          { text: '产生工序', field: '产生工序' },
-          { text: '备注', field: '备注' },
-          { text: '收集开始时间', field: '收集开始时间' },
-          { text: '数量(吨)', field: '数量(吨)' },
-          { text: '填报人', field: '填报人' },
-          { text: '记录时间', field: '记录时间' },
-          { text: '清理前照片', field: '清理前照片' },
-          { text: '清理后照片', field: '清理后照片' }
-        ];
+        // 设置导出限制 - 纯文本导出最多1000条每文件
+        const BATCH_SIZE = 1000;
+        const totalRecords = data.length;
+        const batchCount = Math.ceil(totalRecords / BATCH_SIZE);
         
-        // 执行不带图片的导出
-        const result = await exportToExcel(exportData, fileName, exportHeaders);
+        // 更新加载文本
+        if(batchCount > 1) {
+          loadingInstance.setText(`数据较多(${totalRecords}条)，将拆分为${batchCount}个文件导出...`);
+          ElMessage.info(`数据较多(${totalRecords}条)，将拆分为${batchCount}个文件导出`);
+        } else {
+          loadingInstance.setText(`准备导出 ${totalRecords} 条记录...`);
+        }
+
+        let successCount = 0;
+        
+        // 分批处理数据
+        for(let batchIndex = 0; batchIndex < batchCount; batchIndex++) {
+          // 计算当前批次的起始和结束索引
+          const startIndex = batchIndex * BATCH_SIZE;
+          const endIndex = Math.min((batchIndex + 1) * BATCH_SIZE, totalRecords);
+          const batchData = data.slice(startIndex, endIndex);
+          
+          // 为批次设置文件名
+          const fileName = batchCount > 1 
+            ? `${baseFileName}_第${batchIndex + 1}部分(共${batchCount}部分)`
+            : baseFileName;
+          
+          // 更新加载文本
+          loadingInstance.setText(`正在处理第${batchIndex + 1}/${batchCount}批次，${startIndex + 1}-${endIndex}条记录...`);
+        
+          // 准备导出数据
+          const exportData = batchData.map(record => ({
+            '单位': record.unit_name,
+            '废物类型': record.waste_type_name,
+            '产生工序': record.process || '无',
+            '产生地点': record.location,
+            '备注': record.remarks || '无',
+            '收集开始时间': formatDateTime(record.collection_start_time),
+            '数量(吨)': record.quantity,
+            '填报人': record.creator_name || '系统',
+            '记录时间': formatDateTime(record.created_at),
+            '清理前照片': record.photo_path_before ? '有' : '无',
+            '清理后照片': record.photo_path_after ? '有' : '无'
+          }));
+          
+          // 设置表头
+          const exportHeaders = [
+            { text: '单位', field: '单位' },
+            { text: '废物类型', field: '废物类型' },
+            { text: '产生地点', field: '产生地点' },
+            { text: '产生工序', field: '产生工序' },
+            { text: '备注', field: '备注' },
+            { text: '收集开始时间', field: '收集开始时间' },
+            { text: '数量(吨)', field: '数量(吨)' },
+            { text: '填报人', field: '填报人' },
+            { text: '记录时间', field: '记录时间' },
+            { text: '清理前照片', field: '清理前照片' },
+            { text: '清理后照片', field: '清理后照片' }
+          ];
+          
+          // 执行不带图片的导出
+          const result = await exportToExcel(exportData, fileName, exportHeaders);
+          
+          if (result) {
+            successCount++;
+          }
+        }
         
         // 关闭加载提示
         loadingInstance.close();
         
-        if (result) {
-          ElMessage.success('导出成功');
+        if (successCount === batchCount) {
+          if (batchCount > 1) {
+            ElMessage.success(`成功导出${batchCount}个文件`);
+          } else {
+            ElMessage.success('导出成功');
+          }
+        } else if (successCount > 0) {
+          ElMessage.warning(`部分导出成功，完成了${successCount}/${batchCount}个文件`);
         } else {
           ElMessage.error('导出失败，请重试');
         }

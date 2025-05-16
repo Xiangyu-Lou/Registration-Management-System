@@ -1,5 +1,12 @@
 # Registration-Management-System Changelog
 
+## 2025-05-16
+
+### 🐛 Bug修复与调整 (Bug Fixes & Adjustments)
+
+*   **导出含有图片记录时限制单个文件最多导出数量**:
+    *   
+
 ## 2025-04-28
 
 ### ✨ 新功能 (Features)
