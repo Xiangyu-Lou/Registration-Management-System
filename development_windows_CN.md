@@ -29,7 +29,8 @@ cd Registration-Management-System
 ### 1.4 配置环境变量
 
 ```bash
-# 在项目根目录下创建 .env 文件
+# 在项目backend目录下创建 .env 文件
+cd backend
 vim .env
 
 # 输入以下内容
@@ -50,9 +51,9 @@ UPLOAD_DIR=uploads
 ### 2.1 安装依赖
 
 ```bash
-cd ../db/mysql
+cd db/mysql
 npm install
-cd ../../backend
+cd ../backend
 npm install
 ```
 

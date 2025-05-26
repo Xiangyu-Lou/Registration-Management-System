@@ -29,7 +29,8 @@ cd Registration-Management-System
 ### 1.4 Configure environment variables
 
 ```bash
-# Create .env file in the project root directory
+# Create .env file in the backend directory
+cd backend
 vim .env
 
 # Input the following content
@@ -50,9 +51,9 @@ UPLOAD_DIR=uploads
 ### 2.1 Install Dependencies
 
 ```bash
-cd ../db/mysql
+cd db/mysql
 npm install
-cd ../../backend
+cd ../backend
 npm install
 ```
 
