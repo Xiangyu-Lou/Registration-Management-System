@@ -339,6 +339,7 @@ import { ref, onMounted, computed, reactive, onUnmounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox, ElImageViewer, ElLoading } from 'element-plus';
 import axios from 'axios';
+import httpService from '../config/httpService';
 import { Plus, Refresh, User, ArrowDown, ArrowUp, Download, Loading, CircleClose } from '@element-plus/icons-vue';
 import auth from '../store/auth';
 import { exportToExcelWithImages, exportToExcel } from '../utils/exportUtils';
@@ -630,9 +631,9 @@ export default {
           params.dateRange = JSON.stringify(filterForm.dateRange);
         }
         
-        const response = await axios.get(
-          `${apiConfig.getUrl(apiConfig.endpoints.wasteRecords)}/user/${auth.state.user.id}`,
-          { params }
+        const response = await httpService.get(
+          `${apiConfig.endpoints.wasteRecords}/user/${auth.state.user.id}`,
+          params
         );
         
         console.log('服务器返回数据:', {
@@ -762,9 +763,9 @@ export default {
         console.log('导出记录的筛选条件:', queryParams);
         
         // 调用后端API获取完整的记录数据
-        const { data } = await axios.get(
-          `${apiConfig.getUrl(apiConfig.endpoints.exportWasteRecords)}/${auth.state.user.id}`,
-          { params: queryParams }
+        const { data } = await httpService.get(
+          `${apiConfig.endpoints.exportWasteRecords}/${auth.state.user.id}`,
+          queryParams
         );
         
         console.log(`从后端获取到 ${data.length} 条记录用于导出`);
@@ -923,9 +924,9 @@ export default {
         console.log('导出记录的筛选条件:', queryParams);
         
         // 调用后端API获取完整的记录数据
-        const { data } = await axios.get(
-          `${apiConfig.getUrl(apiConfig.endpoints.exportWasteRecords)}/${auth.state.user.id}`,
-          { params: queryParams }
+        const { data } = await httpService.get(
+          `${apiConfig.endpoints.exportWasteRecords}/${auth.state.user.id}`,
+          queryParams
         );
         
         console.log(`从后端获取到 ${data.length} 条记录用于导出`);
@@ -1094,9 +1095,9 @@ export default {
         };
         
         // 调用后端API获取完整的记录数据
-        const { data } = await axios.get(
-          `${apiConfig.getUrl(apiConfig.endpoints.exportWasteRecords)}/${auth.state.user.id}`,
-          { params: queryParams }
+        const { data } = await httpService.get(
+          `${apiConfig.endpoints.exportWasteRecords}/${auth.state.user.id}`,
+          queryParams
         );
         
         if (data.length === 0) {
@@ -1217,7 +1218,7 @@ export default {
       )
         .then(async () => {
           try {
-            await axios.delete(`${apiConfig.getUrl(apiConfig.endpoints.wasteRecords)}/${record.id}`);
+            await httpService.delete(`${apiConfig.getUrl(apiConfig.endpoints.wasteRecords)}/${record.id}`);
             ElMessage.success('删除成功');
             await fetchRecords();
           } catch (error) {

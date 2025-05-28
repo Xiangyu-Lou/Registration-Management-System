@@ -264,6 +264,12 @@ export default {
     const customProcess = ref('');
     const processOptions = ['作业现场', '清罐清理', '报废清理', '管线刺漏', '历史遗留', '日常维护', '封井退出', '其他'];
     
+    // 添加跟踪被删除照片的变量
+    const deletedPhotosBefore = ref([]);
+    const deletedPhotosAfter = ref([]);
+    const originalPhotosBefore = ref([]);
+    const originalPhotosAfter = ref([]);
+    
     // 各管理区对应的四级单位列表
     const locationMap = {
       '桓台': ['金家接转站', '金17-1注采站', '金17-2注采站', '金6金9项目组', '金8注采站', '其他'],
@@ -531,6 +537,9 @@ export default {
           const photoPaths = parsePhotoPath(recordData.photo_path_before);
           console.log('解析后的收集前照片路径:', photoPaths);
           
+          // 保存原始照片路径用于删除跟踪
+          originalPhotosBefore.value = [...photoPaths];
+          
           fileListBefore.value = photoPaths.map(path => {
             // 构建完整URL
             let fullUrl = path;
@@ -544,7 +553,8 @@ export default {
             
             return {
               name: path.split('/').pop(),
-              url: fullUrl
+              url: fullUrl,
+              originalPath: path // 保存原始路径
             };
           });
         }
@@ -553,6 +563,9 @@ export default {
           console.log('收集后照片路径:', recordData.photo_path_after);
           const photoPaths = parsePhotoPath(recordData.photo_path_after);
           console.log('解析后的收集后照片路径:', photoPaths);
+          
+          // 保存原始照片路径用于删除跟踪
+          originalPhotosAfter.value = [...photoPaths];
           
           fileListAfter.value = photoPaths.map(path => {
             // 构建完整URL
@@ -567,7 +580,8 @@ export default {
             
             return {
               name: path.split('/').pop(),
-              url: fullUrl
+              url: fullUrl,
+              originalPath: path // 保存原始路径
             };
           });
         }
@@ -834,6 +848,12 @@ export default {
     const handlePhotoBeforeRemove = (file, fileList) => {
       console.log('收集前照片移除:', file);
       
+      // 如果删除的是原有照片（有originalPath），记录到删除列表中
+      if (file.originalPath) {
+        console.log('记录要删除的收集前照片:', file.originalPath);
+        deletedPhotosBefore.value.push(file.originalPath);
+      }
+      
       // 更新fileListBefore
       fileListBefore.value = fileList;
       
@@ -998,6 +1018,12 @@ export default {
     const handlePhotoAfterRemove = (file, fileList) => {
       console.log('收集后照片移除:', file);
       
+      // 如果删除的是原有照片（有originalPath），记录到删除列表中
+      if (file.originalPath) {
+        console.log('记录要删除的收集后照片:', file.originalPath);
+        deletedPhotosAfter.value.push(file.originalPath);
+      }
+      
       // 更新fileListAfter
       fileListAfter.value = fileList;
       
@@ -1143,67 +1169,42 @@ export default {
             
             formData.append('remarks', form.remarks || '');
             
-            // 处理照片 - 根据后端逻辑，如果有新上传的照片，后端会删除所有旧照片
-            // 因此，我们需要合并现有照片和新上传的照片
+            // 如果是编辑模式，发送要删除的照片列表
+            if (!isNew.value) {
+              if (deletedPhotosBefore.value.length > 0) {
+                console.log('发送要删除的收集前照片列表:', deletedPhotosBefore.value);
+                formData.append('photos_to_remove_before', JSON.stringify(deletedPhotosBefore.value));
+              }
+              
+              if (deletedPhotosAfter.value.length > 0) {
+                console.log('发送要删除的收集后照片列表:', deletedPhotosAfter.value);
+                formData.append('photos_to_remove_after', JSON.stringify(deletedPhotosAfter.value));
+              }
+            }
+            
+            // 处理照片 - 使用新的删除跟踪逻辑
             
             // 处理收集前照片
             if (fileListBefore.value.length > 0) {
               const newFiles = fileListBefore.value.filter(file => file.raw);
-              const existingFiles = fileListBefore.value.filter(file => !file.raw);
+              const existingFiles = fileListBefore.value.filter(file => !file.raw && file.originalPath);
               
-              // 如果有新上传的照片，我们需要将现有照片的URL转换为File对象
-              if (newFiles.length > 0) {
-                console.log('有新上传的收集前照片，需要合并现有照片');
-                
-                // 将新照片添加到formData
-                newFiles.forEach(file => {
-                  if (file.raw) {
-                    console.log('添加新的收集前照片:', file.raw.name);
-                    formData.append('photo_before', file.raw);
-                  }
-                });
-                
-                // 如果有现有照片，我们需要将它们的路径保存到photo_path_before字段
-                if (existingFiles.length > 0) {
-                  const existingPaths = existingFiles.map(file => {
-                    // 确保URL是相对路径
-                    let path = file.url;
-                    const origin = window.location.origin;
-                    if (path.startsWith(origin)) {
-                      path = path.substring(origin.length);
-                      // 确保路径以/开头
-                      if (!path.startsWith('/')) {
-                        path = '/' + path;
-                      }
-                    }
-                    return path;
-                  });
-                  
-                  console.log('保存现有收集前照片路径:', existingPaths);
-                  formData.append('photo_path_before', JSON.stringify(existingPaths));
+              // 添加新上传的照片
+              newFiles.forEach(file => {
+                if (file.raw) {
+                  console.log('添加新的收集前照片:', file.raw.name);
+                  formData.append('photo_before', file.raw);
                 }
-              } else if (existingFiles.length > 0) {
-                // 如果没有新上传的照片，只有现有照片，我们需要将它们的路径保存到photo_path_before字段
-                const existingPaths = existingFiles.map(file => {
-                  // 确保URL是相对路径
-                  let path = file.url;
-                  const origin = window.location.origin;
-                  if (path.startsWith(origin)) {
-                    path = path.substring(origin.length);
-                    // 确保路径以/开头
-                    if (!path.startsWith('/')) {
-                      path = '/' + path;
-                    }
-                  }
-                  return path;
-                });
-                
-                console.log('保存现有收集前照片路径(无新照片):', existingPaths);
+              });
+              
+              // 如果有保留的现有照片，添加它们的路径
+              if (existingFiles.length > 0) {
+                const existingPaths = existingFiles.map(file => file.originalPath);
+                console.log('保留的收集前照片路径:', existingPaths);
                 formData.append('photo_path_before', JSON.stringify(existingPaths));
               }
-            } else if (!isNew.value && record.value && record.value.photo_path_before) {
-              // 如果是编辑现有记录，且原记录有照片，但现在照片列表为空，表示用户删除了所有照片
-              // 发送一个特殊标记，告诉后端将字段设为null
+            } else if (!isNew.value && originalPhotosBefore.value.length > 0) {
+              // 如果原本有照片但现在列表为空，表示用户删除了所有照片
               console.log('用户删除了所有收集前照片，发送NULL标记');
               formData.append('photo_path_before', 'NULL');
             }
@@ -1211,61 +1212,24 @@ export default {
             // 处理收集后照片
             if (fileListAfter.value.length > 0) {
               const newFiles = fileListAfter.value.filter(file => file.raw);
-              const existingFiles = fileListAfter.value.filter(file => !file.raw);
+              const existingFiles = fileListAfter.value.filter(file => !file.raw && file.originalPath);
               
-              // 如果有新上传的照片，我们需要将现有照片的URL转换为File对象
-              if (newFiles.length > 0) {
-                console.log('有新上传的收集后照片，需要合并现有照片');
-                
-                // 将新照片添加到formData
-                newFiles.forEach(file => {
-                  if (file.raw) {
-                    console.log('添加新的收集后照片:', file.raw.name);
-                    formData.append('photo_after', file.raw);
-                  }
-                });
-                
-                // 如果有现有照片，我们需要将它们的路径保存到photo_path_after字段
-                if (existingFiles.length > 0) {
-                  const existingPaths = existingFiles.map(file => {
-                    // 确保URL是相对路径
-                    let path = file.url;
-                    const origin = window.location.origin;
-                    if (path.startsWith(origin)) {
-                      path = path.substring(origin.length);
-                      // 确保路径以/开头
-                      if (!path.startsWith('/')) {
-                        path = '/' + path;
-                      }
-                    }
-                    return path;
-                  });
-                  
-                  console.log('保存现有收集后照片路径:', existingPaths);
-                  formData.append('photo_path_after', JSON.stringify(existingPaths));
+              // 添加新上传的照片
+              newFiles.forEach(file => {
+                if (file.raw) {
+                  console.log('添加新的收集后照片:', file.raw.name);
+                  formData.append('photo_after', file.raw);
                 }
-              } else if (existingFiles.length > 0) {
-                // 如果没有新上传的照片，只有现有照片，我们需要将它们的路径保存到photo_path_after字段
-                const existingPaths = existingFiles.map(file => {
-                  // 确保URL是相对路径
-                  let path = file.url;
-                  const origin = window.location.origin;
-                  if (path.startsWith(origin)) {
-                    path = path.substring(origin.length);
-                    // 确保路径以/开头
-                    if (!path.startsWith('/')) {
-                      path = '/' + path;
-                    }
-                  }
-                  return path;
-                });
-                
-                console.log('保存现有收集后照片路径(无新照片):', existingPaths);
+              });
+              
+              // 如果有保留的现有照片，添加它们的路径
+              if (existingFiles.length > 0) {
+                const existingPaths = existingFiles.map(file => file.originalPath);
+                console.log('保留的收集后照片路径:', existingPaths);
                 formData.append('photo_path_after', JSON.stringify(existingPaths));
               }
-            } else if (!isNew.value && record.value && record.value.photo_path_after) {
-              // 如果是编辑现有记录，且原记录有照片，但现在照片列表为空，表示用户删除了所有照片
-              // 发送一个特殊标记，告诉后端将字段设为null
+            } else if (!isNew.value && originalPhotosAfter.value.length > 0) {
+              // 如果原本有照片但现在列表为空，表示用户删除了所有照片
               console.log('用户删除了所有收集后照片，发送NULL标记');
               formData.append('photo_path_after', 'NULL');
             }
@@ -1382,7 +1346,11 @@ export default {
       locationMap,
       customLocation,
       customProcess,
-      processOptions
+      processOptions,
+      deletedPhotosBefore,
+      deletedPhotosAfter,
+      originalPhotosBefore,
+      originalPhotosAfter
     };
   }
 };
