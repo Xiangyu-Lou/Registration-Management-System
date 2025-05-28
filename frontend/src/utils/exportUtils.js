@@ -1,6 +1,7 @@
 // 用于导出数据到CSV和Excel的工具函数
 import * as XLSX from 'xlsx';
 import ExcelJS from 'exceljs';
+import { parsePhotoPath, generateTimestampedFileName, sanitizeFileName } from './commonUtils';
 // import { saveAs } from 'file-saver';
 
 // 检查XLSX库是否正确加载
@@ -49,36 +50,6 @@ const fetchImageAsBuffer = async (imageUrl, baseUrl = window.location.origin) =>
 };
 
 /**
- * 解析照片路径，支持JSON字符串和数组
- * @param {String|Array} path - 照片路径字符串或数组
- * @returns {Array} 解析后的照片路径数组
- */
-const parsePhotoPath = (path) => {
-  if (!path) {
-    return [];
-  }
-  
-  // 如果已经是数组，直接返回
-  if (Array.isArray(path)) {
-    return path;
-  }
-  
-  try {
-    // 尝试解析JSON字符串
-    if (typeof path === 'string' && path.startsWith('[') && path.endsWith(']')) {
-      const parsed = JSON.parse(path);
-      return Array.isArray(parsed) ? parsed : [path];
-    }
-    
-    // 非JSON格式，作为单个路径返回
-    return [path];
-  } catch (error) {
-    console.error('解析照片路径失败:', error);
-    return [path];
-  }
-};
-
-/**
  * 导出数据到Excel（支持图片），使用ExcelJS库
  * @param {Array} data - 要导出的数据数组
  * @param {String} fileName - 导出的文件名（不含扩展名）
@@ -97,9 +68,8 @@ export const exportToExcelWithImages = async (data, fileName, headers, baseUrl =
 
   try {
     // 处理文件名
-    fileName = fileName.replace(/[\\/:*?"<>|]/g, '_');
-    const timestamp = new Date().toISOString().replace(/[-:.]/g, '').substring(0, 14);
-    const fullFileName = `${fileName}_${timestamp}.xlsx`;
+    const cleanFileName = sanitizeFileName(fileName);
+    const fullFileName = generateTimestampedFileName(cleanFileName, 'xlsx');
     
     // 创建新工作簿
     const workbook = new ExcelJS.Workbook();
@@ -244,9 +214,8 @@ export const exportToExcel = async (data, fileName, headers) => {
   }
 
   // 处理文件名
-  fileName = fileName.replace(/[\\/:*?"<>|]/g, '_');
-  const timestamp = new Date().toISOString().replace(/[-:.]/g, '').substring(0, 14);
-  const fullFileName = `${fileName}_${timestamp}.xlsx`;
+  const cleanFileName = sanitizeFileName(fileName);
+  const fullFileName = generateTimestampedFileName(cleanFileName, 'xlsx');
   
   console.log('导出函数被调用，数据条数:', data.length);
   
@@ -325,8 +294,8 @@ export const exportToExcel = async (data, fileName, headers) => {
  */
 export const exportToCSV = (data, fileName, headers) => {
   // 处理文件名
-  const timestamp = new Date().toISOString().replace(/[-:.]/g, '').substring(0, 14);
-  const csvFileName = `${fileName}_${timestamp}.csv`;
+  const cleanFileName = sanitizeFileName(fileName);
+  const csvFileName = generateTimestampedFileName(cleanFileName, 'csv');
   
   // 准备CSV内容
   let csvContent = '\uFEFF'; // 添加BOM以支持中文
