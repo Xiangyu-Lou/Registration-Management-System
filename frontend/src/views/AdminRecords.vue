@@ -168,13 +168,13 @@
             <h3 class="table-title">所有废物记录</h3>
             <div class="card-actions">
               <el-button type="warning" @click="exportWithoutImages" :loading="loading">
-                <el-icon><download /></el-icon> 无照片
+                <el-icon><download /></el-icon> 无照片(推荐)
               </el-button>
               <el-button type="warning" @click="exportWithImages" :loading="loading">
-                <el-icon><download /></el-icon> 包含首张照片
+                <el-icon><download /></el-icon> 包含首张照片(推荐)
               </el-button>
               <el-button type="warning" @click="exportWithAllImages" :loading="loading">
-                <el-icon><download /></el-icon> 包含全部照片
+                <el-icon><download /></el-icon> 包含全部照片(不推荐)
               </el-button>
             </div>
           </div>
@@ -945,7 +945,7 @@ export default {
         const baseFileName = `固体废物记录_全部照片_${unitName}`;
 
         // 设置导出限制 - 带全部图片导出最多100条每文件
-        const BATCH_SIZE = 100;
+        const BATCH_SIZE = 50;
         const totalRecords = data.length;
         const batchCount = Math.ceil(totalRecords / BATCH_SIZE);
         

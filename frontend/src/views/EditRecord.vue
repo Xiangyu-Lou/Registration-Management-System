@@ -1251,21 +1251,52 @@ export default {
                 formData,
                 handleUploadProgress
               );
-              ElMessage.success('废物记录更新成功');
+              ElMessage.success('废物记录更新成功！正在跳转到记录列表...');
             } else {
               await httpService.postForm(
                 apiConfig.endpoints.wasteRecords, 
                 formData,
                 handleUploadProgress
               );
-              ElMessage.success('废物记录添加成功');
+              ElMessage.success('废物记录添加成功！正在跳转到记录列表...');
             }
             
             // 关闭上传进度对话框
             showUploadProgress.value = false;
             
-            // 返回列表页
+            // 延迟跳转，让用户看到成功消息
+            setTimeout(() => {
+              // 根据用户角色跳转到相应的记录查看页面
+              if (auth.state.isLoggedIn && auth.state.user) {
+                const userRole = auth.state.user.role_id;
+                
+                if (userRole === 3 || userRole === 4) {
+                  // 超级管理员 - 跳转到管理员记录页面
+                  router.push('/admin-records');
+                } else if (userRole === 2) {
+                  // 单位管理员 - 跳转到单位记录列表
+                  router.push({ 
+                    name: 'RecordsList', 
+                    params: { unitId: auth.state.user.unit_id } 
+                  });
+                } else if (userRole === 1) {
+                  // 普通员工 - 跳转到个人记录列表
+                  router.push({ 
+                    name: 'RecordsList', 
+                    params: { unitId: auth.state.user.unit_id } 
+                  });
+                } else {
+                  // 其他角色，默认跳转到记录列表
+                  router.push({ 
+                    name: 'RecordsList', 
+                    params: { unitId: auth.state.user.unit_id } 
+                  });
+                }
+              } else {
+                // 未登录用户，使用原有的goBack逻辑
             goBack();
+              }
+            }, 1500); // 1.5秒后跳转
           } catch (error) {
             console.error('提交表单失败:', error);
             if (error.response && error.response.data) {

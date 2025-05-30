@@ -281,7 +281,7 @@ export default {
           response = await httpService.get(apiConfig.endpoints.users);
         } else {
           // 单位管理员只获取本单位员工
-          response = await httpService.get(`${apiConfig.endpoints.units}/${currentUnitId.value}/users`);
+          response = await httpService.get(`${apiConfig.endpoints.usersByUnit}/${currentUnitId.value}`);
         }
         users.value = response.data;
         allUsers.value = response.data; // 保存完整的用户列表副本

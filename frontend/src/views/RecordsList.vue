@@ -150,13 +150,13 @@
             <h3 class="table-title">废物记录列表</h3>
             <div class="card-actions">
               <el-button type="warning" @click="exportWithoutImages" :loading="loading">
-                <el-icon><download /></el-icon> 无照片
+                <el-icon><download /></el-icon> 无照片(推荐)
               </el-button>
               <el-button type="warning" @click="exportWithImages" :loading="loading">
-                <el-icon><download /></el-icon> 包含首张照片
+                <el-icon><download /></el-icon> 包含首张照片(推荐)
               </el-button>
               <el-button type="warning" @click="exportWithAllImages" :loading="loading">
-                <el-icon><download /></el-icon> 包含全部照片
+                <el-icon><download /></el-icon> 包含全部照片(不推荐)
               </el-button>
             </div>
           </div>
@@ -315,9 +315,9 @@
             </template>
           </el-table>
           
-          <div class="empty-block" v-if="records.length === 0 && !loading">
+          <!-- <div class="empty-block" v-if="records.length === 0 && !loading">
             <el-empty description="暂无废物记录" />
-          </div>
+          </div> -->
           
           <!-- 添加员工权限提示 -->
           <div class="record-limit-tip" v-if="!isAdmin && !isUnitAdmin">

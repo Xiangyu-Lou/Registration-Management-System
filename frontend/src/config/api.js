@@ -12,6 +12,7 @@ export default {
   endpoints: {
     login: '/api/login',
     users: '/api/users',
+    usersByUnit: '/api/users/unit', // 获取指定单位的用户
     userStatus: '/api/users/:id/status',  // 用户状态变更API
     userProfile: '/api/users/:id/profile', // 用户个人资料更新API
     units: '/api/units',

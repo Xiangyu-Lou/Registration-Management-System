@@ -934,8 +934,36 @@ export default {
             
             console.log('提交响应:', response.data);
 
-            ElMessage.success('废物记录提交成功');
+            // 显示成功消息
+            ElMessage.success('废物记录提交成功！正在跳转到记录列表...');
+            
+            // 重置表单
             resetForm();
+            
+            // 延迟跳转，让用户看到成功消息
+            setTimeout(() => {
+              // 根据用户角色跳转到相应的记录查看页面
+              if (auth.state.isLoggedIn && auth.state.user) {
+                const userRole = auth.state.user.role_id;
+                
+                if (userRole === 3 || userRole === 4) {
+                  // 超级管理员 - 跳转到管理员记录页面
+                  router.push('/admin-records');
+                } else if (userRole === 2) {
+                  // 单位管理员 - 跳转到单位记录列表
+                  router.push({ name: 'RecordsList', params: { unitId: props.id } });
+                } else if (userRole === 1) {
+                  // 普通员工 - 跳转到个人记录列表
+                  router.push({ name: 'RecordsList', params: { unitId: props.id } });
+                } else {
+                  // 其他角色，默认跳转到记录列表
+                  router.push({ name: 'RecordsList', params: { unitId: props.id } });
+                }
+              } else {
+                // 未登录用户，跳转到记录列表
+                router.push({ name: 'RecordsList', params: { unitId: props.id } });
+              }
+            }, 1500); // 1.5秒后跳转
           } catch (error) {
             console.error('Error submitting form:', error);
             if (error.response) {
