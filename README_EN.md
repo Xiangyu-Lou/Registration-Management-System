@@ -31,6 +31,17 @@ A modern solid waste management system built with Vue 3 + Node.js + MySQL, featu
   - Real-time filtering and search
   - Data statistics and analysis
 
+### 📊 Operation Log System
+- **Comprehensive Audit Tracking**
+  - Records all user operations: login, waste record management, user management, etc.
+  - Detailed operation descriptions with before/after data comparisons
+- **Security Monitoring**
+  - Records operation time, IP address, user agent and other security information
+  - Supports distinction between supervision data and regular data
+- **Management Features**
+  - Provides operation log viewing functionality for administrators
+  - Facilitates troubleshooting and system auditing
+
 ## 🏗️ Project Architecture
 
 ### Overall Architecture

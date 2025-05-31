@@ -2,6 +2,8 @@ const WasteRecord = require('../models/WasteRecord');
 const User = require('../models/User');
 const { verifyToken } = require('../utils/auth');
 const { processUploadedFiles, deletePhotoFiles, mergePhotoFiles, removeSpecificPhotoFiles } = require('../utils/fileUtils');
+const { logWasteRecordOperation } = require('../utils/logger');
+const { parseCollectionTime } = require('../utils/dateUtils');
 const path = require('path');
 
 // 创建废物记录
@@ -28,8 +30,8 @@ const createWasteRecord = async (req, res, next) => {
       return res.status(400).json({ error: '废物类型不存在' });
     }
     
-    // 格式化收集时间
-    const collectionStartTime = collectionDate && collectionTime ? `${collectionDate} ${collectionTime}` : null;
+    // 使用工具函数格式化收集时间，确保时区一致性
+    const collectionStartTime = parseCollectionTime(collectionDate, collectionTime);
     
     // 处理上传的照片
     const photoPathBefore = processUploadedFiles(req.files.photo_before);
@@ -61,6 +63,39 @@ const createWasteRecord = async (req, res, next) => {
       process,
       isSupervised: isSupervisedValue
     });
+    
+    // 获取创建后的完整记录信息用于日志
+    const createdRecord = await WasteRecord.findById(recordId);
+    
+    // 记录操作日志
+    const quantityText = quantityValue !== null ? `${quantityValue}吨` : '未填写';
+    const collectionTimeText = collectionStartTime || '未填写';
+    const remarksText = remarks || '无';
+    const photoBeforeCount = req.files.photo_before ? req.files.photo_before.length : 0;
+    const photoAfterCount = req.files.photo_after ? req.files.photo_after.length : 0;
+    const supervisionText = isSupervisedValue ? ' [监督数据]' : '';
+    
+    await logWasteRecordOperation(
+      req, 
+      'create', 
+      recordId, 
+      userId, 
+      `创建废物记录${supervisionText} - 单位: ${createdRecord.unit_name}, 废物类型: ${createdRecord.waste_type_name}, 位置: ${location}, 工序: ${process}, 数量: ${quantityText}, 收集时间: ${collectionTimeText}, 收集前照片: ${photoBeforeCount}张, 收集后照片: ${photoAfterCount}张, 备注: ${remarksText}`,
+      {
+        unitId,
+        unitName: createdRecord.unit_name,
+        wasteTypeId,
+        wasteTypeName: createdRecord.waste_type_name,
+        location,
+        quantity: quantityValue,
+        process,
+        collectionTime: collectionStartTime,
+        remarks,
+        photoBeforeCount,
+        photoAfterCount,
+        isSupervised: isSupervisedValue
+      }
+    );
     
     res.status(201).json({
       message: '废物记录添加成功',
@@ -183,6 +218,22 @@ const updateWasteRecord = async (req, res, next) => {
       return res.status(404).json({ error: '记录不存在' });
     }
     
+    // 获取当前用户ID
+    const userId = req.user ? req.user.id : null;
+    
+    // 记录更新前的数据用于日志
+    const beforeData = {
+      location: record.location,
+      quantity: record.quantity,
+      process: record.process,
+      unitId: record.unit_id,
+      unitName: record.unit_name,
+      wasteTypeId: record.waste_type_id,
+      wasteTypeName: record.waste_type_name,
+      remarks: record.remarks,
+      collectionTime: record.collection_start_time
+    };
+    
     // 处理quantity字段
     const quantityValue = quantity === undefined || quantity === 'undefined' || quantity === '' ? null : quantity;
     
@@ -244,8 +295,8 @@ const updateWasteRecord = async (req, res, next) => {
       newPhotoPathAfter = photo_path_after;
     }
     
-    // 格式化收集时间
-    const collectionStartTime = collectionDate && collectionTime ? `${collectionDate} ${collectionTime}` : null;
+    // 使用工具函数格式化收集时间，确保时区一致性
+    const collectionStartTime = parseCollectionTime(collectionDate, collectionTime);
     
     // 更新记录
     await WasteRecord.update(id, {
@@ -259,6 +310,78 @@ const updateWasteRecord = async (req, res, next) => {
       remarks,
       process
     });
+    
+    // 获取更新后的完整记录信息
+    const updatedRecord = await WasteRecord.findById(id);
+    
+    // 记录更新后的数据用于日志
+    const afterData = {
+      location,
+      quantity: quantityValue,
+      process,
+      unitId,
+      unitName: updatedRecord.unit_name,
+      wasteTypeId,
+      wasteTypeName: updatedRecord.waste_type_name,
+      remarks,
+      collectionTime: collectionStartTime
+    };
+    
+    // 构建详细的变更描述
+    let changeDetails = [];
+    if (beforeData.unitName !== afterData.unitName) {
+      changeDetails.push(`单位: ${beforeData.unitName} → ${afterData.unitName}`);
+    }
+    if (beforeData.wasteTypeName !== afterData.wasteTypeName) {
+      changeDetails.push(`废物类型: ${beforeData.wasteTypeName} → ${afterData.wasteTypeName}`);
+    }
+    if (beforeData.location !== afterData.location) {
+      changeDetails.push(`位置: ${beforeData.location} → ${afterData.location}`);
+    }
+    if (beforeData.process !== afterData.process) {
+      changeDetails.push(`工序: ${beforeData.process} → ${afterData.process}`);
+    }
+    if (beforeData.quantity !== afterData.quantity) {
+      const beforeQty = beforeData.quantity !== null ? `${beforeData.quantity}吨` : '未填写';
+      const afterQty = afterData.quantity !== null ? `${afterData.quantity}吨` : '未填写';
+      changeDetails.push(`数量: ${beforeQty} → ${afterQty}`);
+    }
+    if (beforeData.collectionTime !== afterData.collectionTime) {
+      const beforeTime = beforeData.collectionTime || '未填写';
+      const afterTime = afterData.collectionTime || '未填写';
+      changeDetails.push(`收集时间: ${beforeTime} → ${afterTime}`);
+    }
+    if ((beforeData.remarks || '') !== (afterData.remarks || '')) {
+      const beforeRemarks = beforeData.remarks || '无';
+      const afterRemarks = afterData.remarks || '无';
+      changeDetails.push(`备注: ${beforeRemarks} → ${afterRemarks}`);
+    }
+    
+    const hasPhotoChanges = (photos_to_remove_before || photos_to_remove_after || 
+                            (req.files.photo_before && req.files.photo_before.length > 0) ||
+                            (req.files.photo_after && req.files.photo_after.length > 0));
+    
+    if (hasPhotoChanges) {
+      changeDetails.push('照片发生变更');
+    }
+    
+    const changeText = changeDetails.length > 0 ? `, 变更内容: ${changeDetails.join('; ')}` : '';
+    
+    // 记录操作日志
+    await logWasteRecordOperation(
+      req, 
+      'update', 
+      parseInt(id), 
+      userId, 
+      `更新废物记录 - 记录ID: ${id}, 当前单位: ${afterData.unitName}, 废物类型: ${afterData.wasteTypeName}, 位置: ${afterData.location}, 工序: ${afterData.process}${changeText}`,
+      {
+        recordId: parseInt(id),
+        beforeData,
+        afterData,
+        changes: changeDetails,
+        hasPhotoChanges
+      }
+    );
     
     res.json({
       message: '废物记录更新成功',
@@ -280,6 +403,22 @@ const deleteWasteRecord = async (req, res, next) => {
       return res.status(404).json({ error: '记录不存在' });
     }
     
+    // 获取当前用户ID
+    const userId = req.user ? req.user.id : null;
+    
+    // 记录删除的数据用于日志
+    const deletedData = {
+      location: record.location,
+      quantity: record.quantity,
+      process: record.process,
+      unitName: record.unit_name,
+      wasteTypeName: record.waste_type_name,
+      createdAt: record.created_at,
+      remarks: record.remarks,
+      collectionTime: record.collection_start_time,
+      creatorName: record.creator_name
+    };
+    
     // 删除照片文件
     if (record.photo_path_before) {
       deletePhotoFiles(record.photo_path_before, path.join(__dirname, '../..'));
@@ -291,6 +430,24 @@ const deleteWasteRecord = async (req, res, next) => {
     
     // 删除记录
     await WasteRecord.delete(id);
+    
+    // 构建详细的删除描述
+    const quantityText = deletedData.quantity !== null ? `${deletedData.quantity}吨` : '未填写';
+    const collectionTimeText = deletedData.collectionTime || '未填写';
+    const remarksText = deletedData.remarks || '无';
+    const creatorText = deletedData.creatorName || '未知';
+    const createdAtText = new Date(deletedData.createdAt).toLocaleString('zh-CN');
+    const supervisionText = record.is_supervised ? ' [监督数据]' : '';
+    
+    // 记录操作日志
+    await logWasteRecordOperation(
+      req, 
+      'delete', 
+      parseInt(id), 
+      userId, 
+      `删除废物记录${supervisionText} - 记录ID: ${id}, 单位: ${deletedData.unitName}, 废物类型: ${deletedData.wasteTypeName}, 位置: ${deletedData.location}, 工序: ${deletedData.process}, 数量: ${quantityText}, 收集时间: ${collectionTimeText}, 备注: ${remarksText}, 创建时间: ${createdAtText}, 创建者: ${creatorText}`,
+      deletedData
+    );
     
     res.json({
       message: '废物记录删除成功',

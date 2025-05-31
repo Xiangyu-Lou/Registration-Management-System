@@ -19,14 +19,30 @@ class Unit {
     return rows[0] || null;
   }
 
+  // 检查单位名称是否已存在
+  static async nameExists(name, excludeId = null) {
+    let query = 'SELECT id FROM units WHERE name = ?';
+    let params = [name];
+    
+    if (excludeId) {
+      query += ' AND id != ?';
+      params.push(excludeId);
+    }
+    
+    const [rows] = await pool.query(query, params);
+    return rows.length > 0;
+  }
+
   // 创建单位
-  static async create(name) {
+  static async create(unitData) {
+    const { name } = unitData;
     const [result] = await pool.query('INSERT INTO units (name) VALUES (?)', [name]);
     return result.insertId;
   }
 
   // 更新单位
-  static async update(id, name) {
+  static async update(id, unitData) {
+    const { name } = unitData;
     await pool.query('UPDATE units SET name = ? WHERE id = ?', [name, id]);
     return true;
   }

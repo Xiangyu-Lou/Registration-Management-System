@@ -520,9 +520,30 @@ export default {
         
         // 处理收集时间
         if (recordData.collection_start_time) {
-          const dateTime = new Date(recordData.collection_start_time);
-          form.collectionDate = dateTime.toISOString().slice(0, 10);
-          form.collectionTime = dateTime.toTimeString().slice(0, 5);
+          // 修复时区问题：直接按照字符串格式处理，避免时区转换
+          const timeString = recordData.collection_start_time;
+          console.log('原始时间字符串:', timeString);
+          
+          // 如果是 YYYY-MM-DD HH:mm:ss 格式
+          if (timeString.includes(' ')) {
+            const [datePart, timePart] = timeString.split(' ');
+            form.collectionDate = datePart;
+            form.collectionTime = timePart.substring(0, 5); // 只取HH:mm部分
+            console.log('解析后日期:', datePart, '时间:', timePart.substring(0, 5));
+          } else {
+            // 如果只是日期格式，或者其他格式，尝试用原来的方法但修正时区
+            const dateTime = new Date(timeString + (timeString.includes('T') ? '' : 'T00:00:00'));
+            // 使用本地时区的方法，避免UTC转换
+            const year = dateTime.getFullYear();
+            const month = String(dateTime.getMonth() + 1).padStart(2, '0');
+            const day = String(dateTime.getDate()).padStart(2, '0');
+            const hours = String(dateTime.getHours()).padStart(2, '0');
+            const minutes = String(dateTime.getMinutes()).padStart(2, '0');
+            
+            form.collectionDate = `${year}-${month}-${day}`;
+            form.collectionTime = `${hours}:${minutes}`;
+            console.log('解析后日期:', form.collectionDate, '时间:', form.collectionTime);
+          }
         }
         
         form.quantity = recordData.quantity;

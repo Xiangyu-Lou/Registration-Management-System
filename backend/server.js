@@ -12,6 +12,7 @@ const userRoutes = require('./routes/users');
 const unitRoutes = require('./routes/units');
 const wasteTypeRoutes = require('./routes/wasteTypes');
 const wasteRecordRoutes = require('./routes/wasteRecords');
+const operationLogRoutes = require('./routes/operationLogs');
 
 // 创建Express应用
 const app = express();
@@ -38,6 +39,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/units', unitRoutes);
 app.use('/api/waste-types', wasteTypeRoutes);
 app.use('/api/waste-records', wasteRecordRoutes);
+app.use('/api/operation-logs', operationLogRoutes);
 
 // 处理所有前端路由请求，返回index.html
 app.get('*', (req, res) => {

@@ -10,7 +10,9 @@ const dbConfig = {
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
-  multipleStatements: true
+  multipleStatements: true,
+  timezone: '+08:00', // 设置为中国时区，避免时区转换问题
+  dateStrings: true  // 将日期作为字符串返回，避免自动时区转换
 };
 
 // 创建数据库连接池

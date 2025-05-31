@@ -131,6 +131,27 @@ async function initializeDatabase() {
     `);
     console.log('waste_records表已创建');
     
+    // 创建操作日志表
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS operation_logs (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        user_id INT,
+        operation_type ENUM('login', 'create', 'update', 'delete') NOT NULL,
+        target_type VARCHAR(50),
+        target_id INT,
+        description TEXT NOT NULL,
+        ip_address VARCHAR(45),
+        user_agent TEXT,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        additional_data JSON,
+        INDEX idx_user_id (user_id),
+        INDEX idx_operation_type (operation_type),
+        INDEX idx_created_at (created_at),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+      )
+    `);
+    console.log('operation_logs表已创建');
+    
     // 插入用户角色（检查是否已存在）
     const [roleRows] = await connection.execute('SELECT COUNT(*) as count FROM user_roles');
     if (roleRows[0].count === 0) {

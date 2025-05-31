@@ -22,6 +22,10 @@ export default {
     wasteRecordDetail: '/api/waste-records/detail',
     wasteRecordsByUser: '/api/waste-records/user',
     exportWasteRecords: '/api/waste-records/export/user',
+    operationLogs: '/api/operation-logs',
+    operationLogStatistics: '/api/operation-logs/statistics',
+    operationLogsByUser: '/api/operation-logs/user',
+    cleanOperationLogs: '/api/operation-logs/clean',
   },
   
   // 获取完整 API URL
