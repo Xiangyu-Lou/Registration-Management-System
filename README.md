@@ -2,7 +2,7 @@
 
 一个基于 Vue 3 + Node.js + MySQL 的固体废物管理系统，采用现代化的MVC架构设计。
 
-[English](README_EN.md) | [部署指南](DEPLOYMENT.md) | [更新日志](CHANGELOG.md)
+[English](README_EN.md) | [Changelog](Changelog.md)
 
 ## 🎯 项目特色
 
@@ -42,6 +42,13 @@
 - **数据库**: MySQL 8.0+
 - **认证**: JWT
 - **文件上传**: Multer
+
+## 📖 部署指南
+
+| 环境 | 指南链接 |
+|------|----------|
+| Linux生产环境(推荐) | [Linux部署指南](development_linux_CN.md) |
+| Windows开发环境 | [Windows部署指南](development_windows_CN.md) |
 
 ## 📁 项目结构
 
@@ -115,73 +122,6 @@ Registration-Management-System/
 └── README.md               # 项目说明 (本文件)
 ```
 
-## 🚀 架构优势
-
-### MVC分层架构
-- **Model (模型层)**: 封装数据访问逻辑，提供统一的数据接口
-- **View (视图层)**: Vue 3前端，负责用户界面和交互
-- **Controller (控制器层)**: 处理业务逻辑，连接模型和视图
-
-### 代码质量
-- 主服务器文件从1735行精简至76行
-- 模块化设计，职责分工明确
-- 统一的错误处理和日志记录
-- 完全向后兼容，API接口不变
-
-### 性能优化
-- 数据库连接池管理
-- 优化的SQL查询
-- 内存使用优化
-- 文件上传性能改进
-
-## 📋 快速开始
-
-### 环境要求
-- Node.js 16.0+
-- MySQL 8.0+
-- npm 或 yarn
-
-### 安装步骤
-
-1. **克隆项目**
-   ```bash
-   git clone <repository-url>
-   cd Registration-Management-System
-   ```
-
-2. **后端配置**
-   ```bash
-   cd backend
-   npm install
-   
-   # 创建环境变量文件
-   cp .env.example .env
-   # 编辑 .env 文件，配置数据库连接和JWT密钥
-   ```
-
-3. **前端配置**
-   ```bash
-   cd frontend
-   npm install
-   ```
-
-4. **数据库初始化**
-   ```bash
-   cd db/mysql
-   node init_db.js
-   ```
-
-5. **启动服务**
-   ```bash
-   # 后端服务 (端口3000)
-   cd backend
-   npm start
-   
-   # 前端服务 (端口8080)
-   cd frontend
-   npm run serve
-   ```
-
 ## 👤 测试账户
 
 数据库初始化后，系统包含以下测试账户：
@@ -192,34 +132,3 @@ Registration-Management-System/
 | 单位管理员 | 13800000002 | 1 | 单位内管理权限 |
 | 基层员工 | 13800000001 | 1 | 基础填报权限 |
 | 监督人员 | 13800000004 | 1 | 监督数据权限 |
-
-## 📖 部署指南
-
-| 环境 | 指南链接 | 说明 |
-|------|----------|------|
-| Windows开发环境 | [Windows部署指南](development_windows.md) | 本地开发环境搭建 |
-| Linux生产环境 | [Linux部署指南](development_linux.md) | 云服务器部署 |
-| 详细部署文档 | [DEPLOYMENT.md](DEPLOYMENT.md) | 完整部署说明 |
-
-## 🔄 更新日志
-
-详细的更新记录请查看 [CHANGELOG.md](CHANGELOG.md)
-
-## 🤝 贡献指南
-
-1. Fork 本仓库
-2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 开启 Pull Request
-
-## 📄 许可证
-
-本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情
-
-## 📞 支持
-
-如果您在使用过程中遇到问题，请通过以下方式获取帮助：
-- 创建 [Issue](../../issues)
-- 查看 [FAQ](FAQ.md)
-- 阅读 [文档](docs/)

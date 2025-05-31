@@ -2,7 +2,7 @@
 
 A modern solid waste management system built with Vue 3 + Node.js + MySQL, featuring a clean MVC architecture design.
 
-[简体中文](README.md) | [Deployment Guide](DEPLOYMENT.md) | [Changelog](CHANGELOG.md)
+[简体中文](README.md) | [Changelog](Changelog.md)
 
 ## 🎯 Project Features
 
@@ -42,6 +42,13 @@ Adopts modern **MVC (Model-View-Controller)** layered architecture, ensuring cod
 - **Database**: MySQL 8.0+
 - **Authentication**: JWT
 - **File Upload**: Multer
+
+## 📖 Deployment Guide
+
+| Environment | Guide Link |
+|-------------|------------|
+| Linux Production(Recommended) | [Linux Deployment Guide](development_linux.md) |
+| Windows Development | [Windows Deployment Guide](development_windows.md) |
 
 ## 📁 Project Structure
 
@@ -115,73 +122,6 @@ Registration-Management-System/
 └── README.md               # Project documentation (Chinese)
 ```
 
-## 🚀 Architecture Advantages
-
-### MVC Layered Architecture
-- **Model Layer**: Encapsulates data access logic, provides unified data interfaces
-- **View Layer**: Vue 3 frontend, handles user interface and interactions
-- **Controller Layer**: Processes business logic, connects models and views
-
-### Code Quality
-- Main server file streamlined from 1735 lines to 76 lines
-- Modular design with clear responsibility separation
-- Unified error handling and logging
-- Full backward compatibility, API interfaces unchanged
-
-### Performance Optimization
-- Database connection pool management
-- Optimized SQL queries
-- Memory usage optimization
-- File upload performance improvements
-
-## 📋 Quick Start
-
-### Requirements
-- Node.js 16.0+
-- MySQL 8.0+
-- npm or yarn
-
-### Installation Steps
-
-1. **Clone Project**
-   ```bash
-   git clone <repository-url>
-   cd Registration-Management-System
-   ```
-
-2. **Backend Setup**
-   ```bash
-   cd backend
-   npm install
-   
-   # Create environment variables file
-   cp .env.example .env
-   # Edit .env file, configure database connection and JWT secret
-   ```
-
-3. **Frontend Setup**
-   ```bash
-   cd frontend
-   npm install
-   ```
-
-4. **Database Initialization**
-   ```bash
-   cd db/mysql
-   node init_db.js
-   ```
-
-5. **Start Services**
-   ```bash
-   # Backend service (port 3000)
-   cd backend
-   npm start
-   
-   # Frontend service (port 8080)
-   cd frontend
-   npm run serve
-   ```
-
 ## 👤 Test Accounts
 
 After database initialization, the system contains the following test accounts:
@@ -192,34 +132,3 @@ After database initialization, the system contains the following test accounts:
 | Unit Administrator | 13800000002 | 1 | Unit management |
 | Basic Employee | 13800000001 | 1 | Basic reporting |
 | Supervisor | 13800000004 | 1 | Supervision data |
-
-## 📖 Deployment Guide
-
-| Environment | Guide Link | Description |
-|-------------|------------|-------------|
-| Windows Development | [Windows Deployment Guide](development_windows.md) | Local development setup |
-| Linux Production | [Linux Deployment Guide](development_linux.md) | Cloud server deployment |
-| Detailed Documentation | [DEPLOYMENT.md](DEPLOYMENT.md) | Complete deployment guide |
-
-## 🔄 Change Log
-
-For detailed update records, please check [CHANGELOG.md](CHANGELOG.md)
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to branch (`git push origin feature/AmazingFeature`)
-5. Open Pull Request
-
-## 📄 License
-
-This project is licensed under the MIT License - see [LICENSE](LICENSE) file for details
-
-## 📞 Support
-
-If you encounter any issues, please get help through:
-- Create [Issue](../../issues)
-- Check [FAQ](FAQ.md)
-- Read [Documentation](docs/) 
