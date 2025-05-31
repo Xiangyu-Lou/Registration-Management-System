@@ -47,8 +47,8 @@ Adopts modern **MVC (Model-View-Controller)** layered architecture, ensuring cod
 
 | Environment | Guide Link |
 |-------------|------------|
-| Linux Production(Recommended) | [Linux Deployment Guide](development_linux.md) |
-| Windows Development | [Windows Deployment Guide](development_windows.md) |
+| Linux(Recommended) | [Linux Deployment Guide](development_linux.md) |
+| Windows | [Windows Deployment Guide](development_windows.md) |
 
 ## 📁 Project Structure
 
