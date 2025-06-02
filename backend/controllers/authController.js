@@ -78,6 +78,7 @@ const login = async (req, res, next) => {
       role_id: user.role_id,
       unit_id: user.unit_id,
       unit_name: user.unit_name,
+      can_view_logs: user.can_view_logs,
       token
     });
   } catch (error) {

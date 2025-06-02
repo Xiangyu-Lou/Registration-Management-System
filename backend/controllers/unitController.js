@@ -94,8 +94,8 @@ const updateUnit = async (req, res, next) => {
     // 检查单位名称是否被其他单位使用
     const nameExists = await Unit.nameExists(name, id);
     if (nameExists) {
-      return res.status(400).json({ error: '单位名称已被其他单位使用' });
-    }
+        return res.status(400).json({ error: '单位名称已被其他单位使用' });
+      }
     
     // 记录更新前的数据
     const beforeData = {

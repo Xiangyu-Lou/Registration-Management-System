@@ -1,23 +1,26 @@
 const express = require('express');
 const router = express.Router();
+const { authenticateToken } = require('../middleware/auth');
 const {
   getOperationLogs,
-  getUserOperationLogs,
-  cleanOldLogs,
-  getOperationStatistics
+  getOperationStats,
+  getUserOperationStats,
+  exportOperationLogs
 } = require('../controllers/operationLogController');
-const { authenticateToken, requireSuperAdmin } = require('../middleware/auth');
 
-// 获取操作日志列表（需要超级管理员权限）
-router.get('/', authenticateToken, requireSuperAdmin, getOperationLogs);
+// 所有操作日志路由都需要认证
+router.use(authenticateToken);
 
-// 获取操作统计信息（需要超级管理员权限）
-router.get('/statistics', authenticateToken, requireSuperAdmin, getOperationStatistics);
+// 获取操作日志（带分页和筛选）
+router.get('/', getOperationLogs);
 
-// 获取指定用户的操作日志（需要超级管理员权限）
-router.get('/user/:userId', authenticateToken, requireSuperAdmin, getUserOperationLogs);
+// 获取操作类型统计
+router.get('/stats', getOperationStats);
 
-// 清理旧日志（需要超级管理员权限）
-router.post('/clean', authenticateToken, requireSuperAdmin, cleanOldLogs);
+// 获取用户操作统计
+router.get('/user-stats', getUserOperationStats);
+
+// 导出操作日志
+router.get('/export', exportOperationLogs);
 
 module.exports = router; 

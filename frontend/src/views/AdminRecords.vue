@@ -12,6 +12,9 @@
         <el-button v-if="isSuperAdmin" type="success" @click="goToUserManagement">
           <el-icon><user /></el-icon> 人员管理
         </el-button>
+        <el-button v-if="isSuperAdmin && canViewLogs" type="warning" @click="goToOperationLogs">
+          <el-icon><document /></el-icon> 操作日志
+        </el-button>
         <el-button @click="refreshRecords">
           <el-icon><refresh /></el-icon> 刷新
         </el-button>
@@ -340,7 +343,7 @@ import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox, ElImageViewer, ElLoading } from 'element-plus';
 import axios from 'axios';
 import httpService from '../config/httpService';
-import { Plus, Refresh, User, ArrowDown, ArrowUp, Download, Loading, CircleClose } from '@element-plus/icons-vue';
+import { Plus, Refresh, User, ArrowDown, ArrowUp, Download, Loading, CircleClose, Document } from '@element-plus/icons-vue';
 import auth from '../store/auth';
 import { exportToExcelWithImages, exportToExcel } from '../utils/exportUtils';
 import apiConfig from '../config/api';
@@ -393,7 +396,8 @@ export default {
     Download,
     ElImageViewer,
     Loading,
-    CircleClose
+    CircleClose,
+    Document
   },
   setup() {
     const router = useRouter();
@@ -703,6 +707,10 @@ export default {
 
     const goToUserManagement = () => {
       router.push('/user-management');
+    };
+
+    const goToOperationLogs = () => {
+      router.push('/operation-logs');
     };
 
     const editRecord = (recordId) => {
@@ -1279,6 +1287,11 @@ export default {
       return auth.state.isLoggedIn && auth.state.user.role_id === 3;
     });
 
+    // 判断是否可以查看操作日志
+    const canViewLogs = computed(() => {
+      return auth.state.isLoggedIn && auth.state.user && auth.state.user.can_view_logs === 1;
+    });
+
     return {
       records,
       filteredRecords,
@@ -1297,6 +1310,7 @@ export default {
       refreshRecords,
       addNewRecord,
       goToUserManagement,
+      goToOperationLogs,
       editRecord,
       confirmDelete,
       showViewer,
@@ -1317,6 +1331,7 @@ export default {
       loadMore,
       tableContainer,
       isSuperAdmin,
+      canViewLogs,
     };
   }
 };

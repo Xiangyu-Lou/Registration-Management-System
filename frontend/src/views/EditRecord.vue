@@ -25,8 +25,8 @@
         class="record-form"
         v-loading="loading"
       >
-        <!-- 如果用户是超级管理员且是新增记录，显示单位选择 -->
-        <el-form-item label="单位" prop="unitId" v-if="isAdmin && isNew">
+        <!-- 如果用户是超级管理员，显示单位选择 -->
+        <el-form-item label="单位" prop="unitId" v-if="isAdmin">
           <el-select v-model="form.unitId" placeholder="请选择单位" style="width: 100%">
             <el-option 
               v-for="unit in units" 
@@ -35,7 +35,7 @@
               :value="unit.id" 
             />
           </el-select>
-          <div class="form-tip">请先选择单位，才能选择产生地点</div>
+          <div class="form-tip" v-if="isNew">请先选择单位，才能选择产生地点</div>
         </el-form-item>
 
         <el-form-item label="废物类型" prop="wasteTypeId">
@@ -362,7 +362,24 @@ export default {
 
     const rules = {
       unitId: [
-        { required: true, message: '请选择单位', trigger: 'change' }
+        { 
+          required: true, 
+          message: '请选择单位', 
+          trigger: 'change',
+          validator: (rule, value, callback) => {
+            // 只有超级管理员才需要验证单位选择
+            if (isAdmin.value) {
+              if (!value) {
+                callback(new Error('请选择单位'));
+              } else {
+                callback();
+              }
+            } else {
+              // 非超级管理员不需要验证
+              callback();
+            }
+          }
+        }
       ],
       wasteTypeId: [
         { required: true, message: '请选择废物类型', trigger: 'change' }

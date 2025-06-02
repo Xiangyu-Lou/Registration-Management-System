@@ -93,6 +93,7 @@ async function initializeDatabase() {
         role_id INT NOT NULL,
         unit_id INT,
         status TINYINT DEFAULT 1 COMMENT '账号状态：0-停用，1-正常',
+        can_view_logs TINYINT(1) DEFAULT NULL COMMENT '是否允许查看操作日志 (1=允许, NULL=不允许)',
         FOREIGN KEY (role_id) REFERENCES user_roles(id),
         FOREIGN KEY (unit_id) REFERENCES units(id)
       )
@@ -210,11 +211,11 @@ async function initializeDatabase() {
       
       // 插入测试用户
       await connection.execute(`
-        INSERT INTO users (username, phone, password, role_id, unit_id, status) VALUES 
-        ('牛庄员工', '13800000001', ?, 1, ?, 1),
-        ('牛庄管理员', '13800000002', ?, 2, ?, 1),
-        ('超级管理员', '13800000003', ?, 3, NULL, 1),
-        ('监督人员', '13800000004', ?, 4, NULL, 1)
+        INSERT INTO users (username, phone, password, role_id, unit_id, status, can_view_logs) VALUES 
+        ('牛庄员工', '13800000001', ?, 1, ?, 1, NULL),
+        ('牛庄管理员', '13800000002', ?, 2, ?, 1, NULL),
+        ('超级管理员', '13800000003', ?, 3, NULL, 1, 1),
+        ('监督人员', '13800000004', ?, 4, NULL, 1, NULL)
       `, [password, niuzhuangId, password, niuzhuangId, password, password]);
       console.log('已插入用户测试数据');
     } else {

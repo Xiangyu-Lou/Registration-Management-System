@@ -1,130 +1,155 @@
 const OperationLog = require('../models/OperationLog');
+const User = require('../models/User');
 
-// 获取操作日志列表（支持分页和筛选）
+// 获取操作日志（带分页和筛选）
 const getOperationLogs = async (req, res, next) => {
   try {
+    // 检查用户是否有查看日志的权限
+    const user = await User.findById(req.user.id);
+    if (!user || !user.can_view_logs) {
+      return res.status(403).json({ error: '您没有权限查看操作日志' });
+    }
+
     const {
       page = 1,
-      pageSize = 50,
-      userId,
+      pageSize = 20,
       operationType,
       targetType,
+      userId,
+      userKeyword,
       startDate,
-      endDate
+      endDate,
+      description
     } = req.query;
 
-    const limit = parseInt(pageSize);
-    const offset = (parseInt(page) - 1) * limit;
-
+    // 处理空字符串参数
     const filters = {
-      userId,
-      operationType,
-      targetType,
-      startDate,
-      endDate
+      operationType: operationType && operationType.trim() !== '' ? operationType : null,
+      targetType: targetType && targetType.trim() !== '' ? targetType : null,
+      userId: userId && userId.trim() !== '' ? userId : null,
+      userKeyword: userKeyword && userKeyword.trim() !== '' ? userKeyword : null,
+      startDate: startDate && startDate.trim() !== '' ? startDate : null,
+      endDate: endDate && endDate.trim() !== '' ? endDate : null,
+      description: description && description.trim() !== '' ? description : null
     };
 
-    // 获取日志数据和总数
-    const [logs, total] = await Promise.all([
-      OperationLog.findAll(filters, limit, offset),
-      OperationLog.countAll(filters)
-    ]);
-
-    res.json({
-      logs,
-      pagination: {
-        page: parseInt(page),
-        pageSize: limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-        hasMore: offset + logs.length < total
-      }
+    const result = await OperationLog.findWithFilters(filters, {
+      page: parseInt(page),
+      pageSize: parseInt(pageSize)
     });
+
+    res.json(result);
   } catch (error) {
-    next(error);
+    console.error('获取操作日志失败:', error);
+    res.status(500).json({ 
+      error: '获取操作日志失败', 
+      details: error.message,
+      logs: [],
+      pagination: { page: 1, pageSize: 20, total: 0, totalPages: 0, hasMore: false }
+    });
   }
 };
 
-// 获取用户的操作日志
-const getUserOperationLogs = async (req, res, next) => {
+// 获取操作类型统计
+const getOperationStats = async (req, res, next) => {
   try {
-    const { userId } = req.params;
-    const {
-      page = 1,
-      pageSize = 50
-    } = req.query;
+    // 检查用户是否有查看日志的权限
+    const user = await User.findById(req.user.id);
+    if (!user || !user.can_view_logs) {
+      return res.status(403).json({ error: '您没有权限查看操作日志统计' });
+    }
 
-    const limit = parseInt(pageSize);
-    const offset = (parseInt(page) - 1) * limit;
-
-    const logs = await OperationLog.findByUserId(userId, limit, offset);
-
-    res.json({
-      logs,
-      pagination: {
-        page: parseInt(page),
-        pageSize: limit
-      }
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-// 清理旧日志
-const cleanOldLogs = async (req, res, next) => {
-  try {
-    const { daysToKeep = 90 } = req.body;
+    const { startDate, endDate } = req.query;
     
-    const deletedCount = await OperationLog.cleanOldLogs(daysToKeep);
-    
-    res.json({
-      message: `成功清理 ${deletedCount} 条超过 ${daysToKeep} 天的日志记录`,
-      deletedCount
-    });
+    // 处理空字符串参数
+    const cleanStartDate = startDate && startDate.trim() !== '' ? startDate : null;
+    const cleanEndDate = endDate && endDate.trim() !== '' ? endDate : null;
+
+    const stats = await OperationLog.getStats(cleanStartDate, cleanEndDate);
+    res.json(stats);
   } catch (error) {
-    next(error);
+    console.error('获取操作类型统计失败:', error);
+    res.status(500).json({ 
+      error: '获取操作统计失败', 
+      details: error.message,
+      totalStats: [],
+      dailyStats: []
+    });
   }
 };
 
-// 获取操作统计信息
-const getOperationStatistics = async (req, res, next) => {
+// 获取用户操作统计
+const getUserOperationStats = async (req, res, next) => {
   try {
+    // 检查用户是否有查看日志的权限
+    const user = await User.findById(req.user.id);
+    if (!user || !user.can_view_logs) {
+      return res.status(403).json({ error: '您没有权限查看用户操作统计' });
+    }
+
+    const { startDate, endDate, limit = 10 } = req.query;
+    
+    // 处理空字符串参数
+    const cleanStartDate = startDate && startDate.trim() !== '' ? startDate : null;
+    const cleanEndDate = endDate && endDate.trim() !== '' ? endDate : null;
+
+    const stats = await OperationLog.getUserStats(cleanStartDate, cleanEndDate, parseInt(limit));
+    res.json(stats || []);
+  } catch (error) {
+    console.error('获取用户操作统计失败:', error);
+    res.status(500).json({ 
+      error: '获取用户操作统计失败', 
+      details: error.message,
+      data: []
+    });
+  }
+};
+
+// 导出操作日志
+const exportOperationLogs = async (req, res, next) => {
+  try {
+    // 检查用户是否有查看日志的权限
+    const user = await User.findById(req.user.id);
+    if (!user || !user.can_view_logs) {
+      return res.status(403).json({ error: '您没有权限导出操作日志' });
+    }
+
     const {
+      operationType,
+      targetType,
+      userId,
+      userKeyword,
       startDate,
-      endDate
+      endDate,
+      description
     } = req.query;
 
-    const filters = { startDate, endDate };
+    // 处理空字符串参数
+    const filters = {
+      operationType: operationType && operationType.trim() !== '' ? operationType : null,
+      targetType: targetType && targetType.trim() !== '' ? targetType : null,
+      userId: userId && userId.trim() !== '' ? userId : null,
+      userKeyword: userKeyword && userKeyword.trim() !== '' ? userKeyword : null,
+      startDate: startDate && startDate.trim() !== '' ? startDate : null,
+      endDate: endDate && endDate.trim() !== '' ? endDate : null,
+      description: description && description.trim() !== '' ? description : null
+    };
 
-    // 获取总数
-    const total = await OperationLog.countAll(filters);
-    
-    // 获取各类型操作统计
-    const [loginCount, createCount, updateCount, deleteCount] = await Promise.all([
-      OperationLog.countAll({ ...filters, operationType: 'login' }),
-      OperationLog.countAll({ ...filters, operationType: 'create' }),
-      OperationLog.countAll({ ...filters, operationType: 'update' }),
-      OperationLog.countAll({ ...filters, operationType: 'delete' })
-    ]);
-
-    res.json({
-      total,
-      statistics: {
-        login: loginCount,
-        create: createCount,
-        update: updateCount,
-        delete: deleteCount
-      }
-    });
+    const logs = await OperationLog.findAllWithFilters(filters);
+    res.json(logs || []);
   } catch (error) {
-    next(error);
+    console.error('导出操作日志失败:', error);
+    res.status(500).json({ 
+      error: '导出操作日志失败', 
+      details: error.message,
+      data: []
+    });
   }
 };
 
 module.exports = {
   getOperationLogs,
-  getUserOperationLogs,
-  cleanOldLogs,
-  getOperationStatistics
+  getOperationStats,
+  getUserOperationStats,
+  exportOperationLogs
 }; 

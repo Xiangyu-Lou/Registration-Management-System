@@ -54,7 +54,15 @@
           </template>
         </el-table-column>
         
-        <el-table-column label="操作" width="240" fixed="right">
+        <el-table-column label="日志权限" width="100" align="center">
+          <template #default="scope">
+            <el-tag :type="scope.row.can_view_logs === 1 ? 'success' : 'info'">
+              {{ scope.row.can_view_logs === 1 ? '允许' : '禁止' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        
+        <el-table-column label="操作" width="300" fixed="right">
           <template #default="scope">
             <!-- 编辑按钮：单位管理员不能编辑其他单位管理员 -->
             <el-button 
@@ -73,6 +81,16 @@
               @click="handleStatusChange(scope.row)"
             >
               {{ scope.row.status === 1 ? '停用' : '恢复' }}
+            </el-button>
+            
+            <!-- 日志权限按钮：只有超级管理员可以设置 -->
+            <el-button 
+              v-if="isSuperAdmin" 
+              size="small" 
+              :type="scope.row.can_view_logs === 1 ? 'warning' : 'primary'"
+              @click="handleLogPermissionChange(scope.row)"
+            >
+              {{ scope.row.can_view_logs === 1 ? '禁止日志' : '允许日志' }}
             </el-button>
             
             <!-- 删除按钮：单位管理员不能删除其他单位管理员 -->
@@ -363,6 +381,26 @@ export default {
       }
     };
     
+    // 处理用户日志权限变更
+    const handleLogPermissionChange = async (row) => {
+      const newPermission = row.can_view_logs === 1 ? null : 1;
+      const permissionText = newPermission === 1 ? '允许查看日志' : '禁止查看日志';
+      
+      try {
+        const endpoint = apiConfig.endpoints.userLogPermission.replace(':id', row.id);
+        await httpService.put(endpoint, { can_view_logs: newPermission });
+        ElMessage.success(`用户日志权限设置成功：${permissionText}`);
+        fetchUsers();
+      } catch (error) {
+        console.error('日志权限变更失败:', error);
+        let errorMsg = '设置日志权限失败';
+        if (error.response && error.response.data && error.response.data.error) {
+          errorMsg = error.response.data.error;
+        }
+        ElMessage.error(errorMsg);
+      }
+    };
+    
     // 重置表单
     const resetForm = () => {
       if (userForm.value) {
@@ -473,6 +511,7 @@ export default {
       handleEdit,
       handleDelete,
       handleStatusChange,
+      handleLogPermissionChange,
       submitForm,
       goBack,
       searchKeyword,

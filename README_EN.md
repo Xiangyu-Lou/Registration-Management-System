@@ -39,8 +39,9 @@ A modern solid waste management system built with Vue 3 + Node.js + MySQL, featu
   - Records operation time, IP address, user agent and other security information
   - Supports distinction between supervision data and regular data
 - **Management Features**
-  - Provides operation log viewing functionality for administrators
-  - Facilitates troubleshooting and system auditing
+  - Authorized personnel can access complete operation log interface
+  - Multi-dimensional real-time filtering: operation type, personnel search, time range, keywords
+  - Provides statistical analysis and convenient troubleshooting tools
 
 ## 🏗️ Project Architecture
 

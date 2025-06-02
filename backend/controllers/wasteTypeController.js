@@ -94,8 +94,8 @@ const updateWasteType = async (req, res, next) => {
     // 检查废物类型名称是否被其他类型使用
     const nameExists = await WasteType.nameExists(name, id);
     if (nameExists) {
-      return res.status(400).json({ error: '废物类型名称已被其他类型使用' });
-    }
+        return res.status(400).json({ error: '废物类型名称已被其他类型使用' });
+      }
     
     // 记录更新前的数据
     const beforeData = {

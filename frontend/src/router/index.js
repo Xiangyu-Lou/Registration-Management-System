@@ -7,6 +7,7 @@ import EditRecord from '../views/EditRecord.vue'
 import UserManagement from '../views/UserManagement.vue'
 import AdminRecords from '../views/AdminRecords.vue'
 import UserProfile from '../views/UserProfile.vue'
+import OperationLogs from '../views/OperationLogs.vue'
 import auth from '../store/auth'
 
 const routes = [
@@ -27,6 +28,12 @@ const routes = [
     name: 'UserProfile',
     component: UserProfile,
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/operation-logs',
+    name: 'OperationLogs',
+    component: OperationLogs,
+    meta: { requiresAuth: true, requiresLogPermission: true }
   },
   {
     path: '/',
@@ -81,10 +88,24 @@ router.beforeEach((to, from, next) => {
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
   const requiresSuperAdmin = to.matched.some(record => record.meta.requiresSuperAdmin);
   const requiresManager = to.matched.some(record => record.meta.requiresManager);
+  const requiresLogPermission = to.matched.some(record => record.meta.requiresLogPermission);
   
   // 如果路由需要登录但用户未登录，重定向到登录页面
   if (requiresAuth && !auth.state.isLoggedIn) {
     next({ name: 'Login' });
+    return;
+  }
+  
+  // 如果路由需要日志权限但用户没有权限
+  if (requiresLogPermission && auth.state.isLoggedIn && auth.state.user.can_view_logs !== 1) {
+    // 重定向到适当的页面
+    if (auth.state.user.role_id === 3) {
+      next({ name: 'AdminRecords' });
+    } else if (auth.state.user.role_id === 4) {
+      next({ name: 'EditRecord', params: { id: null } });
+    } else {
+      next({ name: 'WasteForm', params: { id: auth.state.user.unit_id } });
+    }
     return;
   }
   

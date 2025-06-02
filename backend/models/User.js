@@ -29,7 +29,7 @@ class User {
   // 根据ID查找用户
   static async findById(id) {
     const [rows] = await pool.query(
-      `SELECT u.id, u.username, u.phone, u.role_id, u.unit_id, r.name as role_name, un.name as unit_name, u.status 
+      `SELECT u.id, u.username, u.phone, u.role_id, u.unit_id, r.name as role_name, un.name as unit_name, u.status, u.can_view_logs
        FROM users u 
        JOIN user_roles r ON u.role_id = r.id 
        LEFT JOIN units un ON u.unit_id = un.id 
@@ -42,7 +42,7 @@ class User {
   // 获取所有用户
   static async findAll() {
     const [rows] = await pool.query(
-      `SELECT u.id, u.username, u.phone, u.role_id, r.name as role_name, u.unit_id, un.name as unit_name, u.status
+      `SELECT u.id, u.username, u.phone, u.role_id, r.name as role_name, u.unit_id, un.name as unit_name, u.status, u.can_view_logs
        FROM users u 
        JOIN user_roles r ON u.role_id = r.id 
        LEFT JOIN units un ON u.unit_id = un.id 
@@ -114,6 +114,12 @@ class User {
         [username, id]
       );
     }
+    return true;
+  }
+
+  // 更新用户日志查看权限
+  static async updateLogPermission(id, canViewLogs) {
+    await pool.query('UPDATE users SET can_view_logs = ? WHERE id = ?', [canViewLogs, id]);
     return true;
   }
 

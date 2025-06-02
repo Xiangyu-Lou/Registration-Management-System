@@ -136,10 +136,10 @@ const updateUser = async (req, res, next) => {
     }
     
     // 检查手机号是否被其他用户使用
-    const phoneExists = await User.phoneExists(phone, id);
-    if (phoneExists) {
-      return res.status(400).json({ error: '手机号已被其他用户使用' });
-    }
+      const phoneExists = await User.phoneExists(phone, id);
+      if (phoneExists) {
+        return res.status(400).json({ error: '手机号已被其他用户使用' });
+      }
     
     // 记录更新前的数据
     const beforeData = {
@@ -360,13 +360,13 @@ const updateUserProfile = async (req, res, next) => {
     // 验证权限：只能修改自己的信息
     if (req.user && req.user.id !== parseInt(id)) {
       return res.status(403).json({ error: '只能修改自己的个人信息' });
-    }
-    
+      }
+      
     // 验证必填字段
     if (!username) {
       return res.status(400).json({ error: '用户名是必填字段' });
-    }
-    
+      }
+      
     // 获取完整用户信息
     const fullUser = await User.findById(id);
     
@@ -431,6 +431,65 @@ const updateUserProfile = async (req, res, next) => {
   }
 };
 
+// 更新用户日志查看权限
+const updateUserLogPermission = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { can_view_logs } = req.body;
+    
+    // 验证用户是否存在
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ error: '用户不存在' });
+    }
+    
+    // 验证权限值
+    if (can_view_logs !== 1 && can_view_logs !== null) {
+      return res.status(400).json({ error: '权限值无效，必须是1或null' });
+    }
+    
+    const oldPermission = user.can_view_logs;
+    
+    // 更新用户日志查看权限
+    await User.updateLogPermission(id, can_view_logs);
+    
+    // 获取操作者ID
+    const operatorId = req.user ? req.user.id : null;
+    
+    const permissionText = can_view_logs === 1 ? '允许查看日志' : '禁止查看日志';
+    const oldPermissionText = oldPermission === 1 ? '允许查看日志' : '禁止查看日志';
+    const roleText = user.role_name || '未知角色';
+    const unitText = user.unit_name || '无单位';
+    
+    // 记录操作日志
+    await logUserManagementOperation(
+      req, 
+      'update', 
+      parseInt(id), 
+      operatorId, 
+      `设置用户日志查看权限 - 用户ID: ${id}, 用户名: ${user.username}, 手机号: ${user.phone}, 角色: ${roleText}, 单位: ${unitText}, 权限变更: ${oldPermissionText} → ${permissionText}`,
+      {
+        userId: parseInt(id),
+        username: user.username,
+        phone: user.phone,
+        roleName: user.role_name,
+        unitName: user.unit_name,
+        operationType: 'log_permission_change',
+        oldPermission: oldPermissionText,
+        newPermission: permissionText
+      }
+    );
+    
+    res.json({
+      message: `用户日志查看权限设置成功`,
+      id: parseInt(id),
+      permission: permissionText
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getAllUsers,
   getUsersByUnit,
@@ -439,5 +498,6 @@ module.exports = {
   updateUser,
   deleteUser,
   updateUserStatus,
-  updateUserProfile
+  updateUserProfile,
+  updateUserLogPermission
 }; 
