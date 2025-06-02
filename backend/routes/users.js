@@ -11,7 +11,7 @@ const {
   updateUserProfile,
   updateUserLogPermission
 } = require('../controllers/userController');
-const { authenticateToken, blockSupervisor } = require('../middleware/auth');
+const { authenticateToken, blockSupervisor, requireLogViewPermission } = require('../middleware/auth');
 
 // 获取所有用户（阻止监督人员访问）
 router.get('/', blockSupervisor, getAllUsers);
@@ -25,8 +25,8 @@ router.put('/:id/profile', authenticateToken, updateUserProfile);
 // 修改用户状态（阻止监督人员访问）
 router.put('/:id/status', blockSupervisor, updateUserStatus);
 
-// 修改用户日志查看权限（阻止监督人员访问）
-router.put('/:id/log-permission', blockSupervisor, updateUserLogPermission);
+// 修改用户日志查看权限（只有有日志查看权限的用户才能修改）
+router.put('/:id/log-permission', requireLogViewPermission, updateUserLogPermission);
 
 // 获取单个用户信息（阻止监督人员访问）
 router.get('/:id', blockSupervisor, getUserById);

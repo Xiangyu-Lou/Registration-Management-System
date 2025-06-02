@@ -83,9 +83,9 @@
               {{ scope.row.status === 1 ? '停用' : '恢复' }}
             </el-button>
             
-            <!-- 日志权限按钮：只有超级管理员可以设置 -->
+            <!-- 日志权限按钮：只有有日志查看权限的用户才能设置 -->
             <el-button 
-              v-if="isSuperAdmin" 
+              v-if="canManageLogPermissions" 
               size="small" 
               :type="scope.row.can_view_logs === 1 ? 'warning' : 'primary'"
               @click="handleLogPermissionChange(scope.row)"
@@ -217,6 +217,11 @@ export default {
     // 判断当前用户是否为超级管理员
     const isSuperAdmin = computed(() => {
       return auth.state.isLoggedIn && (auth.state.user.role_id === 3 || auth.state.user.role_id === 4);
+    });
+    
+    // 判断当前用户是否可以管理日志权限（只有有日志查看权限的用户才能修改其他人的日志权限）
+    const canManageLogPermissions = computed(() => {
+      return auth.state.isLoggedIn && auth.state.user && auth.state.user.can_view_logs === 1;
     });
     
     // 当前登录用户的单位ID
@@ -390,6 +395,12 @@ export default {
         const endpoint = apiConfig.endpoints.userLogPermission.replace(':id', row.id);
         await httpService.put(endpoint, { can_view_logs: newPermission });
         ElMessage.success(`用户日志权限设置成功：${permissionText}`);
+        
+        // 如果修改的是当前登录用户自己的权限，更新本地状态
+        if (auth.state.user && auth.state.user.id === row.id) {
+          auth.updateUserInfo({ can_view_logs: newPermission });
+        }
+        
         fetchUsers();
       } catch (error) {
         console.error('日志权限变更失败:', error);
@@ -507,6 +518,7 @@ export default {
       rules,
       isSuperAdmin,
       currentUnitId,
+      canManageLogPermissions,
       openAddDialog,
       handleEdit,
       handleDelete,

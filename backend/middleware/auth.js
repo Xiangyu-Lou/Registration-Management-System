@@ -1,4 +1,5 @@
 const { verifyToken } = require('../utils/auth');
+const User = require('../models/User');
 
 // 验证JWT token的中间件
 const authenticateToken = (req, res, next) => {
@@ -47,7 +48,42 @@ const blockSupervisor = (req, res, next) => {
     if (decoded.role_id === 4) {
       return res.status(403).json({ error: '没有权限访问用户管理' });
     }
-    // 不是监督人员，继续执行
+    // 设置用户信息到请求对象
+    req.user = decoded;
+    next();
+  } catch (error) {
+    return res.status(401).json({ error: '无效的令牌' });
+  }
+};
+
+// 检查是否有查看日志的权限（用于修改其他人的日志权限）
+const requireLogViewPermission = async (req, res, next) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) {
+    return res.status(401).json({ error: '未授权' });
+  }
+  
+  try {
+    const decoded = verifyToken(token);
+    
+    // 检查用户是否为监督人员
+    if (decoded.role_id === 4) {
+      return res.status(403).json({ error: '监督人员无权修改日志权限' });
+    }
+    
+    // 从数据库获取用户完整信息以检查日志查看权限
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      return res.status(404).json({ error: '用户不存在' });
+    }
+    
+    // 检查用户是否有查看日志的权限
+    if (!user.can_view_logs) {
+      return res.status(403).json({ error: '只有有权限查看日志的用户才能修改其他人的日志权限' });
+    }
+    
+    // 设置用户信息到请求对象
+    req.user = decoded;
     next();
   } catch (error) {
     return res.status(401).json({ error: '无效的令牌' });
@@ -58,5 +94,6 @@ module.exports = {
   authenticateToken,
   requireSuperAdmin,
   requireUnitAdmin,
-  blockSupervisor
+  blockSupervisor,
+  requireLogViewPermission
 }; 
