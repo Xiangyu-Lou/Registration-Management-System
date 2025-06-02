@@ -14,7 +14,7 @@
         <el-card>
           <template #header>
             <div class="filter-header">
-              <span>筛选条件 <small style="color: #909399;">(实时筛选，输入后自动搜索)</small></span>
+              <span>筛选条件 <small style="color: #909399;"></small></span>
               <el-button type="primary" link @click="resetFilters">
                 <el-icon><refresh /></el-icon> 重置筛选
               </el-button>
