@@ -2,7 +2,7 @@
 
 一个基于 Vue 3 + Node.js + MySQL 的固体废物管理系统，采用现代化的MVC架构设计。
 
-[English](README_EN.md) | [更新日志](Changelog.md)
+[English](README_EN.md) | [介绍手册](instruction.md) | [更新日志](Changelog.md)
 
 ## 🎯 项目特色
 

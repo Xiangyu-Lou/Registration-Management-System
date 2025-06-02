@@ -2,7 +2,7 @@
 
 A modern solid waste management system built with Vue 3 + Node.js + MySQL, featuring a clean MVC architecture design.
 
-[简体中文](README.md) | [Changelog](Changelog.md)
+[简体中文](README.md) | [Instruction](instruction.md) | [Changelog](Changelog.md)
 
 ## 🎯 Project Features
 
