@@ -14,7 +14,7 @@
 - **操作日志审计**：完整的操作日志系统，实现行为可追溯
 - **移动端适配**：响应式设计，支持手机、平板等移动设备使用
 
-![登录界面](photos\login.png)
+![登录界面](photos/login.png)
 
 Fig1: 登录界面
 
@@ -65,7 +65,7 @@ Fig1: 登录界面
 - 查看操作日志（需额外授权）
 - 管理单位和废物类型
 
-![超级管理员记录查看](photos\superadmin.png)
+![超级管理员记录查看](photos/superadmin.png)
 
 Fig2: 超级管理员记录查看页面
 
@@ -98,7 +98,7 @@ Fig2: 超级管理员记录查看页面
 - **照片记录**：收集前照片（≤5张）、收集后照片（≤5张）
 - **备注信息**：其他补充说明
 
-![填报记录](photos\add.png)
+![填报记录](photos/add.png)
 
 Fig3: 记录填报页面
 
@@ -112,7 +112,7 @@ Fig3: 记录填报页面
 - 按时间范围筛选
 - 实时搜索与防抖优化
 
-![筛选功能](photos\filter.png)
+![筛选功能](photos/filter.png)
 
 Fig4: 实时筛选功能
 
@@ -123,7 +123,7 @@ Fig4: 实时筛选功能
 2. **包含首张照片**：每类照片导出第一张
 3. **包含全部照片**：导出所有照片（最多10张）
 
-![导出样例](photos\export.png)
+![导出样例](photos/export.png)
 
 Fig5: 导出样例
 
@@ -139,7 +139,7 @@ Fig5: 导出样例
 - 启用/停用账号
 - 重置用户密码
 
-![员工账户管理界面](photos\staffmanage.png)
+![员工账户管理界面](photos/staffmanage.png)
 
 Fig6: 员工账户管理页面
 
@@ -149,7 +149,7 @@ Fig6: 员工账户管理页面
 - 更改登录密码
 - 查看个人信息
 
-![账户管理](photos\selfmanagement.png)
+![账户管理](photos/selfmanagement.png)
 
 Fig7: 修改个人账户信息
 
@@ -168,7 +168,7 @@ Fig7: 修改个人账户信息
 - 按关键词搜索
 - 详细的操作前后数据对比
 
-![操作日志](photos\operationlogs.png)
+![操作日志](photos/operationlogs.png)
 
 Fig8: 操作日志
 
@@ -231,7 +231,7 @@ Fig8: 操作日志
 - **预览功能**：点击照片可查看大图
 - **增量更新**：编辑时可追加新照片或删除指定照片
 
-![图片查看](photos\imagepreview.png)
+![图片查看](photos/imagepreview.png)
 
 Fig9: 图片查看
 
