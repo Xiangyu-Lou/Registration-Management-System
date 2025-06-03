@@ -16,10 +16,18 @@ const state = reactive({
   ...defaultState
 });
 
-// 从localStorage获取已保存的用户信息和token
+// 从localStorage和sessionStorage获取已保存的用户信息和token
 const init = () => {
-  const savedUser = localStorage.getItem('user');
-  const savedToken = localStorage.getItem('token');
+  // 优先检查localStorage（记住登录）
+  let savedUser = localStorage.getItem('user');
+  let savedToken = localStorage.getItem('token');
+  
+  // 如果localStorage中没有，检查sessionStorage（临时登录）
+  if (!savedUser || !savedToken) {
+    savedUser = sessionStorage.getItem('user');
+    savedToken = sessionStorage.getItem('token');
+  }
+  
   if (savedUser && savedToken) {
     try {
       const user = JSON.parse(savedUser);
@@ -30,11 +38,17 @@ const init = () => {
       if (httpService.defaults && httpService.defaults.headers) {
         httpService.defaults.headers.common['Authorization'] = `Bearer ${savedToken}`;
       }
+      console.log('成功恢复用户状态:', user.username || user.phone, '角色ID:', user.role_id);
     } catch (e) {
       console.error('Error parsing saved user data:', e);
+      // 清除损坏的数据
       localStorage.removeItem('user');
       localStorage.removeItem('token');
+      sessionStorage.removeItem('user');
+      sessionStorage.removeItem('token');
     }
+  } else {
+    console.log('未找到保存的用户状态');
   }
 };
 

@@ -49,7 +49,7 @@ const routes = [
   },
   {
     path: '/record/new',
-    name: 'EditRecord',
+    name: 'NewRecord',
     component: EditRecord,
     props: { id: null },
     meta: { requiresAuth: true }
@@ -102,7 +102,7 @@ router.beforeEach((to, from, next) => {
     if (auth.state.user.role_id === 3) {
       next({ name: 'AdminRecords' });
     } else if (auth.state.user.role_id === 4) {
-      next({ name: 'EditRecord', params: { id: null } });
+      next({ name: 'NewRecord' });
     } else {
       next({ name: 'WasteForm', params: { id: auth.state.user.unit_id } });
     }
@@ -128,7 +128,7 @@ router.beforeEach((to, from, next) => {
     if (auth.state.user.role_id === 3) {
       next({ name: 'AdminRecords' }); // 超级管理员到管理页面
     } else if (auth.state.user.role_id === 4) {
-      next({ name: 'EditRecord', params: { id: null } }); // 监督人员直接进入新增记录页面
+      next({ name: 'NewRecord' }); // 监督人员直接进入新增记录页面
     } else if (auth.state.user.role_id === 2) {
       next({ name: 'WasteForm', params: { id: auth.state.user.unit_id } }); // 单位管理员直接进入填报页面
     } else {
@@ -143,7 +143,7 @@ router.beforeEach((to, from, next) => {
       next({ name: 'AdminRecords' });
       return;
     } else if (auth.state.user.role_id === 4) {
-      next({ name: 'EditRecord', params: { id: null } }); // 监督人员直接进入新增记录页面
+      next({ name: 'NewRecord' }); // 监督人员直接进入新增记录页面
       return;
     } else if (auth.state.user.role_id === 2) {
       next({ name: 'WasteForm', params: { id: auth.state.user.unit_id } });
