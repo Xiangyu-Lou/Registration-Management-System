@@ -165,12 +165,79 @@ const exportWasteRecordsByUser = async (req, res, next) => {
     const { userId } = req.params;
     const filters = req.query;
     
+    // 获取导出类型参数
+    const exportType = req.query.exportType || 'unknown';
+    
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ error: '用户不存在' });
     }
     
     const records = await WasteRecord.exportByUser(userId, user, filters);
+    
+    // 记录导出操作日志
+    const currentUserId = req.user ? req.user.id : userId;
+    
+    // 获取导出类型的中文描述
+    const exportTypeNames = {
+      'no_images': '无照片导出',
+      'first_image': '包含首张照片导出', 
+      'all_images': '包含全部照片导出'
+    };
+    const exportTypeName = exportTypeNames[exportType] || '未知导出方式';
+    
+    // 构建筛选条件描述
+    let filterDesc = [];
+    if (filters.unitId) {
+      // 如果有单位筛选，获取单位名称
+      try {
+        const Unit = require('../models/Unit');
+        const unit = await Unit.findById(filters.unitId);
+        if (unit) {
+          filterDesc.push(`单位: ${unit.name}`);
+        }
+      } catch (e) {
+        filterDesc.push(`单位ID: ${filters.unitId}`);
+      }
+    }
+    if (filters.wasteTypeId) {
+      filterDesc.push(`废物类型ID: ${filters.wasteTypeId}`);
+    }
+    if (filters.location) {
+      filterDesc.push(`地点: ${filters.location}`);
+    }
+    if (filters.process) {
+      filterDesc.push(`工序: ${filters.process}`);
+    }
+    if (filters.dateRange) {
+      filterDesc.push(`日期范围: ${filters.dateRange}`);
+    }
+    if (filters.minQuantity || filters.maxQuantity) {
+      const minQty = filters.minQuantity || '不限';
+      const maxQty = filters.maxQuantity || '不限';
+      filterDesc.push(`数量范围: ${minQty} - ${maxQty}吨`);
+    }
+    
+    const filterText = filterDesc.length > 0 ? `, 筛选条件: ${filterDesc.join(', ')}` : ', 无筛选条件';
+    const userRoleDesc = user.role_id === 3 ? '超级管理员' : (user.role_id === 2 ? '单位管理员' : (user.role_id === 4 ? '监督人员' : '基层员工'));
+    
+    await logWasteRecordOperation(
+      req, 
+      'create', // 导出操作使用create类型，表示创建了导出文件
+      null, // 没有特定的记录ID
+      currentUserId, 
+      `导出废物记录 - 方式: ${exportTypeName}, 数据条数: ${records.length}条, 操作角色: ${userRoleDesc}${filterText}`,
+      {
+        exportType,
+        exportTypeName,
+        recordCount: records.length,
+        userRole: user.role_id,
+        userRoleName: userRoleDesc,
+        filters: filters,
+        targetUserId: parseInt(userId)
+      }
+    );
+    
     res.json(records);
   } catch (error) {
     next(error);

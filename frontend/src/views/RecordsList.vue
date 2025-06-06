@@ -785,7 +785,8 @@ export default {
           location: filterForm.location || undefined,
           process: filterForm.process || undefined,
           dateRange: filterForm.dateRange ? JSON.stringify(filterForm.dateRange) : undefined,
-          unitId: props.unitId ? parseInt(props.unitId) : undefined
+          unitId: props.unitId ? parseInt(props.unitId) : undefined,
+          exportType: 'first_image' // 添加导出类型参数
         };
         
         console.log('导出记录的筛选条件:', queryParams);
@@ -904,7 +905,8 @@ export default {
           location: filterForm.location || undefined,
           process: filterForm.process || undefined,
           dateRange: filterForm.dateRange ? JSON.stringify(filterForm.dateRange) : undefined,
-          unitId: props.unitId ? parseInt(props.unitId) : undefined
+          unitId: props.unitId ? parseInt(props.unitId) : undefined,
+          exportType: 'all_images' // 添加导出类型参数
         };
         
         console.log('导出记录的筛选条件:', queryParams);
@@ -1036,7 +1038,8 @@ export default {
           location: filterForm.location || undefined,
           process: filterForm.process || undefined,
           dateRange: filterForm.dateRange ? JSON.stringify(filterForm.dateRange) : undefined,
-          unitId: props.unitId ? parseInt(props.unitId) : undefined
+          unitId: props.unitId ? parseInt(props.unitId) : undefined,
+          exportType: 'no_images' // 添加导出类型参数
         };
 
         // 调用后端API获取完整的记录数据

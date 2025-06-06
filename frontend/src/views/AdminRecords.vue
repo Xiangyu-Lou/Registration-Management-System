@@ -766,6 +766,7 @@ export default {
           dateRange: filterForm.dateRange ? JSON.stringify(filterForm.dateRange) : undefined,
           unitId: filterForm.unitId ? filterForm.unitId : undefined,
           showSupervised: filterForm.showSupervised ? 'true' : 'false', // 转换为字符串
+          exportType: 'first_image' // 添加导出类型参数
         };
         
         console.log('导出记录的筛选条件:', queryParams);
@@ -927,6 +928,7 @@ export default {
           dateRange: filterForm.dateRange ? JSON.stringify(filterForm.dateRange) : undefined,
           unitId: filterForm.unitId ? filterForm.unitId : undefined,
           showSupervised: filterForm.showSupervised ? 'true' : 'false', // 转换为字符串
+          exportType: 'all_images' // 添加导出类型参数
         };
         
         console.log('导出记录的筛选条件:', queryParams);
@@ -1100,6 +1102,7 @@ export default {
           dateRange: filterForm.dateRange ? JSON.stringify(filterForm.dateRange) : undefined,
           unitId: filterForm.unitId ? filterForm.unitId : undefined,
           showSupervised: filterForm.showSupervised ? 'true' : 'false', // 转换为字符串
+          exportType: 'no_images' // 添加导出类型参数
         };
         
         // 调用后端API获取完整的记录数据
