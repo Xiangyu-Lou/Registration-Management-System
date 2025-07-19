@@ -27,6 +27,17 @@ export default {
     operationLogUserStats: '/api/operation-logs/user-stats',
     exportOperationLogs: '/api/operation-logs/export',
     userLogPermission: '/api/users/:id/log-permission',
+    // 公司管理相关API
+    companies: '/api/companies',
+    companyById: '/api/companies/:id',
+    companyStats: '/api/companies/:id/stats',
+    // 问题反馈相关API
+    feedback: '/api/feedback',
+    userFeedbacks: '/api/feedback/user',
+    adminFeedbacks: '/api/feedback/admin',
+    feedbackStats: '/api/feedback/stats',
+    feedbackById: '/api/feedback/:id',
+    feedbackStatus: '/api/feedback/:id/status',
   },
   
   // 获取完整 API URL

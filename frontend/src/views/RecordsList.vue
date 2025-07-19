@@ -20,7 +20,7 @@
         <el-button type="primary" @click="addNewRecord">
           <el-icon><plus /></el-icon> 新增填报
         </el-button>
-        <el-button type="success" @click="goToUserManagement" v-if="isAdmin || isUnitAdmin">
+        <el-button type="success" @click="goToUserManagement" v-if="(isAdmin && !isSupervisor) || isUnitAdmin">
           <el-icon><user /></el-icon> 人员管理
         </el-button>
         <el-button @click="refreshRecords">
@@ -446,6 +446,11 @@ export default {
     // 判断是否为单位管理员
     const isUnitAdmin = computed(() => {
       return auth.isUnitAdmin();
+    });
+    
+    // 判断是否为监督人员
+    const isSupervisor = computed(() => {
+      return auth.isSupervisor();
     });
     
     // 格式化日期时间
@@ -1130,6 +1135,7 @@ export default {
       wasteTypes,
       isAdmin,
       isUnitAdmin,
+      isSupervisor,
       parseFormattedDateTime,
       refreshRecords,
       goBack,

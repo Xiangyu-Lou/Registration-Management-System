@@ -45,6 +45,12 @@
         <el-table-column prop="phone" label="手机号" width="140" />
         <el-table-column prop="role_name" label="角色" width="120" />
         <el-table-column prop="unit_name" label="单位" min-width="120" />
+        <el-table-column 
+          v-if="isSystemAdmin" 
+          prop="company_name" 
+          label="公司" 
+          width="120" 
+        />
         
         <el-table-column label="状态" width="100" align="center">
           <template #default="scope">
@@ -131,26 +137,47 @@
         
         <el-form-item label="角色" prop="roleId">
           <el-select v-model="form.roleId" placeholder="请选择角色" style="width: 100%">
-            <!-- 如果是超级管理员，可以添加所有类型用户 -->
-            <el-option v-if="isSuperAdmin" :value="3" label="超级管理员" />
-            <el-option v-if="isSuperAdmin" :value="4" label="监督人员" />
+            <!-- 系统超级管理员可以创建所有角色用户 -->
+            <el-option v-if="isSystemAdmin" :value="5" label="系统超级管理员" />
+            <el-option v-if="isSystemAdmin || isCompanyAdmin" :value="3" label="公司管理员" />
+            <el-option v-if="isSystemAdmin || isCompanyAdmin" :value="4" label="监督人员" />
             <el-option :value="2" label="单位管理员" />
             <el-option :value="1" label="基层员工" />
           </el-select>
         </el-form-item>
         
-        <el-form-item label="单位" prop="unitId" v-if="form.roleId !== 3 && form.roleId !== 4">
+        <el-form-item label="单位" prop="unitId" v-if="form.roleId !== 3 && form.roleId !== 4 && form.roleId !== 5">
           <el-select 
             v-model="form.unitId" 
             placeholder="请选择单位" 
             style="width: 100%"
-            :disabled="!isSuperAdmin && isEdit"
+            :disabled="!isAdmin && isEdit"
           >
             <el-option 
               v-for="unit in units" 
               :key="unit.id" 
-              :label="unit.name" 
+              :label="isSystemAdmin ? `${unit.name} (${unit.company_name})` : unit.name" 
               :value="unit.id" 
+            />
+          </el-select>
+        </el-form-item>
+        
+        <!-- 系统超级管理员可以选择公司 -->
+        <el-form-item 
+          v-if="isSystemAdmin" 
+          label="公司" 
+          prop="companyId"
+        >
+          <el-select 
+            v-model="form.companyId" 
+            placeholder="请选择公司" 
+            style="width: 100%"
+          >
+            <el-option 
+              v-for="company in companies" 
+              :key="company.id" 
+              :label="company.name" 
+              :value="company.id" 
             />
           </el-select>
         </el-form-item>
@@ -211,12 +238,23 @@ export default {
     const userForm = ref(null);
     const users = ref([]);
     const units = ref([]);
+    const companies = ref([]);
     const searchKeyword = ref('');
     const allUsers = ref([]);
     
-    // 判断当前用户是否为超级管理员
+    // 判断当前用户是否为系统超级管理员
+    const isSystemAdmin = computed(() => {
+      return auth.isSystemAdmin();
+    });
+    
+    // 判断当前用户是否为公司管理员
+    const isCompanyAdmin = computed(() => {
+      return auth.isCompanyAdmin();
+    });
+    
+    // 判断当前用户是否为管理员（兼容原有逻辑）
     const isSuperAdmin = computed(() => {
-      return auth.state.isLoggedIn && (auth.state.user.role_id === 3 || auth.state.user.role_id === 4);
+      return auth.isAdmin();
     });
     
     // 判断当前用户是否可以管理日志权限（只有有日志查看权限的用户才能修改其他人的日志权限）
@@ -236,6 +274,7 @@ export default {
       phone: '',
       roleId: 1,
       unitId: null,
+      companyId: null,
       password: ''
     });
     
@@ -255,10 +294,20 @@ export default {
       unitId: [
         { 
           required: function() {
-            // 超级管理员和监督人员不需要选择单位
-            return form.roleId !== 3 && form.roleId !== 4;
+            // 系统超级管理员、公司管理员和监督人员不需要选择单位
+            return form.roleId !== 3 && form.roleId !== 4 && form.roleId !== 5;
           }, 
           message: '请选择单位', 
+          trigger: 'change' 
+        }
+      ],
+      companyId: [
+        { 
+          required: function() {
+            // 系统超级管理员创建用户时必须选择公司
+            return isSystemAdmin.value && !isEdit.value;
+          }, 
+          message: '请选择公司', 
           trigger: 'change' 
         }
       ],
@@ -327,6 +376,19 @@ export default {
       }
     };
     
+    // 获取公司列表（仅系统超级管理员需要）
+    const fetchCompanies = async () => {
+      if (!isSystemAdmin.value) return;
+      
+      try {
+        const response = await httpService.get(apiConfig.endpoints.companies);
+        companies.value = response.data;
+      } catch (error) {
+        console.error('Error fetching companies:', error);
+        ElMessage.error('获取公司列表失败');
+      }
+    };
+    
     // 打开添加对话框
     const openAddDialog = () => {
       isEdit.value = false;
@@ -336,6 +398,11 @@ export default {
       // 如果是单位管理员，默认选择当前单位
       if (!isSuperAdmin.value) {
         form.unitId = currentUnitId.value;
+      }
+      
+      // 如果不是系统超级管理员，默认选择当前用户的公司
+      if (!isSystemAdmin.value) {
+        form.companyId = auth.getCompanyId();
       }
     };
     
@@ -347,6 +414,7 @@ export default {
       form.phone = row.phone;
       form.roleId = row.role_id;
       form.unitId = row.unit_id;
+      form.companyId = row.company_id;
       form.password = ''; // 编辑时密码字段为空
       dialogVisible.value = true;
     };
@@ -422,6 +490,7 @@ export default {
       form.phone = '';
       form.roleId = 1;
       form.unitId = null;
+      form.companyId = null;
       form.password = '';
     };
     
@@ -435,8 +504,13 @@ export default {
               username: form.username,
               phone: form.phone,
               roleId: form.roleId,
-              unitId: form.roleId !== 3 ? form.unitId : null
+              unitId: (form.roleId !== 3 && form.roleId !== 4 && form.roleId !== 5) ? form.unitId : null
             };
+            
+            // 系统超级管理员可以指定公司
+            if (isSystemAdmin.value && form.companyId) {
+              userData.companyId = form.companyId;
+            }
             
             // 仅当有输入密码时，才添加密码字段
             if (form.password) {
@@ -499,6 +573,7 @@ export default {
     onMounted(() => {
       fetchUsers();
       fetchUnits();
+      fetchCompanies();
     });
     
     // 监听搜索关键字变化
@@ -514,8 +589,11 @@ export default {
       userForm,
       users,
       units,
+      companies,
       form,
       rules,
+      isSystemAdmin,
+      isCompanyAdmin,
       isSuperAdmin,
       currentUnitId,
       canManageLogPermissions,

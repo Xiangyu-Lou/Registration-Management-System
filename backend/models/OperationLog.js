@@ -11,35 +11,47 @@ class OperationLog {
       description,
       ipAddress,
       userAgent,
-      additionalData
+      additionalData,
+      companyId
     } = logData;
 
     const [result] = await pool.query(
       `INSERT INTO operation_logs 
-      (user_id, operation_type, target_type, target_id, description, ip_address, user_agent, additional_data)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [userId, operationType, targetType, targetId, description, ipAddress, userAgent, additionalData ? JSON.stringify(additionalData) : null]
+      (user_id, operation_type, target_type, target_id, description, ip_address, user_agent, additional_data, company_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [userId, operationType, targetType, targetId, description, ipAddress, userAgent, additionalData ? JSON.stringify(additionalData) : null, companyId]
     );
 
     return result.insertId;
   }
 
   // 根据用户ID查找日志
-  static async findByUserId(userId, limit = 100, offset = 0) {
-    const [rows] = await pool.query(
-      `SELECT ol.*, u.username, u.phone 
+  static async findByUserId(userId, currentUser = null, limit = 100, offset = 0) {
+    let query = `
+      SELECT ol.*, u.username, u.phone, c.name as company_name
        FROM operation_logs ol
        LEFT JOIN users u ON ol.user_id = u.id
+      LEFT JOIN companies c ON ol.company_id = c.id
        WHERE ol.user_id = ?
-       ORDER BY ol.created_at DESC
-       LIMIT ? OFFSET ?`,
-      [userId, limit, offset]
-    );
+    `;
+    
+    const params = [userId];
+    
+    // 如果不是系统超级管理员，只能查看本公司日志
+    if (currentUser && currentUser.role_id !== 5) {
+      query += ' AND ol.company_id = ?';
+      params.push(currentUser.company_id);
+    }
+    
+    query += ' ORDER BY ol.created_at DESC LIMIT ? OFFSET ?';
+    params.push(limit, offset);
+    
+    const [rows] = await pool.query(query, params);
     return rows;
   }
 
   // 获取所有日志（支持分页和筛选）
-  static async findAll(filters = {}, limit = 100, offset = 0) {
+  static async findAll(filters = {}, currentUser = null, limit = 100, offset = 0) {
     const {
       userId,
       operationType,
@@ -49,12 +61,19 @@ class OperationLog {
     } = filters;
 
     let sql = `
-      SELECT ol.*, u.username, u.phone 
+      SELECT ol.*, u.username, u.phone, c.name as company_name
       FROM operation_logs ol
       LEFT JOIN users u ON ol.user_id = u.id
+      LEFT JOIN companies c ON ol.company_id = c.id
       WHERE 1=1
     `;
     const params = [];
+
+    // 如果不是系统超级管理员，只能查看本公司日志
+    if (currentUser && currentUser.role_id !== 5) {
+      sql += ' AND ol.company_id = ?';
+      params.push(currentUser.company_id);
+    }
 
     if (userId) {
       sql += ' AND ol.user_id = ?';
@@ -144,7 +163,7 @@ class OperationLog {
   }
 
   // 带分页和筛选的查询方法
-  static async findWithFilters(filters = {}, pagination = {}) {
+  static async findWithFilters(filters = {}, pagination = {}, currentUser = null) {
     const {
       operationType,
       targetType,
@@ -163,9 +182,16 @@ class OperationLog {
     let baseSql = `
       FROM operation_logs ol
       LEFT JOIN users u ON ol.user_id = u.id
+      LEFT JOIN companies c ON ol.company_id = c.id
       WHERE 1=1
     `;
     const params = [];
+
+    // 如果不是系统超级管理员，只能查看本公司日志
+    if (currentUser && currentUser.role_id !== 5) {
+      baseSql += ' AND ol.company_id = ?';
+      params.push(currentUser.company_id);
+    }
 
     if (operationType) {
       baseSql += ' AND ol.operation_type = ?';
@@ -209,12 +235,13 @@ class OperationLog {
 
     // 获取分页数据
     const dataSql = `
-      SELECT ol.*, u.username, u.phone, u.role_id,
+      SELECT ol.*, u.username, u.phone, u.role_id, c.name as company_name,
       CASE u.role_id
         WHEN 1 THEN '基层员工'
         WHEN 2 THEN '单位管理员'
-        WHEN 3 THEN '超级管理员'
+        WHEN 3 THEN '公司管理员'
         WHEN 4 THEN '监督人员'
+        WHEN 5 THEN '系统超级管理员'
         ELSE '未知'
       END as role_name
       ${baseSql}
@@ -241,7 +268,7 @@ class OperationLog {
   }
 
   // 获取操作类型统计
-  static async getStats(startDate, endDate) {
+  static async getStats(startDate, endDate, currentUser = null) {
     try {
       let sql = `
         SELECT 
@@ -252,6 +279,12 @@ class OperationLog {
         WHERE 1=1
       `;
       const params = [];
+
+      // 如果不是系统超级管理员，只能查看本公司统计
+      if (currentUser && currentUser.role_id !== 5) {
+        sql += ' AND company_id = ?';
+        params.push(currentUser.company_id);
+      }
 
       if (startDate) {
         sql += ' AND created_at >= ?';
@@ -276,6 +309,12 @@ class OperationLog {
         WHERE 1=1
       `;
       const totalParams = [];
+
+      // 如果不是系统超级管理员，只能查看本公司统计
+      if (currentUser && currentUser.role_id !== 5) {
+        totalSql += ' AND company_id = ?';
+        totalParams.push(currentUser.company_id);
+      }
 
       if (startDate) {
         totalSql += ' AND created_at >= ?';
@@ -306,18 +345,20 @@ class OperationLog {
   }
 
   // 获取用户操作统计
-  static async getUserStats(startDate, endDate, limit = 10) {
+  static async getUserStats(startDate, endDate, currentUser = null, limit = 10) {
     try {
       let sql = `
         SELECT 
           ol.user_id,
           u.username,
           u.phone,
+          c.name as company_name,
           CASE u.role_id
             WHEN 1 THEN '基层员工'
             WHEN 2 THEN '单位管理员'
-            WHEN 3 THEN '超级管理员'
+            WHEN 3 THEN '公司管理员'
             WHEN 4 THEN '监督人员'
+            WHEN 5 THEN '系统超级管理员'
             ELSE '未知'
           END as role_name,
           COUNT(*) as operation_count,
@@ -328,9 +369,16 @@ class OperationLog {
           MAX(ol.created_at) as last_operation_time
         FROM operation_logs ol
         LEFT JOIN users u ON ol.user_id = u.id
+        LEFT JOIN companies c ON ol.company_id = c.id
         WHERE 1=1
       `;
       const params = [];
+
+      // 如果不是系统超级管理员，只能查看本公司统计
+      if (currentUser && currentUser.role_id !== 5) {
+        sql += ' AND ol.company_id = ?';
+        params.push(currentUser.company_id);
+      }
 
       if (startDate) {
         sql += ' AND ol.created_at >= ?';
@@ -342,7 +390,7 @@ class OperationLog {
         params.push(endDate);
       }
 
-      sql += ' GROUP BY ol.user_id, u.username, u.phone, u.role_id';
+      sql += ' GROUP BY ol.user_id, u.username, u.phone, u.role_id, c.name';
       sql += ' ORDER BY operation_count DESC';
       sql += ' LIMIT ?';
       params.push(limit);
@@ -356,7 +404,7 @@ class OperationLog {
   }
 
   // 导出所有符合条件的日志
-  static async findAllWithFilters(filters = {}) {
+  static async findAllWithFilters(filters = {}, currentUser = null) {
     try {
       const {
         operationType,
@@ -369,19 +417,27 @@ class OperationLog {
       } = filters;
 
       let sql = `
-        SELECT ol.*, u.username, u.phone, u.role_id,
+        SELECT ol.*, u.username, u.phone, u.role_id, c.name as company_name,
         CASE u.role_id
           WHEN 1 THEN '基层员工'
           WHEN 2 THEN '单位管理员'
-          WHEN 3 THEN '超级管理员'
+          WHEN 3 THEN '公司管理员'
           WHEN 4 THEN '监督人员'
+          WHEN 5 THEN '系统超级管理员'
           ELSE '未知'
         END as role_name
         FROM operation_logs ol
         LEFT JOIN users u ON ol.user_id = u.id
+        LEFT JOIN companies c ON ol.company_id = c.id
         WHERE 1=1
       `;
       const params = [];
+
+      // 如果不是系统超级管理员，只能查看本公司日志
+      if (currentUser && currentUser.role_id !== 5) {
+        sql += ' AND ol.company_id = ?';
+        params.push(currentUser.company_id);
+      }
 
       if (operationType) {
         sql += ' AND ol.operation_type = ?';

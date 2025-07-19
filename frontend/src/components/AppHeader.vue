@@ -7,10 +7,16 @@
       <span class="welcome-text">
         欢迎,
         <strong>{{ userName }}</strong>
+        <span v-if="auth.state.user.company_name" class="company-tag">
+          {{ auth.state.user.company_name }}
+        </span>
         <span v-if="auth.state.user.unit_name" class="unit-tag">
           {{ auth.state.user.unit_name }}
         </span>
       </span>
+      <el-button type="text" class="feedback-button" @click="goToFeedback">
+        <el-icon><chat-line-round /></el-icon> 问题反馈
+      </el-button>
       <el-button type="text" class="profile-button" @click="goToProfile">
         <el-icon><user /></el-icon> 账号设置
       </el-button>
@@ -25,10 +31,14 @@
 import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
+import { ChatLineRound } from '@element-plus/icons-vue';
 import auth from '../store/auth';
 
 export default {
   name: 'AppHeader',
+  components: {
+    ChatLineRound
+  },
   setup() {
     const router = useRouter();
     
@@ -50,11 +60,17 @@ export default {
       router.push('/profile');
     };
     
+    // 跳转到问题反馈页面
+    const goToFeedback = () => {
+      router.push({ name: 'FeedbackList' });
+    };
+    
     return {
       auth,
       userName,
       handleLogout,
-      goToProfile
+      goToProfile,
+      goToFeedback
     };
   }
 };
@@ -86,7 +102,7 @@ export default {
   font-size: 14px;
 }
 
-.role-tag, .unit-tag {
+.role-tag, .unit-tag, .company-tag {
   font-size: 12px;
   margin-left: 5px;
   padding: 2px 6px;
@@ -94,6 +110,11 @@ export default {
   background-color: rgba(255, 255, 255, 0.3);
 }
 
+.company-tag {
+  background-color: rgba(255, 215, 0, 0.6); /* 金色背景表示公司 */
+}
+
+.feedback-button,
 .profile-button,
 .logout-button {
   color: white;
@@ -101,6 +122,7 @@ export default {
   margin-left: 15px;
 }
 
+.feedback-button:hover,
 .profile-button:hover,
 .logout-button:hover {
   color: #f0f0f0;
@@ -137,7 +159,7 @@ export default {
     align-items: center;
   }
   
-  .role-tag, .unit-tag {
+  .role-tag, .unit-tag, .company-tag {
     font-size: 10px;
     margin-left: 3px;
     padding: 1px 4px;

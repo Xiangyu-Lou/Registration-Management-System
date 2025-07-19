@@ -1,28 +1,73 @@
 const { pool } = require('../config/database');
 
 class Unit {
-  // 获取所有单位
-  static async findAll() {
-    const [rows] = await pool.query('SELECT * FROM units ORDER BY name');
+  // 获取所有单位（系统超级管理员可看全部，其他用户只看本公司）
+  static async findAll(currentUser = null) {
+    let query = `
+      SELECT u.*, c.name as company_name 
+      FROM units u 
+      JOIN companies c ON u.company_id = c.id
+    `;
+    
+    const params = [];
+    
+    // 如果不是系统超级管理员，只能查看本公司单位
+    if (currentUser && currentUser.role_id !== 5) {
+      query += ' WHERE u.company_id = ?';
+      params.push(currentUser.company_id);
+    }
+    
+    query += ' ORDER BY c.name ASC, u.name ASC';
+    
+    const [rows] = await pool.query(query, params);
     return rows;
   }
 
   // 根据ID查找单位
-  static async findById(id) {
-    const [rows] = await pool.query('SELECT * FROM units WHERE id = ?', [id]);
+  static async findById(id, currentUser = null) {
+    let query = `
+      SELECT u.*, c.name as company_name 
+      FROM units u 
+      JOIN companies c ON u.company_id = c.id 
+      WHERE u.id = ?
+    `;
+    
+    const params = [id];
+    
+    // 如果不是系统超级管理员，只能查看本公司单位
+    if (currentUser && currentUser.role_id !== 5) {
+      query += ' AND u.company_id = ?';
+      params.push(currentUser.company_id);
+    }
+    
+    const [rows] = await pool.query(query, params);
     return rows[0] || null;
   }
 
   // 根据名称查找单位
-  static async findByName(name) {
-    const [rows] = await pool.query('SELECT * FROM units WHERE name = ?', [name]);
+  static async findByName(name, companyId = null) {
+    let query = `
+      SELECT u.*, c.name as company_name 
+      FROM units u 
+      JOIN companies c ON u.company_id = c.id 
+      WHERE u.name = ?
+    `;
+    
+    const params = [name];
+    
+    if (companyId) {
+      query += ' AND u.company_id = ?';
+      params.push(companyId);
+    }
+    
+    const [rows] = await pool.query(query, params);
     return rows[0] || null;
   }
 
-  // 检查单位名称是否已存在
-  static async nameExists(name, excludeId = null) {
-    let query = 'SELECT id FROM units WHERE name = ?';
-    let params = [name];
+  // 检查单位名称是否已存在（在同一公司内）
+  static async nameExists(name, companyId, excludeId = null) {
+    let query = 'SELECT id FROM units WHERE name = ? AND company_id = ?';
+    let params = [name, companyId];
     
     if (excludeId) {
       query += ' AND id != ?';
@@ -35,15 +80,15 @@ class Unit {
 
   // 创建单位
   static async create(unitData) {
-    const { name } = unitData;
-    const [result] = await pool.query('INSERT INTO units (name) VALUES (?)', [name]);
+    const { name, companyId } = unitData;
+    const [result] = await pool.query('INSERT INTO units (name, company_id) VALUES (?, ?)', [name, companyId]);
     return result.insertId;
   }
 
   // 更新单位
   static async update(id, unitData) {
-    const { name } = unitData;
-    await pool.query('UPDATE units SET name = ? WHERE id = ?', [name, id]);
+    const { name, companyId } = unitData;
+    await pool.query('UPDATE units SET name = ?, company_id = ? WHERE id = ?', [name, companyId, id]);
     return true;
   }
 
@@ -63,6 +108,25 @@ class Unit {
   static async hasWasteRecords(id) {
     const [rows] = await pool.query('SELECT COUNT(*) as count FROM waste_records WHERE unit_id = ?', [id]);
     return rows[0].count > 0;
+  }
+
+  // 根据公司ID获取单位
+  static async findByCompanyId(companyId) {
+    const [rows] = await pool.query(
+      `SELECT u.*, c.name as company_name 
+       FROM units u 
+       JOIN companies c ON u.company_id = c.id 
+       WHERE u.company_id = ? 
+       ORDER BY u.name ASC`, 
+      [companyId]
+    );
+    return rows;
+  }
+
+  // 检查单位是否属于指定公司
+  static async belongsToCompany(unitId, companyId) {
+    const [rows] = await pool.query('SELECT id FROM units WHERE id = ? AND company_id = ?', [unitId, companyId]);
+    return rows.length > 0;
   }
 }
 

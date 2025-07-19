@@ -49,6 +49,9 @@ const createWasteRecord = async (req, res, next) => {
       }
     }
     
+    // 获取公司ID（从当前用户）
+    const companyId = req.user ? req.user.company_id : null;
+    
     // 创建记录
     const recordId = await WasteRecord.create({
       unitId,
@@ -61,7 +64,8 @@ const createWasteRecord = async (req, res, next) => {
       creatorId: userId,
       remarks,
       process,
-      isSupervised: isSupervisedValue
+      isSupervised: isSupervisedValue,
+      companyId
     });
     
     // 获取创建后的完整记录信息用于日志
@@ -111,30 +115,17 @@ const getWasteRecordsByUnit = async (req, res, next) => {
   try {
     const { unitId } = req.params;
     
-    // 判断用户角色
-    const token = req.headers.authorization?.split(' ')[1];
-    let isAdmin = false;
-    
-    if (token) {
-      try {
-        const decoded = verifyToken(token);
-        isAdmin = decoded.role_id === 3; // 只有超级管理员可以看到所有数据
-      } catch (err) {
-        console.error('Token验证失败:', err);
-      }
-    }
-    
-    const records = await WasteRecord.findByUnitId(unitId, isAdmin);
+    const records = await WasteRecord.findByUnitId(unitId, req.user);
     res.json(records);
   } catch (error) {
     next(error);
   }
 };
 
-// 获取所有废物记录
+// 获取所有废物记录（根据用户权限过滤）
 const getAllWasteRecords = async (req, res, next) => {
   try {
-    const records = await WasteRecord.findAll();
+    const records = await WasteRecord.findAll(req.user);
     res.json(records);
   } catch (error) {
     next(error);
@@ -276,7 +267,8 @@ const updateWasteRecord = async (req, res, next) => {
       remarks, 
       process,
       photos_to_remove_before,  // 要删除的收集前照片列表
-      photos_to_remove_after    // 要删除的收集后照片列表
+      photos_to_remove_after,   // 要删除的收集后照片列表
+      companyId                 // 公司ID（仅系统超级管理员可修改）
     } = req.body;
     
     // 验证记录是否存在
@@ -365,6 +357,12 @@ const updateWasteRecord = async (req, res, next) => {
     // 使用工具函数格式化收集时间，确保时区一致性
     const collectionStartTime = parseCollectionTime(collectionDate, collectionTime);
     
+    // 确定公司ID（仅系统超级管理员可修改）
+    let updateCompanyId = undefined;
+    if (companyId !== undefined && req.user?.role_id === 5) {
+      updateCompanyId = companyId;
+    }
+    
     // 更新记录
     await WasteRecord.update(id, {
       unitId,
@@ -375,7 +373,8 @@ const updateWasteRecord = async (req, res, next) => {
       photoPathAfter: newPhotoPathAfter,
       quantity: quantityValue,
       remarks,
-      process
+      process,
+      companyId: updateCompanyId
     });
     
     // 获取更新后的完整记录信息

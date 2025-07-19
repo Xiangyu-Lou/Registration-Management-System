@@ -282,6 +282,7 @@ export default {
       '无棣': ['车41注采站', '车142注采站', '车40注采站', '车408注采站', '车274注采站', '车1接转站', '东风港联合站', '其他'],
       '河口': ['沾14东注采站', '沾14西注采站', '渤南注采站', '大北注采站', '沾5注采站', '太平接转站', '沾5接转站', '其他'],
       '胜兴': ['博兴注采站', '其他'],
+      '单位1': ['注采站a', '注采站b', '其他'],
       '其他': ['其他']
     };
     
@@ -334,9 +335,9 @@ export default {
       return !route.params.id || route.params.id === 'new';
     });
     
-    // 检查用户是否为超级管理员
+    // 检查用户是否为管理员（系统超级管理员、公司管理员或监督人员）
     const isAdmin = computed(() => {
-      return auth.state.isLoggedIn && (auth.state.user.role_id === 3 || auth.state.user.role_id === 4);
+      return auth.state.isLoggedIn && (auth.state.user.role_id === 3 || auth.state.user.role_id === 4 || auth.state.user.role_id === 5);
     });
     
     // 检查用户是否为监督人员
@@ -1355,13 +1356,22 @@ export default {
 
     // 返回上一页
     const goBack = () => {
-      if (isAdmin.value) {
-        router.push('/admin-records');
-      } else {
+      // 根据用户角色决定返回的页面
+      if (auth.state.user.role_id === 5) {
+        // 系统超级管理员返回到系统管理页面
+        router.push({ name: 'SuperAdminRecords' });
+      } else if (auth.state.user.role_id === 3 || auth.state.user.role_id === 4) {
+        // 公司管理员和监督人员返回到公司管理页面
+        router.push({ name: 'AdminRecords' });
+      } else if (auth.state.user.unit_id) {
+        // 单位管理员和基层员工返回到记录列表页面
         router.push({ 
           name: 'RecordsList', 
           params: { unitId: auth.state.user.unit_id } 
         });
+      } else {
+        // 没有单位的用户返回到单位选择页面
+        router.push({ name: 'UnitSelection' });
       }
     };
 

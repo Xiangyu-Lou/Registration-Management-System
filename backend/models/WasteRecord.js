@@ -15,14 +15,15 @@ class WasteRecord {
       creatorId,
       remarks,
       process,
-      isSupervised
+      isSupervised,
+      companyId
     } = recordData;
 
     const [result] = await pool.query(
       `INSERT INTO waste_records 
-      (unit_id, waste_type_id, location, collection_start_time, photo_path_before, photo_path_after, quantity, created_at, creator_id, remarks, process, is_supervised)
-      VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?)`,
-      [unitId, wasteTypeId, location, collectionStartTime, photoPathBefore, photoPathAfter, quantity, creatorId, remarks, process, isSupervised]
+      (unit_id, waste_type_id, location, collection_start_time, photo_path_before, photo_path_after, quantity, created_at, creator_id, remarks, process, is_supervised, company_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?)`,
+      [unitId, wasteTypeId, location, collectionStartTime, photoPathBefore, photoPathAfter, quantity, creatorId, remarks, process, isSupervised, companyId]
     );
 
     return result.insertId;
@@ -31,11 +32,12 @@ class WasteRecord {
   // 根据ID查找记录
   static async findById(id) {
     const [rows] = await pool.query(
-      `SELECT wr.*, u.name as unit_name, wt.name as waste_type_name,
+      `SELECT wr.*, u.name as unit_name, wt.name as waste_type_name, c.name as company_name,
        IFNULL(creator.username, creator.phone) as creator_name
        FROM waste_records wr
        JOIN units u ON wr.unit_id = u.id
        JOIN waste_types wt ON wr.waste_type_id = wt.id
+       JOIN companies c ON wr.company_id = c.id
        LEFT JOIN users creator ON wr.creator_id = creator.id
        WHERE wr.id = ?`,
       [id]
@@ -43,36 +45,55 @@ class WasteRecord {
     return rows[0] || null;
   }
 
-  // 获取所有记录
-  static async findAll() {
-    const [rows] = await pool.query(
-      `SELECT wr.*, u.name as unit_name, wt.name as waste_type_name,
+  // 获取所有记录（系统超级管理员可看全部，其他用户只看本公司）
+  static async findAll(currentUser = null) {
+    let query = `
+      SELECT wr.*, u.name as unit_name, wt.name as waste_type_name, c.name as company_name,
        IFNULL(creator.username, creator.phone) as creator_name
        FROM waste_records wr
        JOIN units u ON wr.unit_id = u.id
        JOIN waste_types wt ON wr.waste_type_id = wt.id
+       JOIN companies c ON wr.company_id = c.id
        LEFT JOIN users creator ON wr.creator_id = creator.id
-       ORDER BY wr.created_at DESC`
-    );
+    `;
+    
+    const params = [];
+    
+    // 如果不是系统超级管理员，只能查看本公司记录
+    if (currentUser && currentUser.role_id !== 5) {
+      query += ' WHERE wr.company_id = ?';
+      params.push(currentUser.company_id);
+    }
+    
+    query += ' ORDER BY wr.created_at DESC';
+    
+    const [rows] = await pool.query(query, params);
     return rows;
   }
 
   // 根据单位ID获取记录
-  static async findByUnitId(unitId, isAdmin = false) {
+  static async findByUnitId(unitId, currentUser = null) {
     let query = `
-      SELECT wr.*, u.name as unit_name, wt.name as waste_type_name,
+      SELECT wr.*, u.name as unit_name, wt.name as waste_type_name, c.name as company_name,
        IFNULL(creator.username, creator.phone) as creator_name
        FROM waste_records wr
        JOIN units u ON wr.unit_id = u.id
        JOIN waste_types wt ON wr.waste_type_id = wt.id
+       JOIN companies c ON wr.company_id = c.id
        LEFT JOIN users creator ON wr.creator_id = creator.id
        WHERE wr.unit_id = ?
     `;
 
     const params = [unitId];
 
-    // 如果不是超级管理员，则不显示监督数据
-    if (!isAdmin) {
+    // 如果不是系统超级管理员，只能查看本公司记录
+    if (currentUser && currentUser.role_id !== 5) {
+      query += ' AND wr.company_id = ?';
+      params.push(currentUser.company_id);
+    }
+
+    // 如果不是超级管理员或系统管理员，则不显示监督数据
+    if (currentUser && currentUser.role_id !== 3 && currentUser.role_id !== 5) {
       query += ' AND (wr.is_supervised IS NULL OR wr.is_supervised != 1)';
     }
 
@@ -101,6 +122,7 @@ class WasteRecord {
       FROM waste_records wr
       JOIN units u ON wr.unit_id = u.id
       JOIN waste_types wt ON wr.waste_type_id = wt.id
+      JOIN companies c ON wr.company_id = c.id
       LEFT JOIN users creator ON wr.creator_id = creator.id
       WHERE 1=1
     `;
@@ -108,7 +130,7 @@ class WasteRecord {
     const params = [];
 
     // 根据用户角色添加权限过滤
-    if (user.role_id !== 3 && user.role_id !== 4) { // 不是超级管理员或监督人员
+    if (user.role_id !== 3 && user.role_id !== 4 && user.role_id !== 5) { // 不是公司管理员、监督人员或系统超级管理员
       baseSql += ' AND wr.unit_id = ?';
       params.push(user.unit_id);
 
@@ -117,8 +139,14 @@ class WasteRecord {
         baseSql += ' AND (wr.is_supervised IS NULL OR wr.is_supervised != 1)';
       }
     } else if (user.role_id === 3 && showSupervised === 'false') {
-      // 超级管理员特殊处理：如果showSupervised为false，则不显示监督人员录入的数据
+      // 公司管理员特殊处理：如果showSupervised为false，则不显示监督人员录入的数据
       baseSql += ' AND (wr.is_supervised IS NULL OR wr.is_supervised != 1)';
+    }
+
+    // 如果不是系统超级管理员，只能查看本公司记录
+    if (user.role_id !== 5) {
+      baseSql += ' AND wr.company_id = ?';
+      params.push(user.company_id);
     }
 
     // 监督人员只能查看自己提交的记录
@@ -188,7 +216,7 @@ class WasteRecord {
 
     // 添加排序和分页
     const dataSql = `
-      SELECT wr.*, u.name as unit_name, wt.name as waste_type_name,
+      SELECT wr.*, u.name as unit_name, wt.name as waste_type_name, c.name as company_name,
       IFNULL(creator.username, creator.phone) as creator_name
       ${baseSql} ORDER BY wr.created_at DESC LIMIT ? OFFSET ?
     `;
@@ -220,11 +248,12 @@ class WasteRecord {
     } = filters;
 
     let sql = `
-      SELECT wr.*, u.name as unit_name, wt.name as waste_type_name,
+      SELECT wr.*, u.name as unit_name, wt.name as waste_type_name, c.name as company_name,
       IFNULL(creator.username, creator.phone) as creator_name
       FROM waste_records wr
       JOIN units u ON wr.unit_id = u.id
       JOIN waste_types wt ON wr.waste_type_id = wt.id
+      JOIN companies c ON wr.company_id = c.id
       LEFT JOIN users creator ON wr.creator_id = creator.id
       WHERE 1=1
     `;
@@ -232,7 +261,7 @@ class WasteRecord {
     const params = [];
 
     // 根据用户角色添加权限过滤
-    if (user.role_id !== 3 && user.role_id !== 4) { // 不是超级管理员或监督人员
+    if (user.role_id !== 3 && user.role_id !== 4 && user.role_id !== 5) { // 不是公司管理员、监督人员或系统超级管理员
       sql += ' AND wr.unit_id = ?';
       params.push(user.unit_id);
 
@@ -241,8 +270,14 @@ class WasteRecord {
         sql += ' AND (wr.is_supervised IS NULL OR wr.is_supervised != 1)';
       }
     } else if (user.role_id === 3 && showSupervised === 'false') {
-      // 超级管理员特殊处理：如果showSupervised为false，则不显示监督人员录入的数据
+      // 公司管理员特殊处理：如果showSupervised为false，则不显示监督人员录入的数据
       sql += ' AND (wr.is_supervised IS NULL OR wr.is_supervised != 1)';
+    }
+
+    // 如果不是系统超级管理员，只能查看本公司记录
+    if (user.role_id !== 5) {
+      sql += ' AND wr.company_id = ?';
+      params.push(user.company_id);
     }
 
     // 监督人员只能查看自己提交的记录
@@ -323,16 +358,26 @@ class WasteRecord {
       photoPathAfter,
       quantity,
       remarks,
-      process
+      process,
+      companyId
     } = recordData;
 
-    await pool.query(
-      `UPDATE waste_records SET 
+    let query = `UPDATE waste_records SET 
        unit_id = ?, waste_type_id = ?, location = ?, collection_start_time = ?, 
-       photo_path_before = ?, photo_path_after = ?, quantity = ?, remarks = ?, process = ?
-       WHERE id = ?`,
-      [unitId, wasteTypeId, location, collectionStartTime, photoPathBefore, photoPathAfter, quantity, remarks, process, id]
-    );
+       photo_path_before = ?, photo_path_after = ?, quantity = ?, remarks = ?, process = ?`;
+    
+    let params = [unitId, wasteTypeId, location, collectionStartTime, photoPathBefore, photoPathAfter, quantity, remarks, process];
+    
+    // 如果传入了companyId，则更新公司字段（主要用于系统超级管理员转移记录）
+    if (companyId !== undefined) {
+      query += `, company_id = ?`;
+      params.push(companyId);
+    }
+    
+    query += ` WHERE id = ?`;
+    params.push(id);
+
+    await pool.query(query, params);
 
     return true;
   }

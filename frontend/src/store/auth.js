@@ -142,9 +142,19 @@ const logout = () => {
   sessionStorage.removeItem('token');
 };
 
-// 判断是否为超级管理员
+// 判断是否为系统超级管理员
+const isSystemAdmin = () => {
+  return state.isLoggedIn && state.user && state.user.role_id === 5;
+};
+
+// 判断是否为公司管理员
+const isCompanyAdmin = () => {
+  return state.isLoggedIn && state.user && state.user.role_id === 3;
+};
+
+// 判断是否为管理员（公司管理员、监督人员或系统超级管理员）
 const isAdmin = () => {
-  return state.isLoggedIn && state.user && (state.user.role_id === 3 || state.user.role_id === 4);
+  return state.isLoggedIn && state.user && (state.user.role_id === 3 || state.user.role_id === 4 || state.user.role_id === 5);
 };
 
 // 判断是否为单位管理员
@@ -165,6 +175,16 @@ const getUserId = () => {
 // 获取当前用户单位ID
 const getUnitId = () => {
   return state.user ? state.user.unit_id : null;
+};
+
+// 获取当前用户公司ID
+const getCompanyId = () => {
+  return state.user ? state.user.company_id : null;
+};
+
+// 获取当前用户公司名称
+const getCompanyName = () => {
+  return state.user ? state.user.company_name : null;
 };
 
 // 更新用户信息
@@ -191,10 +211,14 @@ export default {
   state,
   login,
   logout,
+  isSystemAdmin,
+  isCompanyAdmin,
   isAdmin,
   isUnitAdmin,
   isSupervisor,
   getUserId,
   getUnitId,
+  getCompanyId,
+  getCompanyName,
   updateUserInfo
 };

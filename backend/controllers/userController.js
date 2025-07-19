@@ -2,21 +2,21 @@ const User = require('../models/User');
 const { hashPassword, comparePassword } = require('../utils/auth');
 const { logUserManagementOperation } = require('../utils/logger');
 
-// 获取所有用户
+// 获取所有用户（根据用户权限过滤）
 const getAllUsers = async (req, res, next) => {
   try {
-    const users = await User.findAll();
+    const users = await User.findAll(req.user);
     res.json(users);
   } catch (error) {
     next(error);
   }
 };
 
-// 获取指定单位的用户
+// 获取指定单位的用户（根据用户权限过滤）
 const getUsersByUnit = async (req, res, next) => {
   try {
     const { unitId } = req.params;
-    const users = await User.findByUnitId(unitId);
+    const users = await User.findByUnitId(unitId, req.user);
     res.json(users);
   } catch (error) {
     next(error);
@@ -41,6 +41,8 @@ const getUserById = async (req, res, next) => {
       role_id: user.role_id,
       unit_id: user.unit_id,
       unit_name: user.unit_name,
+      company_id: user.company_id,
+      company_name: user.company_name,
       status: user.status
     });
   } catch (error) {
@@ -51,11 +53,26 @@ const getUserById = async (req, res, next) => {
 // 创建用户
 const createUser = async (req, res, next) => {
   try {
-    const { username, phone, password, roleId, unitId } = req.body;
+    const { username, phone, password, roleId, unitId, companyId } = req.body;
     
     // 验证必填字段
     if (!username || !phone || !roleId) {
       return res.status(400).json({ error: '用户名、手机号和角色是必填字段' });
+    }
+    
+    // 确定用户所属公司
+    let userCompanyId = companyId;
+    if (!userCompanyId) {
+      // 如果没有指定公司ID，使用当前用户的公司ID（除非是系统超级管理员）
+      if (req.user.role_id === 5) {
+        return res.status(400).json({ error: '系统超级管理员必须指定用户所属公司' });
+      }
+      userCompanyId = req.user.company_id;
+    } else {
+      // 如果指定了公司ID，检查权限
+      if (req.user.role_id !== 5 && req.user.company_id !== userCompanyId) {
+        return res.status(403).json({ error: '只能在本公司内创建用户' });
+      }
     }
     
     // 检查手机号是否已存在
@@ -76,7 +93,8 @@ const createUser = async (req, res, next) => {
       phone,
       password: hashedPassword,
       roleId,
-      unitId
+      unitId,
+      companyId: userCompanyId
     });
     
     // 获取创建后的完整用户信息用于日志
@@ -122,7 +140,7 @@ const createUser = async (req, res, next) => {
 const updateUser = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { username, phone, password, roleId, unitId } = req.body;
+    const { username, phone, password, roleId, unitId, companyId } = req.body;
     
     // 验证用户是否存在
     const existingUser = await User.findById(id);
@@ -130,9 +148,23 @@ const updateUser = async (req, res, next) => {
       return res.status(404).json({ error: '用户不存在' });
     }
     
+    // 权限检查：非系统超级管理员只能管理本公司用户
+    if (req.user.role_id !== 5 && req.user.company_id !== existingUser.company_id) {
+      return res.status(403).json({ error: '只能管理本公司用户' });
+    }
+    
     // 验证必填字段
     if (!username || !phone || !roleId) {
       return res.status(400).json({ error: '用户名、手机号和角色是必填字段' });
+    }
+    
+    // 确定用户所属公司
+    let userCompanyId = companyId !== undefined ? companyId : existingUser.company_id;
+    if (companyId !== undefined && req.user.role_id !== 5) {
+      // 非系统超级管理员不能转移用户到其他公司
+      if (companyId !== req.user.company_id) {
+        return res.status(403).json({ error: '无权将用户转移到其他公司' });
+      }
     }
     
     // 检查手机号是否被其他用户使用
@@ -163,7 +195,8 @@ const updateUser = async (req, res, next) => {
       phone,
       password: hashedPassword,
       roleId,
-      unitId
+      unitId,
+      companyId: userCompanyId
     });
     
     // 获取更新后的完整用户信息

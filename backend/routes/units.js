@@ -9,11 +9,11 @@ const {
 } = require('../controllers/unitController');
 const { authenticateToken, requireSuperAdmin } = require('../middleware/auth');
 
-// 获取所有单位（无需特殊权限）
-router.get('/', getAllUnits);
+// 获取所有单位（需要登录认证，会根据用户权限过滤）
+router.get('/', authenticateToken, getAllUnits);
 
-// 获取单位详情（无需特殊权限）
-router.get('/:id', getUnitById);
+// 获取单位详情（需要登录认证，会根据用户权限过滤）
+router.get('/:id', authenticateToken, getUnitById);
 
 // 创建单位（需要超级管理员权限）
 router.post('/', authenticateToken, requireSuperAdmin, createUnit);

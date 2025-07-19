@@ -20,7 +20,9 @@ const generateToken = (user, rememberMe = false) => {
     username: user.username,
     phone: user.phone,
     role_id: user.role_id,
-    unit_id: user.unit_id
+    unit_id: user.unit_id,
+    company_id: user.company_id,
+    company_name: user.company_name
   };
   
   const expiresIn = rememberMe ? jwtConfig.expiresIn.remember : jwtConfig.expiresIn.default;

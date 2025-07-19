@@ -24,8 +24,8 @@
 </template>
 
 <script>
-import axios from 'axios';
 import { ElMessage } from 'element-plus';
+import httpService from '../config/httpService';
 import api from '../config/api';
 
 export default {
@@ -44,7 +44,7 @@ export default {
       this.loading = true;
       try {
         console.log('正在获取单位列表...');
-        const response = await axios.get(api.getUrl(api.endpoints.units));
+        const response = await httpService.get(api.endpoints.units);
         console.log('获取单位列表成功:', response.data);
         this.units = response.data;
       } catch (error) {

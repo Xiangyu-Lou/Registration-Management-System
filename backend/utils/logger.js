@@ -23,8 +23,9 @@ const logLogin = async (req, userId, username, success = true, reason = '', user
       // 登录成功
       const roleText = userInfo?.roleName || '未知角色';
       const unitText = userInfo?.unitName || '无单位';
+      const companyText = userInfo?.companyName || '未知公司';
       const rememberText = userInfo?.rememberMe ? '(记住登录)' : '';
-      description = `用户登录成功 - 用户名: ${username}, 手机号: ${userInfo?.phone || username}, 角色: ${roleText}, 单位: ${unitText}${rememberText}`;
+      description = `用户登录成功 - 用户名: ${username}, 手机号: ${userInfo?.phone || username}, 角色: ${roleText}, 单位: ${unitText}, 公司: ${companyText}${rememberText}`;
       
       if (userInfo) {
         additionalData = { ...additionalData, ...userInfo };
@@ -35,7 +36,8 @@ const logLogin = async (req, userId, username, success = true, reason = '', user
         // 有用户信息（用户存在但登录失败）
         const roleText = userInfo.roleName || '未知角色';
         const unitText = userInfo.unitName || '无单位';
-        description = `用户登录失败 - 用户名: ${username}, 手机号: ${userInfo.phone || username}, 角色: ${roleText}, 单位: ${unitText}, 失败原因: ${reason}`;
+        const companyText = userInfo.companyName || '未知公司';
+        description = `用户登录失败 - 用户名: ${username}, 手机号: ${userInfo.phone || username}, 角色: ${roleText}, 单位: ${unitText}, 公司: ${companyText}, 失败原因: ${reason}`;
         additionalData = { ...additionalData, ...userInfo };
       } else {
         // 无用户信息（用户不存在）
@@ -51,7 +53,8 @@ const logLogin = async (req, userId, username, success = true, reason = '', user
       description,
       ipAddress: getClientIP(req),
       userAgent: req.headers['user-agent'],
-      additionalData
+      additionalData,
+      companyId: userInfo?.company_id || null
     });
   } catch (error) {
     console.error('记录登录日志失败:', error);
@@ -61,6 +64,9 @@ const logLogin = async (req, userId, username, success = true, reason = '', user
 // 记录废物记录操作日志
 const logWasteRecordOperation = async (req, operationType, recordId, userId, description, additionalData = null) => {
   try {
+    // 从请求中获取公司ID
+    const companyId = req.user?.company_id || null;
+    
     await OperationLog.create({
       userId,
       operationType,
@@ -69,7 +75,8 @@ const logWasteRecordOperation = async (req, operationType, recordId, userId, des
       description,
       ipAddress: getClientIP(req),
       userAgent: req.headers['user-agent'],
-      additionalData
+      additionalData,
+      companyId
     });
   } catch (error) {
     console.error('记录废物记录操作日志失败:', error);
@@ -79,6 +86,9 @@ const logWasteRecordOperation = async (req, operationType, recordId, userId, des
 // 记录用户管理操作日志
 const logUserManagementOperation = async (req, operationType, targetUserId, operatorId, description, additionalData = null) => {
   try {
+    // 从请求中获取公司ID
+    const companyId = req.user?.company_id || null;
+    
     await OperationLog.create({
       userId: operatorId,
       operationType,
@@ -87,7 +97,8 @@ const logUserManagementOperation = async (req, operationType, targetUserId, oper
       description,
       ipAddress: getClientIP(req),
       userAgent: req.headers['user-agent'],
-      additionalData
+      additionalData,
+      companyId
     });
   } catch (error) {
     console.error('记录用户管理操作日志失败:', error);
@@ -97,6 +108,9 @@ const logUserManagementOperation = async (req, operationType, targetUserId, oper
 // 记录单位管理操作日志
 const logUnitOperation = async (req, operationType, unitId, userId, description, additionalData = null) => {
   try {
+    // 从请求中获取公司ID
+    const companyId = req.user?.company_id || null;
+    
     await OperationLog.create({
       userId,
       operationType,
@@ -105,7 +119,8 @@ const logUnitOperation = async (req, operationType, unitId, userId, description,
       description,
       ipAddress: getClientIP(req),
       userAgent: req.headers['user-agent'],
-      additionalData
+      additionalData,
+      companyId
     });
   } catch (error) {
     console.error('记录单位操作日志失败:', error);
@@ -115,6 +130,9 @@ const logUnitOperation = async (req, operationType, unitId, userId, description,
 // 记录废物类型管理操作日志
 const logWasteTypeOperation = async (req, operationType, wasteTypeId, userId, description, additionalData = null) => {
   try {
+    // 从请求中获取公司ID
+    const companyId = req.user?.company_id || null;
+    
     await OperationLog.create({
       userId,
       operationType,
@@ -123,7 +141,8 @@ const logWasteTypeOperation = async (req, operationType, wasteTypeId, userId, de
       description,
       ipAddress: getClientIP(req),
       userAgent: req.headers['user-agent'],
-      additionalData
+      additionalData,
+      companyId
     });
   } catch (error) {
     console.error('记录废物类型操作日志失败:', error);
@@ -131,15 +150,22 @@ const logWasteTypeOperation = async (req, operationType, wasteTypeId, userId, de
 };
 
 // 通用操作日志记录
-const logOperation = async (req, logData) => {
+const logOperation = async (req, userId, operationType, targetType, targetId, description, additionalData = null) => {
   try {
-    const fullLogData = {
-      ...logData,
-      ipAddress: getClientIP(req),
-      userAgent: req.headers['user-agent']
-    };
+    // 从请求中获取公司ID
+    const companyId = req.user?.company_id || null;
     
-    await OperationLog.create(fullLogData);
+    await OperationLog.create({
+      userId,
+      operationType,
+      targetType,
+      targetId,
+      description,
+      ipAddress: getClientIP(req),
+      userAgent: req.headers['user-agent'],
+      additionalData,
+      companyId
+    });
   } catch (error) {
     console.error('记录操作日志失败:', error);
   }

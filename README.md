@@ -7,14 +7,21 @@
 ## 🎯 项目特色
 
 ### 💡 核心功能
-- **基础单位管理**
-  - 支持多个基础单位的选择和管理
-  - 每个单位可独立管理废物记录
+- **公司层级管理**
+  - 支持多公司架构，每个公司管理独立的单位和用户
+  - 完整的权限隔离体系，确保各公司数据安全
+  - 灵活的组织结构：公司 → 单位 → 用户
+
+- **问题反馈系统**
+  - 所有用户可提交问题反馈，支持详细描述
+  - 管理员可查看、处理和回复反馈
+  - 完整的状态管理和统计功能
 
 ### 👥 用户权限系统
-- **四级权限管理**
-  - **超级管理员** - 全系统数据查看权限，所有单位记录管理权限
-  - **单位管理员** - 本单位数据查看权限，本单位记录管理权限
+- **五级权限管理**
+  - **系统超级管理员** - 全系统数据查看权限，所有公司和单位管理权限
+  - **公司管理员** - 本公司数据查看权限，本公司单位和用户管理权限
+  - **单位管理员** - 本单位数据查看权限，本单位记录和用户管理权限
   - **基层员工** - 本单位废物填报权限，基础数据查看权限（48小时限制）
   - **监督人员** - 独立的监督数据录入和管理权限
 
@@ -77,18 +84,24 @@ Registration-Management-System/
 │   │   ├── userController.js        # 用户管理控制器
 │   │   ├── unitController.js        # 单位管理控制器
 │   │   ├── wasteTypeController.js   # 废物类型控制器
-│   │   └── wasteRecordController.js # 废物记录控制器
+│   │   ├── wasteRecordController.js # 废物记录控制器
+│   │   ├── companyController.js     # 公司管理控制器
+│   │   └── feedbackController.js    # 问题反馈控制器
 │   ├── models/               # 数据模型层 (数据访问)
 │   │   ├── User.js           # 用户数据模型
 │   │   ├── Unit.js           # 单位数据模型
 │   │   ├── WasteType.js      # 废物类型数据模型
-│   │   └── WasteRecord.js    # 废物记录数据模型
+│   │   ├── WasteRecord.js    # 废物记录数据模型
+│   │   ├── Company.js        # 公司数据模型
+│   │   └── Feedback.js       # 问题反馈数据模型
 │   ├── routes/               # 路由层 (API路由)
 │   │   ├── auth.js           # 认证路由
 │   │   ├── users.js          # 用户路由
 │   │   ├── units.js          # 单位路由
 │   │   ├── wasteTypes.js     # 废物类型路由
-│   │   └── wasteRecords.js   # 废物记录路由
+│   │   ├── wasteRecords.js   # 废物记录路由
+│   │   ├── companies.js      # 公司路由
+│   │   └── feedback.js       # 问题反馈路由
 │   ├── middleware/           # 中间件
 │   │   ├── auth.js           # 认证中间件
 │   │   └── errorHandler.js   # 错误处理中间件
@@ -110,7 +123,11 @@ Registration-Management-System/
 │   │   │   ├── EditRecord.vue     # 记录编辑页面
 │   │   │   ├── RecordsList.vue    # 记录列表页面
 │   │   │   ├── AdminRecords.vue   # 管理员记录页面
-│   │   │   └── UserManagement.vue # 用户管理页面
+│   │   │   ├── UserManagement.vue # 用户管理页面
+│   │   │   ├── CompanyManagement.vue # 公司管理页面
+│   │   │   ├── FeedbackForm.vue   # 问题反馈表单
+│   │   │   ├── FeedbackList.vue   # 反馈列表页面
+│   │   │   └── FeedbackManagement.vue # 反馈管理页面
 │   │   ├── router/          # 路由配置
 │   │   ├── store/           # 状态管理
 │   │   ├── config/          # 配置文件
@@ -140,7 +157,8 @@ Registration-Management-System/
 
 | 角色 | 手机号 | 密码 | 权限说明 |
 |------|--------|------|----------|
-| 超级管理员 | 13800000003 | 1 | 全系统管理权限 |
+| 系统超级管理员 | 13800000005 | 1 | 全系统管理权限 |
+| 公司管理员 | 13800000003 | 1 | 公司内管理权限 |
 | 单位管理员 | 13800000002 | 1 | 单位内管理权限 |
 | 基层员工 | 13800000001 | 1 | 基础填报权限 |
 | 监督人员 | 13800000004 | 1 | 监督数据权限 |

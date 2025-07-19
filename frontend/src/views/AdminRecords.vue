@@ -1,7 +1,7 @@
 <template>
   <div class="admin-records-container">
     <div class="header">
-      <h1>固体废物管理系统历史记录</h1>
+              <h1>固体废物记录</h1>
     </div>
 
     <div class="content">
@@ -9,7 +9,7 @@
         <el-button type="primary" @click="addNewRecord">
           <el-icon><plus /></el-icon> 新增填报
         </el-button>
-        <el-button v-if="isSuperAdmin" type="success" @click="goToUserManagement">
+        <el-button v-if="isSuperAdmin && !isSupervisor" type="success" @click="goToUserManagement">
           <el-icon><user /></el-icon> 人员管理
         </el-button>
         <el-button v-if="isSuperAdmin && canViewLogs" type="warning" @click="goToOperationLogs">
@@ -582,7 +582,7 @@ export default {
     // 获取单位列表
     const fetchUnits = async () => {
       try {
-        const response = await axios.get(apiConfig.getUrl(apiConfig.endpoints.units));
+        const response = await httpService.get(apiConfig.endpoints.units);
         units.value = response.data;
       } catch (error) {
         console.error('获取单位列表失败:', error);
@@ -1285,14 +1285,20 @@ export default {
       return index + 1;
     };
 
-    // 判断是否为超级管理员（只有role_id=3才是真正的超级管理员）
+    // 判断是否为管理员（公司管理员或监督人员）
     const isSuperAdmin = computed(() => {
-      return auth.state.isLoggedIn && auth.state.user.role_id === 3;
+      return auth.state.isLoggedIn && auth.state.user && 
+             (auth.state.user.role_id === 3 || auth.state.user.role_id === 4);
     });
 
     // 判断是否可以查看操作日志
     const canViewLogs = computed(() => {
       return auth.state.isLoggedIn && auth.state.user && auth.state.user.can_view_logs === 1;
+    });
+    
+    // 判断是否为监督人员
+    const isSupervisor = computed(() => {
+      return auth.state.isLoggedIn && auth.state.user && auth.state.user.role_id === 4;
     });
 
     return {
@@ -1335,6 +1341,8 @@ export default {
       tableContainer,
       isSuperAdmin,
       canViewLogs,
+      isSupervisor,
+      auth, // 添加auth对象
     };
   }
 };

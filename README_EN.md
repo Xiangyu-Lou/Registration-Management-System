@@ -7,14 +7,21 @@ A modern solid waste management system built with Vue 3 + Node.js + MySQL, featu
 ## 🎯 Project Features
 
 ### 💡 Core Functions
-- **Basic Unit Management**
-  - Support for multiple basic units selection and management
-  - Each unit can independently manage waste records
+- **Company Hierarchy Management**
+  - Support for multi-company architecture with independent unit and user management
+  - Complete permission isolation system ensuring data security for each company
+  - Flexible organizational structure: Company → Unit → User
+
+- **Problem Feedback System**
+  - All users can submit problem feedback with detailed descriptions
+  - Administrators can view, handle, and reply to feedback
+  - Complete status management and statistical functions
 
 ### 👥 User Permission System
-- **Four-level Permission Management**
-  - **Super Administrator** - Full system data viewing permissions, record management for all units
-  - **Unit Administrator** - Unit data viewing permissions, unit record management permissions  
+- **Five-level Permission Management**
+  - **System Super Administrator** - Full system data viewing permissions, all company and unit management
+  - **Company Administrator** - Company data viewing permissions, company unit and user management
+  - **Unit Administrator** - Unit data viewing permissions, unit record and user management
   - **Basic Employee** - Unit waste reporting permissions, basic data viewing (48-hour limit)
   - **Supervisor** - Independent supervision data entry and management permissions
 
@@ -77,18 +84,24 @@ Registration-Management-System/
 │   │   ├── userController.js        # User management controller
 │   │   ├── unitController.js        # Unit management controller
 │   │   ├── wasteTypeController.js   # Waste type controller
-│   │   └── wasteRecordController.js # Waste record controller
+│   │   ├── wasteRecordController.js # Waste record controller
+│   │   ├── companyController.js     # Company management controller
+│   │   └── feedbackController.js    # Problem feedback controller
 │   ├── models/               # Model Layer (Data Access)
 │   │   ├── User.js           # User data model
 │   │   ├── Unit.js           # Unit data model
 │   │   ├── WasteType.js      # Waste type data model
-│   │   └── WasteRecord.js    # Waste record data model
+│   │   ├── WasteRecord.js    # Waste record data model
+│   │   ├── Company.js        # Company data model
+│   │   └── Feedback.js       # Problem feedback data model
 │   ├── routes/               # Route Layer (API Routes)
 │   │   ├── auth.js           # Authentication routes
 │   │   ├── users.js          # User routes
 │   │   ├── units.js          # Unit routes
 │   │   ├── wasteTypes.js     # Waste type routes
-│   │   └── wasteRecords.js   # Waste record routes
+│   │   ├── wasteRecords.js   # Waste record routes
+│   │   ├── companies.js      # Company routes
+│   │   └── feedback.js       # Problem feedback routes
 │   ├── middleware/           # Middleware
 │   │   ├── auth.js           # Authentication middleware
 │   │   └── errorHandler.js   # Error handling middleware
@@ -110,7 +123,11 @@ Registration-Management-System/
 │   │   │   ├── EditRecord.vue     # Record editing page
 │   │   │   ├── RecordsList.vue    # Records list page
 │   │   │   ├── AdminRecords.vue   # Admin records page
-│   │   │   └── UserManagement.vue # User management page
+│   │   │   ├── UserManagement.vue # User management page
+│   │   │   ├── CompanyManagement.vue # Company management page
+│   │   │   ├── FeedbackForm.vue   # Problem feedback form
+│   │   │   ├── FeedbackList.vue   # Feedback list page
+│   │   │   └── FeedbackManagement.vue # Feedback management page
 │   │   ├── router/          # Route configuration
 │   │   ├── store/           # State management
 │   │   ├── config/          # Configuration files
@@ -140,7 +157,8 @@ After database initialization, the system contains the following test accounts:
 
 | Role | Phone | Password | Permission Description |
 |------|-------|----------|----------------------|
-| Super Administrator | 13800000003 | 1 | Full system management |
+| System Super Administrator | 13800000005 | 1 | Full system management |
+| Company Administrator | 13800000003 | 1 | Company management |
 | Unit Administrator | 13800000002 | 1 | Unit management |
 | Basic Employee | 13800000001 | 1 | Basic reporting |
 | Supervisor | 13800000004 | 1 | Supervision data |

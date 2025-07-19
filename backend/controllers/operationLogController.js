@@ -36,7 +36,7 @@ const getOperationLogs = async (req, res, next) => {
     const result = await OperationLog.findWithFilters(filters, {
       page: parseInt(page),
       pageSize: parseInt(pageSize)
-    });
+    }, req.user);
 
     res.json(result);
   } catch (error) {
@@ -65,7 +65,7 @@ const getOperationStats = async (req, res, next) => {
     const cleanStartDate = startDate && startDate.trim() !== '' ? startDate : null;
     const cleanEndDate = endDate && endDate.trim() !== '' ? endDate : null;
 
-    const stats = await OperationLog.getStats(cleanStartDate, cleanEndDate);
+    const stats = await OperationLog.getStats(cleanStartDate, cleanEndDate, req.user);
     res.json(stats);
   } catch (error) {
     console.error('获取操作类型统计失败:', error);
@@ -93,7 +93,7 @@ const getUserOperationStats = async (req, res, next) => {
     const cleanStartDate = startDate && startDate.trim() !== '' ? startDate : null;
     const cleanEndDate = endDate && endDate.trim() !== '' ? endDate : null;
 
-    const stats = await OperationLog.getUserStats(cleanStartDate, cleanEndDate, parseInt(limit));
+    const stats = await OperationLog.getUserStats(cleanStartDate, cleanEndDate, req.user, parseInt(limit));
     res.json(stats || []);
   } catch (error) {
     console.error('获取用户操作统计失败:', error);
@@ -135,7 +135,7 @@ const exportOperationLogs = async (req, res, next) => {
       description: description && description.trim() !== '' ? description : null
     };
 
-    const logs = await OperationLog.findAllWithFilters(filters);
+    const logs = await OperationLog.findAllWithFilters(filters, req.user);
     res.json(logs || []);
   } catch (error) {
     console.error('导出操作日志失败:', error);

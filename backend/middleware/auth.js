@@ -19,10 +19,26 @@ const authenticateToken = (req, res, next) => {
   }
 };
 
-// 检查超级管理员权限
+// 检查系统超级管理员权限
+const requireSystemAdmin = (req, res, next) => {
+  if (!req.user || req.user.role_id !== 5) {
+    return res.status(403).json({ error: '需要系统超级管理员权限' });
+  }
+  next();
+};
+
+// 检查公司级管理员权限（公司管理员或系统超级管理员）
+const requireCompanyAdmin = (req, res, next) => {
+  if (!req.user || (req.user.role_id !== 3 && req.user.role_id !== 5)) {
+    return res.status(403).json({ error: '需要公司管理员权限' });
+  }
+  next();
+};
+
+// 检查超级管理员权限（兼容原有逻辑：公司管理员、监督人员或系统超级管理员）
 const requireSuperAdmin = (req, res, next) => {
-  if (!req.user || (req.user.role_id !== 3 && req.user.role_id !== 4)) {
-    return res.status(403).json({ error: '需要超级管理员权限' });
+  if (!req.user || (req.user.role_id !== 3 && req.user.role_id !== 4 && req.user.role_id !== 5)) {
+    return res.status(403).json({ error: '需要管理员权限' });
   }
   next();
 };
@@ -91,7 +107,10 @@ const requireLogViewPermission = async (req, res, next) => {
 };
 
 module.exports = {
+  authenticate: authenticateToken,  // 为了保持与现有代码的兼容性
   authenticateToken,
+  requireSystemAdmin,
+  requireCompanyAdmin,
   requireSuperAdmin,
   requireUnitAdmin,
   blockSupervisor,
