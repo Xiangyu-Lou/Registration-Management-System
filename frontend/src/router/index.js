@@ -187,7 +187,7 @@ router.beforeEach((to, from, next) => {
       next({ name: 'NewRecord' });
     } else {
       if (auth.state.user.unit_id) {
-        next({ name: 'WasteForm', params: { id: auth.state.user.unit_id } });
+      next({ name: 'WasteForm', params: { id: auth.state.user.unit_id } });
       } else {
         next({ name: 'UnitSelection' });
       }
@@ -201,7 +201,7 @@ router.beforeEach((to, from, next) => {
     if (auth.state.user.role_id === 5) {
       next({ name: 'SuperAdminRecords' });
     } else if (auth.state.user.unit_id) {
-      next({ name: 'WasteForm', params: { id: auth.state.user.unit_id } });
+    next({ name: 'WasteForm', params: { id: auth.state.user.unit_id } });
     } else {
       next({ name: 'UnitSelection' });
     }
@@ -222,11 +222,11 @@ router.beforeEach((to, from, next) => {
     // 基层员工不能访问管理员页面
     else if (auth.state.user.role_id === 1) {
       if (auth.state.user.unit_id) {
-        next({ name: 'WasteForm', params: { id: auth.state.user.unit_id } });
+    next({ name: 'WasteForm', params: { id: auth.state.user.unit_id } });
       } else {
         next({ name: 'UnitSelection' });
       }
-      return;
+    return;
     }
   }
   
@@ -240,13 +240,13 @@ router.beforeEach((to, from, next) => {
       next({ name: 'NewRecord' }); // 监督人员直接进入新增记录页面
     } else if (auth.state.user.role_id === 2) {
       if (auth.state.user.unit_id) {
-        next({ name: 'WasteForm', params: { id: auth.state.user.unit_id } }); // 单位管理员直接进入填报页面
+      next({ name: 'WasteForm', params: { id: auth.state.user.unit_id } }); // 单位管理员直接进入填报页面
       } else {
         next({ name: 'UnitSelection' });
       }
     } else {
       if (auth.state.user.unit_id) {
-        next({ name: 'WasteForm', params: { id: auth.state.user.unit_id } }); // 普通员工到填报页面
+      next({ name: 'WasteForm', params: { id: auth.state.user.unit_id } }); // 普通员工到填报页面
       } else {
         next({ name: 'UnitSelection' });
       }
@@ -279,7 +279,7 @@ router.beforeEach((to, from, next) => {
     } else if (auth.state.user.role_id === 1) {
       // 基层员工 → 填报页面或单位选择页面
       if (auth.state.user.unit_id) {
-        next({ name: 'WasteForm', params: { id: auth.state.user.unit_id } });
+      next({ name: 'WasteForm', params: { id: auth.state.user.unit_id } });
       } else {
         next({ name: 'UnitSelection' });
       }

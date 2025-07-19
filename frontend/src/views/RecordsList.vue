@@ -1403,24 +1403,29 @@ export default {
 
 .photo-preview {
   display: flex;
-  flex-direction: column;
-  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
   justify-content: center;
-  width: 100%;
+  align-items: center;
+  position: relative;
 }
 
 .photo-thumbnail-container {
   cursor: pointer;
-  margin-bottom: 2px;
-  display: flex;
-  justify-content: center;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid #ddd;
 }
 
 .photo-count {
-  font-size: 12px;
-  color: #909399;
-  text-align: center;
-  margin-top: 2px;
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 1px 4px;
+  border-radius: 2px;
+  font-size: 10px;
 }
 
 .image-error {

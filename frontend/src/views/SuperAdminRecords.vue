@@ -286,6 +286,24 @@
                 </div>
               </template>
             </el-table-column>
+            
+            <!-- 添加表格append插槽用于显示加载更多 -->
+            <template #append>
+              <div v-if="loadingMore" class="loading-row">
+                <el-icon class="loading"><loading /></el-icon>
+                正在加载...
+              </div>
+              
+              <div v-else-if="hasMore && records.length > 0" class="load-more-row">
+                <el-button type="primary" @click="loadMore" :disabled="loadingMore" size="small">
+                  点击加载更多 <el-icon><arrow-down /></el-icon>
+                </el-button>
+              </div>
+              
+              <div v-else-if="records.length > 0" class="no-more-row">
+                已全部加载
+              </div>
+            </template>
           </el-table>
         </div>
 
@@ -310,7 +328,7 @@ import { ref, onMounted, computed, reactive, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox, ElImageViewer, ElLoading } from 'element-plus';
 import httpService from '../config/httpService';
-import { Refresh, User, ArrowDown, ArrowUp, Download, Document, ChatLineRound } from '@element-plus/icons-vue';
+import { Refresh, User, ArrowDown, ArrowUp, Download, Document, ChatLineRound, Loading } from '@element-plus/icons-vue';
 import auth from '../store/auth';
 import { exportToExcelWithImages, exportToExcel } from '../utils/exportUtils';
 import apiConfig from '../config/api';
@@ -340,7 +358,8 @@ export default {
     Download,
     ElImageViewer,
     Document,
-    ChatLineRound
+    ChatLineRound,
+    Loading
   },
   setup() {
     const router = useRouter();
@@ -362,6 +381,12 @@ export default {
     const baseUrl = apiConfig.baseURL;
     const tableHeight = ref(750);
     const tableRef = ref(null);
+
+    // 分页相关变量
+    const page = ref(1);
+    const pageSize = ref(20);
+    const hasMore = ref(true);
+    const loadingMore = ref(false);
 
          // 图片预览相关
      const showViewer = ref(false);
@@ -440,17 +465,48 @@ export default {
     });
 
     // 获取记录列表
-    const fetchRecords = async () => {
-      loading.value = true;
+    const fetchRecords = async (reset = true) => {
+      if (reset) {
+        loading.value = true;
+        page.value = 1;
+        records.value = [];
+      } else {
+        loadingMore.value = true;
+      }
+      
       try {
-        const response = await httpService.get(apiConfig.endpoints.wasteRecords);
-        records.value = response.data;
+        const params = {
+          page: page.value,
+          pageSize: pageSize.value
+        };
+        
+        const response = await httpService.get(apiConfig.endpoints.wasteRecords, { params });
+        
+        if (reset) {
+          records.value = response.data.records || response.data;
+        } else {
+          records.value = [...records.value, ...(response.data.records || response.data)];
+        }
+        
+        // 检查是否还有更多数据
+        const returnedCount = response.data.records ? response.data.records.length : response.data.length;
+        hasMore.value = returnedCount === pageSize.value;
+        
       } catch (error) {
         console.error('Error fetching records:', error);
         ElMessage.error('获取记录列表失败');
       } finally {
         loading.value = false;
+        loadingMore.value = false;
       }
+    };
+
+    // 加载更多记录
+    const loadMore = async () => {
+      if (loadingMore.value || !hasMore.value) return;
+      
+      page.value += 1;
+      await fetchRecords(false);
     };
 
     // 获取单位列表
@@ -488,7 +544,7 @@ export default {
 
     // 应用筛选
     const applyFilter = () => {
-      fetchRecords();
+      fetchRecords(true);
     };
 
     // 重置筛选
@@ -502,7 +558,7 @@ export default {
           filterForm[key] = null;
         }
       });
-      fetchRecords();
+      fetchRecords(true);
     };
 
     // 格式化日期时间
@@ -929,7 +985,7 @@ export default {
 
     // 刷新记录
     const refreshRecords = () => {
-      fetchRecords();
+      fetchRecords(true);
     };
 
     
@@ -981,7 +1037,7 @@ export default {
       try {
         await httpService.delete(`${apiConfig.endpoints.wasteRecords}/${id}`);
         ElMessage.success('删除成功');
-        fetchRecords();
+        fetchRecords(true);
       } catch (error) {
         console.error('Error deleting record:', error);
         ElMessage.error('删除失败');
@@ -1009,7 +1065,7 @@ export default {
 
     // 初始化
     onMounted(() => {
-      fetchRecords();
+      fetchRecords(true);
       fetchUnits();
       fetchCompanies();
       fetchWasteTypes();
@@ -1048,7 +1104,13 @@ export default {
                     indexMethod,
        tableHeight,
        tableRef,
-       canViewLogs
+       canViewLogs,
+       // 分页相关
+       page,
+       pageSize,
+       hasMore,
+       loadingMore,
+       loadMore
     };
   }
 };
@@ -1163,6 +1225,55 @@ export default {
 .empty-state {
   text-align: center;
   padding: 40px;
+}
+
+/* 加载更多相关样式 */
+.loading-row {
+  height: 55px;
+  text-align: center;
+  background-color: #f5f7fa;
+  line-height: 55px;
+  color: #409EFF;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.load-more-row {
+  height: 55px;
+  text-align: center;
+  background-color: #f5f7fa;
+  line-height: 55px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.no-more-row {
+  height: 55px;
+  text-align: center;
+  background-color: #f5f7fa;
+  line-height: 55px;
+  color: #909399;
+  font-size: 14px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.loading {
+  animation: rotating 2s linear infinite;
+  margin-right: 5px;
+}
+
+@keyframes rotating {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (max-width: 768px) {
