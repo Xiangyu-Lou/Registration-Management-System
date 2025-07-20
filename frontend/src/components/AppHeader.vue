@@ -42,7 +42,7 @@
       >
         <el-form-item label="问题类型" prop="type">
           <el-select v-model="form.type" placeholder="请选择问题类型" style="width: 100%">
-            <el-option label="系统Bug" value="bug" />
+            <el-option label="系统漏洞" value="bug" />
             <el-option label="功能建议" value="feature" />
             <el-option label="体验改进" value="improvement" />
             <el-option label="其他问题" value="other" />
