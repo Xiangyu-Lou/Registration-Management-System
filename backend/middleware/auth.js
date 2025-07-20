@@ -106,6 +106,36 @@ const requireLogViewPermission = async (req, res, next) => {
   }
 };
 
+// 验证监督人员单位访问权限
+const validateSupervisorUnitAccess = async (req, res, next) => {
+  try {
+    // 只对监督人员进行检查
+    if (req.user && req.user.role_id === 4) {
+      // 从参数或请求体中获取单位ID
+      const unitId = req.params.unitId || req.params.id || req.body.unitId;
+      
+      if (unitId) {
+        const Unit = require('../models/Unit');
+        const unit = await Unit.findById(unitId);
+        
+        if (!unit) {
+          return res.status(404).json({ error: '单位不存在' });
+        }
+        
+        // 检查单位是否属于监督人员的公司
+        if (unit.company_id !== req.user.company_id) {
+          return res.status(403).json({ error: '监督人员只能操作本公司单位' });
+        }
+      }
+    }
+    
+    next();
+  } catch (error) {
+    console.error('验证监督人员单位访问权限失败:', error);
+    return res.status(500).json({ error: '权限验证失败' });
+  }
+};
+
 module.exports = {
   authenticate: authenticateToken,  // 为了保持与现有代码的兼容性
   authenticateToken,
@@ -114,5 +144,6 @@ module.exports = {
   requireSuperAdmin,
   requireUnitAdmin,
   blockSupervisor,
-  requireLogViewPermission
+  requireLogViewPermission,
+  validateSupervisorUnitAccess
 }; 

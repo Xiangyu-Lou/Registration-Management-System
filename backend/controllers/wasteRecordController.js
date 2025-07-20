@@ -30,6 +30,15 @@ const createWasteRecord = async (req, res, next) => {
       return res.status(400).json({ error: '废物类型不存在' });
     }
     
+    // 监督人员单位访问权限验证
+    if (req.user && req.user.role_id === 4) {
+      const Unit = require('../models/Unit');
+      const unit = await Unit.findById(unitId);
+      if (!unit || unit.company_id !== req.user.company_id) {
+        return res.status(403).json({ error: '监督人员只能在本公司单位创建记录' });
+      }
+    }
+    
     // 使用工具函数格式化收集时间，确保时区一致性
     const collectionStartTime = parseCollectionTime(collectionDate, collectionTime);
     

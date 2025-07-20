@@ -128,6 +128,42 @@ class Unit {
     const [rows] = await pool.query('SELECT id FROM units WHERE id = ? AND company_id = ?', [unitId, companyId]);
     return rows.length > 0;
   }
+
+  // 监督人员专用：获取本公司所有单位
+  static async findAllForSupervisor(supervisorUser) {
+    const query = `
+      SELECT u.*, c.name as company_name 
+      FROM units u 
+      JOIN companies c ON u.company_id = c.id
+      WHERE u.company_id = ?
+      ORDER BY u.name ASC
+    `;
+    const [rows] = await pool.query(query, [supervisorUser.company_id]);
+    return rows;
+  }
+
+  // 验证用户对单位的访问权限
+  static async validateUnitAccess(unitId, userId) {
+    const [unitRows] = await pool.query(
+      'SELECT company_id FROM units WHERE id = ?', [unitId]
+    );
+    const [userRows] = await pool.query(
+      'SELECT company_id, role_id FROM users WHERE id = ?', [userId]
+    );
+    
+    if (unitRows.length === 0 || userRows.length === 0) {
+      return false;
+    }
+    
+    const unit = unitRows[0];
+    const user = userRows[0];
+    
+    // 系统超级管理员可以访问任意单位
+    if (user.role_id === 5) return true;
+    
+    // 其他用户只能访问本公司单位
+    return unit.company_id === user.company_id;
+  }
 }
 
 module.exports = Unit; 

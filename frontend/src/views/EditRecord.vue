@@ -461,7 +461,17 @@ export default {
     const fetchUnits = async () => {
       try {
         const response = await httpService.get(apiConfig.endpoints.units);
-        units.value = response.data;
+        let allUnits = response.data;
+        
+        // 监督人员只能看到本公司单位
+        if (auth.isSupervisor()) {
+          const currentCompanyId = auth.getCompanyId();
+          allUnits = allUnits.filter(unit => 
+            unit.company_id === currentCompanyId
+          );
+        }
+        
+        units.value = allUnits;
       } catch (error) {
         console.error('获取单位列表失败:', error);
         ElMessage.error('获取单位列表失败');

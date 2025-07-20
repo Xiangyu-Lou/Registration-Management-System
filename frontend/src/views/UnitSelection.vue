@@ -27,6 +27,7 @@
 import { ElMessage } from 'element-plus';
 import httpService from '../config/httpService';
 import api from '../config/api';
+import auth from '../store/auth';
 
 export default {
   name: 'UnitSelection',
@@ -46,7 +47,19 @@ export default {
         console.log('正在获取单位列表...');
         const response = await httpService.get(api.endpoints.units);
         console.log('获取单位列表成功:', response.data);
-        this.units = response.data;
+        
+        let allUnits = response.data;
+        
+        // 监督人员只能看到本公司单位
+        if (auth.isSupervisor()) {
+          const currentCompanyId = auth.getCompanyId();
+          this.units = allUnits.filter(unit => 
+            unit.company_id === currentCompanyId
+          );
+          console.log('监督人员过滤后的单位列表:', this.units);
+        } else {
+          this.units = allUnits;
+        }
       } catch (error) {
         console.error('获取单位列表失败:', error);
         ElMessage.error('获取单位列表失败');

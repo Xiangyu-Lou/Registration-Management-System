@@ -14,6 +14,8 @@ import FeedbackForm from '../views/FeedbackForm.vue'
 import FeedbackList from '../views/FeedbackList.vue'
 import FeedbackManagement from '../views/FeedbackManagement.vue'
 import auth from '../store/auth'
+import httpService from '../config/httpService'
+import apiConfig from '../config/api'
 
 const routes = [
   {
@@ -124,7 +126,7 @@ const router = createRouter({
 })
 
 // 路由守卫
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   // 检查页面是否需要授权
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
   const requiresSuperAdmin = to.matched.some(record => record.meta.requiresSuperAdmin);
@@ -137,6 +139,42 @@ router.beforeEach((to, from, next) => {
   if (requiresAuth && !auth.state.isLoggedIn) {
     next({ name: 'Login' });
     return;
+  }
+  
+  // 监督人员访问单位页面时验证单位归属公司
+  if (to.name === 'WasteForm' && auth.state.isLoggedIn && auth.isSupervisor()) {
+    const unitId = to.params.id;
+    try {
+      const response = await httpService.get(`${apiConfig.endpoints.units}/${unitId}`);
+      const unit = response.data;
+      if (unit && unit.company_id !== auth.getCompanyId()) {
+        console.warn('监督人员尝试访问其他公司单位:', unitId);
+        next({ name: 'UnitSelection' });
+        return;
+      }
+    } catch (error) {
+      console.error('验证单位访问权限失败:', error);
+      next({ name: 'UnitSelection' });
+      return;
+    }
+  }
+  
+  // 监督人员访问记录列表时验证单位归属公司
+  if (to.name === 'RecordsList' && auth.state.isLoggedIn && auth.isSupervisor()) {
+    const unitId = to.params.unitId;
+    try {
+      const response = await httpService.get(`${apiConfig.endpoints.units}/${unitId}`);
+      const unit = response.data;
+      if (unit && unit.company_id !== auth.getCompanyId()) {
+        console.warn('监督人员尝试访问其他公司单位记录:', unitId);
+        next({ name: 'UnitSelection' });
+        return;
+      }
+    } catch (error) {
+      console.error('验证单位记录访问权限失败:', error);
+      next({ name: 'UnitSelection' });
+      return;
+    }
   }
   
   // 如果路由需要日志权限但用户没有权限

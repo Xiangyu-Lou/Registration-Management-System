@@ -359,7 +359,17 @@ export default {
     const fetchUnitName = async () => {
       try {
         const response = await httpService.get(apiConfig.endpoints.units);
-        const unit = response.data.find(u => u.id === parseInt(props.id));
+        let allUnits = response.data;
+        
+        // 监督人员只能看到本公司单位
+        if (auth.isSupervisor()) {
+          const currentCompanyId = auth.getCompanyId();
+          allUnits = allUnits.filter(unit => 
+            unit.company_id === currentCompanyId
+          );
+        }
+        
+        const unit = allUnits.find(u => u.id === parseInt(props.id));
         if (unit) {
           unitName.value = unit.name;
           
@@ -370,6 +380,10 @@ export default {
             locationOptions.value = [];
             console.warn(`未找到管理区 "${unitName.value}" 的地点选项`);
           }
+        } else if (auth.isSupervisor()) {
+          // 监督人员尝试访问其他公司单位时显示错误并重定向
+          ElMessage.error('无权访问该单位，请联系管理员');
+          router.push({ name: 'UnitSelection' });
         }
       } catch (error) {
         console.error('Error fetching unit name:', error);

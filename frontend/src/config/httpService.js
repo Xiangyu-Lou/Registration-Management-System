@@ -52,7 +52,14 @@ axiosInstance.interceptors.response.use(
           }
           break;
         case 403:
-          ElMessage.error('没有权限访问该资源');
+          // 特殊处理监督人员权限被拒绝的情况
+          if (error.response.data?.error?.includes('监督人员只能')) {
+            ElMessage.error(error.response.data.error);
+            // 重定向到单位选择页面
+            router.push({ name: 'UnitSelection' });
+          } else {
+            ElMessage.error('没有权限访问该资源');
+          }
           break;
         case 404:
           ElMessage.error('请求的资源不存在');
