@@ -2,8 +2,8 @@ const mysql = require('mysql2/promise');
 const path = require('path');
 const fs = require('fs');
 const bcrypt = require('bcrypt');
-// 加载环境变量，指定绝对路径
-require('dotenv').config({ path: path.join(__dirname, '../../.env') });
+// 加载环境变量 - 统一使用backend/.env
+require('dotenv').config({ path: path.join(__dirname, '../../backend/.env') });
 
 // 输出环境变量进行调试
 console.log('环境变量加载状态:');

@@ -1,7 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-require('dotenv').config();
+// 加载环境变量 - 统一使用backend/.env
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const { testConnection } = require('./config/database');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');

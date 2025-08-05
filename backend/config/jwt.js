@@ -1,4 +1,6 @@
-require('dotenv').config();
+const path = require('path');
+// 加载环境变量 - 统一使用backend/.env
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 // JWT配置
 const jwtConfig = {
@@ -14,4 +16,4 @@ if (jwtConfig.secret === 'please_set_jwt_secret_in_env_file') {
   console.warn('⚠ 警告: 请在.env文件中设置JWT_SECRET');
 }
 
-module.exports = jwtConfig; 
+module.exports = jwtConfig;

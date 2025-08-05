@@ -6,7 +6,7 @@ const fs = require('fs');
 const mysql = require('mysql2/promise');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-// 加载环境变量
+// 加载环境变量 - 统一使用backend/.env
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 // JWT 密钥

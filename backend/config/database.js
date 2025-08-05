@@ -1,5 +1,7 @@
 const mysql = require('mysql2/promise');
-require('dotenv').config();
+const path = require('path');
+// 加载环境变量 - 统一使用backend/.env
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 // 数据库连接配置
 const dbConfig = {
