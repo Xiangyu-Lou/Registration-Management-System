@@ -16,4 +16,4 @@ if (jwtConfig.secret === 'please_set_jwt_secret_in_env_file') {
   console.warn('⚠ 警告: 请在.env文件中设置JWT_SECRET');
 }
 
-module.exports = jwtConfig;
+module.exports = jwtConfig; 

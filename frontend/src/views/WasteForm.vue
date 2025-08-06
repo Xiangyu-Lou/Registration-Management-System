@@ -124,7 +124,6 @@
               inputmode: 'decimal',
               pattern: '[0-9]*[.,]?[0-9]*'
             }"
-            :controls="false"
           />
         </el-form-item>
 

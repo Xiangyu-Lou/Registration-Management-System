@@ -1,12 +1,8 @@
 // 用于导出数据到CSV和Excel的工具函数
-import * as XLSX from 'xlsx';
+// 移除xlsx依赖，统一使用ExcelJS
 import ExcelJS from 'exceljs';
 import { parsePhotoPath, generateTimestampedFileName, sanitizeFileName } from './commonUtils';
 // import { saveAs } from 'file-saver';
-
-// 检查XLSX库是否正确加载
-console.log('XLSX库版本:', XLSX.version);
-console.log('XLSX库可用方法:', Object.keys(XLSX).join(', '));
 
 /**
  * 从服务器获取图片并作为ArrayBuffer返回
