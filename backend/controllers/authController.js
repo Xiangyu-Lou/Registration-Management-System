@@ -7,12 +7,17 @@ const login = async (req, res, next) => {
   try {
     const { phone, password, rememberMe } = req.body;
     
+    // 验证必填字段
+    if (!phone || !password) {
+      return res.status(400).json({ error: '手机号和密码都是必填字段' });
+    }
+    
     // 验证用户是否存在
     const user = await User.findByPhoneForAuth(phone);
     if (!user) {
       // 记录登录失败日志
       await logLogin(req, null, phone, false, '用户不存在');
-      return res.status(401).json({ error: '用户不存在' });
+      return res.status(401).json({ error: '用户名或密码错误' }); // 统一错误信息，避免用户枚举
     }
     
     // 检查用户状态
@@ -28,32 +33,31 @@ const login = async (req, res, next) => {
       return res.status(403).json({ error: '账号已停用，请联系管理员' });
     }
     
-    // 验证密码 - 支持空密码用户(主要是兼容历史数据)
-    if (user.password) {
-      if (!password) {
-        // 记录登录失败日志
-        await logLogin(req, user.id, user.username || user.phone, false, '未输入密码', {
-          userId: user.id,
-          username: user.username,
-          phone: user.phone,
-          roleName: user.role_name,
-          unitName: user.unit_name
-        });
-        return res.status(401).json({ error: '请输入密码' });
-      }
-      
-      const passwordMatch = await comparePassword(password, user.password);
-      if (!passwordMatch) {
-        // 记录登录失败日志
-        await logLogin(req, user.id, user.username || user.phone, false, '密码错误', {
-          userId: user.id,
-          username: user.username,
-          phone: user.phone,
-          roleName: user.role_name,
-          unitName: user.unit_name
-        });
-        return res.status(401).json({ error: '密码错误' });
-      }
+    // 检查用户是否设置了密码
+    if (!user.password) {
+      // 记录登录失败日志
+      await logLogin(req, user.id, user.username || user.phone, false, '账号未设置密码', {
+        userId: user.id,
+        username: user.username,
+        phone: user.phone,
+        roleName: user.role_name,
+        unitName: user.unit_name
+      });
+      return res.status(401).json({ error: '账号未设置密码，请联系管理员重置密码' });
+    }
+    
+    // 验证密码
+    const passwordMatch = await comparePassword(password, user.password);
+    if (!passwordMatch) {
+      // 记录登录失败日志
+      await logLogin(req, user.id, user.username || user.phone, false, '密码错误', {
+        userId: user.id,
+        username: user.username,
+        phone: user.phone,
+        roleName: user.role_name,
+        unitName: user.unit_name
+      });
+      return res.status(401).json({ error: '用户名或密码错误' }); // 统一错误信息
     }
 
     // 生成 token

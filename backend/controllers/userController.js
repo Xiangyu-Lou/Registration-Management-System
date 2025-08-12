@@ -56,8 +56,13 @@ const createUser = async (req, res, next) => {
     const { username, phone, password, roleId, unitId, companyId } = req.body;
     
     // 验证必填字段
-    if (!username || !phone || !roleId) {
-      return res.status(400).json({ error: '用户名、手机号和角色是必填字段' });
+    if (!username || !phone || !roleId || !password) {
+      return res.status(400).json({ error: '用户名、手机号、密码和角色是必填字段' });
+    }
+    
+    // 密码强度验证
+    if (password.length < 6) {
+      return res.status(400).json({ error: '密码长度至少6位' });
     }
     
     // 确定用户所属公司
@@ -81,11 +86,8 @@ const createUser = async (req, res, next) => {
       return res.status(400).json({ error: '手机号已存在' });
     }
     
-    // 加密密码（如果提供）
-    let hashedPassword = null;
-    if (password) {
-      hashedPassword = await hashPassword(password);
-    }
+    // 加密密码（现在是必须的）
+    const hashedPassword = await hashPassword(password);
     
     // 创建用户
     const userId = await User.create({
@@ -106,7 +108,6 @@ const createUser = async (req, res, next) => {
     // 构建详细描述
     const roleText = createdUser.role_name || '未知角色';
     const unitText = createdUser.unit_name || '无单位';
-    const passwordText = password ? '已设置密码' : '未设置密码';
     
     // 记录操作日志
     await logUserManagementOperation(
@@ -114,7 +115,7 @@ const createUser = async (req, res, next) => {
       'create', 
       userId, 
       operatorId, 
-      `创建用户 - 用户名: ${username}, 手机号: ${phone}, 角色: ${roleText}, 单位: ${unitText}, 密码状态: ${passwordText}`,
+      `创建用户 - 用户名: ${username}, 手机号: ${phone}, 角色: ${roleText}, 单位: ${unitText}, 密码状态: 已设置密码`,
       {
         username,
         phone,
@@ -122,7 +123,7 @@ const createUser = async (req, res, next) => {
         roleName: createdUser.role_name,
         unitId,
         unitName: createdUser.unit_name,
-        hasPassword: !!password,
+        hasPassword: true,
         status: '正常'
       }
     );
