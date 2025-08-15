@@ -69,6 +69,51 @@
             style="margin-top: 10px; height: 40px;"
           />
         </el-form-item>
+
+        <!-- 地理位置信息 -->
+        <el-form-item label="地理位置">
+          <div class="location-section">
+            <div class="location-controls">
+              <el-button 
+                type="primary" 
+                :icon="Location" 
+                :loading="locationLoading" 
+                @click="getCurrentLocation"
+                :disabled="!isLocationSupported"
+              >
+                {{ locationLoading ? '获取中...' : '获取当前位置' }}
+              </el-button>
+              <span v-if="!isLocationSupported" class="location-tip">
+                当前环境不支持位置获取
+              </span>
+              <span v-else-if="!isSecureContext" class="location-tip">
+                需要HTTPS环境才能获取位置
+              </span>
+            </div>
+            
+            <!-- 位置信息显示 -->
+            <div v-if="locationInfo.success" class="location-info">
+              <div class="location-item">
+                <el-tag type="success" size="small">坐标</el-tag>
+                <span>{{ formatCoordinates(locationInfo.longitude, locationInfo.latitude) }}</span>
+              </div>
+              <div v-if="locationInfo.address" class="location-item">
+                <el-tag type="info" size="small">地址</el-tag>
+                <span>{{ formatAddress(locationInfo) }}</span>
+              </div>
+            </div>
+            
+            <div v-if="locationError" class="location-error">
+              <el-alert 
+                :title="locationError" 
+                type="warning" 
+                :closable="false" 
+                show-icon 
+                size="small"
+              />
+            </div>
+          </div>
+        </el-form-item>
         
         <el-form-item label="备注" prop="remarks">
           <el-input 
@@ -212,9 +257,16 @@ import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import httpService from '../config/httpService';
 import apiConfig from '../config/api';
-import { ArrowLeft, Document, Plus, Clock } from '@element-plus/icons-vue';
+import { ArrowLeft, Document, Plus, Clock, Location } from '@element-plus/icons-vue';
 import auth from '../store/auth';
 import Compressor from 'compressorjs';
+import { 
+  getCurrentLocation as getLocationInfo, 
+  isLocationSupported, 
+  isSecureContext, 
+  formatCoordinates, 
+  formatAddress 
+} from '../utils/locationUtils';
 
 export default {
   name: 'WasteForm',
@@ -248,6 +300,19 @@ export default {
     const customLocation = ref(''); // 自定义产生地点
     const customProcess = ref(''); // 自定义产生工序
     const processOptions = ['作业现场', '清罐清理', '报废清理', '管线刺漏', '历史遗留', '日常维护', '封井退出', '其他'];
+    
+    // 位置相关状态
+    const locationLoading = ref(false);
+    const locationInfo = ref({
+      success: false,
+      longitude: null,
+      latitude: null,
+      address: '',
+      district: '',
+      city: '',
+      province: ''
+    });
+    const locationError = ref('');
     
     // 各管理区对应的四级单位列表
     const locationMap = {
@@ -339,6 +404,11 @@ export default {
 
       await fetchUnitName(); // 这里会同时更新locationOptions
       await fetchWasteTypes();
+      
+      // 自动获取位置信息
+      if (isLocationSupported() && isSecureContext()) {
+        getCurrentLocation();
+      }
     });
 
     onBeforeUnmount(() => {
@@ -397,6 +467,26 @@ export default {
       } catch (error) {
         console.error('Error fetching waste types:', error);
         ElMessage.error('获取废物类型失败');
+      }
+    };
+
+    // 获取当前位置
+    const getCurrentLocation = async () => {
+      if (locationLoading.value) return; // 防止重复调用
+      
+      locationLoading.value = true;
+      locationError.value = '';
+      
+      try {
+        const location = await getLocationInfo();
+        locationInfo.value = location;
+        console.log('位置获取成功:', location);
+      } catch (error) {
+        locationError.value = error.message;
+        console.error('位置获取失败:', error);
+        // 不显示错误消息，根据需求只有失败时需要提示
+      } finally {
+        locationLoading.value = false;
       }
     };
 
@@ -885,6 +975,28 @@ export default {
             // 添加备注字段
             formData.append('remarks', form.remarks || '');
             
+            // 添加位置信息
+            if (locationInfo.value.success) {
+              if (locationInfo.value.longitude) {
+                formData.append('longitude', locationInfo.value.longitude);
+              }
+              if (locationInfo.value.latitude) {
+                formData.append('latitude', locationInfo.value.latitude);
+              }
+              if (locationInfo.value.address) {
+                formData.append('address', locationInfo.value.address);
+              }
+              if (locationInfo.value.district) {
+                formData.append('district', locationInfo.value.district);
+              }
+              if (locationInfo.value.city) {
+                formData.append('city', locationInfo.value.city);
+              }
+              if (locationInfo.value.province) {
+                formData.append('province', locationInfo.value.province);
+              }
+            }
+            
             // 添加创建者ID（如果用户已登录）
             if (auth.state.isLoggedIn && auth.state.user) {
               formData.append('creator_id', auth.state.user.id);
@@ -1072,13 +1184,68 @@ export default {
       locationOptions,
       customLocation,
       customProcess,
-      processOptions
+      processOptions,
+      // 位置相关
+      locationLoading,
+      locationInfo,
+      locationError,
+      getCurrentLocation,
+      isLocationSupported,
+      isSecureContext,
+      formatCoordinates,
+      formatAddress,
+      Location
     };
   }
 };
 </script>
 
 <style scoped>
+/* 位置信息样式 */
+.location-section {
+  width: 100%;
+}
+
+.location-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.location-tip {
+  color: #909399;
+  font-size: 12px;
+}
+
+.location-info {
+  background-color: #f5f7fa;
+  border: 1px solid #e4e7ed;
+  border-radius: 6px;
+  padding: 12px;
+  margin-top: 8px;
+}
+
+.location-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.location-item:last-child {
+  margin-bottom: 0;
+}
+
+.location-item span {
+  color: #606266;
+  font-size: 14px;
+}
+
+.location-error {
+  margin-top: 8px;
+}
 .waste-form-container {
   display: flex;
   flex-direction: column;

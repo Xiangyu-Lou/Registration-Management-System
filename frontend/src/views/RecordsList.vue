@@ -199,6 +199,13 @@
                 {{ scope.row.remarks || '无' }}
               </template>
             </el-table-column>
+            <el-table-column label="地理位置" min-width="200" class="mobile-hidden">
+              <template #default="scope">
+                <div v-if="hasLocationInfo(scope.row)" class="location-info-cell">
+                  <span>{{ formatLocationDisplay(scope.row) }}</span>
+                </div>
+              </template>
+            </el-table-column>
             <el-table-column label="收集开始时间" min-width="160">
               <template #default="scope">
                 {{ parseFormattedDateTime(scope.row.collection_start_time) }}
@@ -352,6 +359,7 @@ import { ArrowLeft, Home, Refresh, Plus, User, ArrowDown, ArrowUp, Download, Loa
 import { exportToExcelWithImages, exportToExcel } from '../utils/exportUtils';
 import auth from '../store/auth';
 import axios from 'axios';
+
 
 export default {
   name: 'RecordsList',
@@ -761,6 +769,28 @@ export default {
     const isBasicEmployee = computed(() => {
       return !isAdmin.value && !isUnitAdmin.value;
     });
+    
+    // 检查记录是否有位置信息
+    const hasLocationInfo = (record) => {
+      return record.address || record.district || record.city || record.province;
+    };
+    
+    // 格式化位置信息显示
+    const formatLocationDisplay = (record) => {
+      const parts = [];
+      
+      if (record.address) {
+        parts.push(record.address);
+      }
+      if (record.district) {
+        parts.push(record.district);
+      }
+      if (record.city) {
+        parts.push(record.city);
+      }
+      
+      return parts.join('，');
+    };
     
     // 带图片导出 (包含首张照片)
     const exportWithImages = async () => {
@@ -1180,6 +1210,9 @@ export default {
       isBasicEmployee,
       // 加载更多记录
       loadMore,
+      // 位置信息相关
+      hasLocationInfo,
+      formatLocationDisplay
     };
   }
 };
@@ -1199,6 +1232,16 @@ export default {
 </style>
 
 <style scoped>
+/* 位置信息单元格样式 */
+.location-info-cell {
+  text-align: left;
+}
+
+.location-info-cell span {
+  color: #606266;
+  font-size: 13px;
+  line-height: 1.4;
+}
 .records-container {
   display: flex;
   flex-direction: column;

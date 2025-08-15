@@ -214,6 +214,13 @@
                   {{ scope.row.remarks || '无' }}
                 </template>
               </el-table-column>
+              <el-table-column label="地理位置" min-width="200" class="mobile-hidden">
+                <template #default="scope">
+                  <div v-if="hasLocationInfo(scope.row)" class="location-info-cell">
+                    <span>{{ formatLocationDisplay(scope.row) }}</span>
+                  </div>
+                </template>
+              </el-table-column>
               <el-table-column prop="collection_start_time" label="收集开始时间" min-width="160" />
               <el-table-column label="数量(吨)" min-width="100">
                 <template #default="scope">
@@ -347,6 +354,7 @@ import { Plus, Refresh, User, ArrowDown, ArrowUp, Download, Loading, CircleClose
 import auth from '../store/auth';
 import { exportToExcelWithImages, exportToExcel } from '../utils/exportUtils';
 import apiConfig from '../config/api';
+
 
 // API基础URL
 // const apiBaseURL = apiConfig.baseURL;
@@ -1300,6 +1308,28 @@ export default {
     const isSupervisor = computed(() => {
       return auth.state.isLoggedIn && auth.state.user && auth.state.user.role_id === 4;
     });
+    
+    // 检查记录是否有位置信息
+    const hasLocationInfo = (record) => {
+      return record.address || record.district || record.city || record.province;
+    };
+    
+    // 格式化位置信息显示
+    const formatLocationDisplay = (record) => {
+      const parts = [];
+      
+      if (record.address) {
+        parts.push(record.address);
+      }
+      if (record.district) {
+        parts.push(record.district);
+      }
+      if (record.city) {
+        parts.push(record.city);
+      }
+      
+      return parts.join('，');
+    };
 
     return {
       records,
@@ -1343,12 +1373,25 @@ export default {
       canViewLogs,
       isSupervisor,
       auth, // 添加auth对象
+      // 位置信息相关
+      hasLocationInfo,
+      formatLocationDisplay
     };
   }
 };
 </script>
 
 <style scoped>
+/* 位置信息单元格样式 */
+.location-info-cell {
+  text-align: left;
+}
+
+.location-info-cell span {
+  color: #606266;
+  font-size: 13px;
+  line-height: 1.4;
+}
 .admin-records-container {
   padding: 20px;
   min-height: 100vh;

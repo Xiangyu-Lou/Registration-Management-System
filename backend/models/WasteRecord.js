@@ -16,14 +16,22 @@ class WasteRecord {
       remarks,
       process,
       isSupervised,
-      companyId
+      companyId,
+      longitude,
+      latitude,
+      address,
+      district,
+      city,
+      province
     } = recordData;
+
+    const queryParams = [unitId, wasteTypeId, location, collectionStartTime, photoPathBefore, photoPathAfter, quantity, creatorId, remarks, process, isSupervised, companyId, longitude, latitude, address, district, city, province];
 
     const [result] = await pool.query(
       `INSERT INTO waste_records 
-      (unit_id, waste_type_id, location, collection_start_time, photo_path_before, photo_path_after, quantity, created_at, creator_id, remarks, process, is_supervised, company_id)
-      VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?)`,
-      [unitId, wasteTypeId, location, collectionStartTime, photoPathBefore, photoPathAfter, quantity, creatorId, remarks, process, isSupervised, companyId]
+      (unit_id, waste_type_id, location, collection_start_time, photo_path_before, photo_path_after, quantity, created_at, creator_id, remarks, process, is_supervised, company_id, longitude, latitude, address, district, city, province)
+      VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      queryParams
     );
 
     return result.insertId;
@@ -359,14 +367,21 @@ class WasteRecord {
       quantity,
       remarks,
       process,
-      companyId
+      companyId,
+      longitude,
+      latitude,
+      address,
+      district,
+      city,
+      province
     } = recordData;
 
     let query = `UPDATE waste_records SET 
        unit_id = ?, waste_type_id = ?, location = ?, collection_start_time = ?, 
-       photo_path_before = ?, photo_path_after = ?, quantity = ?, remarks = ?, process = ?`;
+       photo_path_before = ?, photo_path_after = ?, quantity = ?, remarks = ?, process = ?, 
+       longitude = ?, latitude = ?, address = ?, district = ?, city = ?, province = ?`;
     
-    let params = [unitId, wasteTypeId, location, collectionStartTime, photoPathBefore, photoPathAfter, quantity, remarks, process];
+    let params = [unitId, wasteTypeId, location, collectionStartTime, photoPathBefore, photoPathAfter, quantity, remarks, process, longitude, latitude, address, district, city, province];
     
     // 如果传入了companyId，则更新公司字段（主要用于系统超级管理员转移记录）
     if (companyId !== undefined) {

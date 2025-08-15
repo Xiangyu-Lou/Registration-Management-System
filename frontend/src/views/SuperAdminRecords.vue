@@ -204,6 +204,13 @@
                 {{ scope.row.remarks || '无' }}
               </template>
             </el-table-column>
+            <el-table-column label="地理位置" min-width="200" class="mobile-hidden">
+              <template #default="scope">
+                <div v-if="hasLocationInfo(scope.row)" class="location-info-cell">
+                  <span>{{ formatLocationDisplay(scope.row) }}</span>
+                </div>
+              </template>
+            </el-table-column>
             <el-table-column prop="collection_start_time" label="收集开始时间" min-width="160" />
             <el-table-column label="数量(吨)" min-width="100">
               <template #default="scope">

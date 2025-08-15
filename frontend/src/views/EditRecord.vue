@@ -94,6 +94,69 @@
           />
         </el-form-item>
 
+        <!-- 地理位置信息显示（编辑模式） -->
+        <el-form-item label="地理位置" v-if="!isNew && hasLocationInfo">
+          <div class="location-display">
+            <div v-if="locationInfo.coordinates" class="location-item">
+              <el-tag type="success" size="small">坐标</el-tag>
+              <span>{{ locationInfo.coordinates }}</span>
+            </div>
+            <div v-if="locationInfo.address" class="location-item">
+              <el-tag type="info" size="small">地址</el-tag>
+              <span>{{ locationInfo.address }}</span>
+            </div>
+            <div v-if="locationInfo.region" class="location-item">
+              <el-tag type="warning" size="small">区域</el-tag>
+              <span>{{ locationInfo.region }}</span>
+            </div>
+          </div>
+        </el-form-item>
+
+        <!-- 地理位置获取（新增模式） -->
+        <el-form-item label="地理位置" v-if="isNew">
+          <div class="location-section">
+            <div class="location-controls">
+              <el-button 
+                type="primary" 
+                :icon="Location" 
+                :loading="locationLoading" 
+                @click="getCurrentLocation"
+                :disabled="!isLocationSupported"
+              >
+                {{ locationLoading ? '获取中...' : '获取当前位置' }}
+              </el-button>
+              <span v-if="!isLocationSupported" class="location-tip">
+                当前环境不支持位置获取
+              </span>
+              <span v-else-if="!isSecureContext" class="location-tip">
+                需要HTTPS环境才能获取位置
+              </span>
+            </div>
+            
+            <!-- 位置信息显示 -->
+            <div v-if="currentLocationInfo.success" class="location-info">
+              <div class="location-item">
+                <el-tag type="success" size="small">坐标</el-tag>
+                <span>{{ formatCoordinates(currentLocationInfo.longitude, currentLocationInfo.latitude) }}</span>
+              </div>
+              <div v-if="currentLocationInfo.address" class="location-item">
+                <el-tag type="info" size="small">地址</el-tag>
+                <span>{{ formatAddress(currentLocationInfo) }}</span>
+              </div>
+            </div>
+            
+            <div v-if="locationError" class="location-error">
+              <el-alert 
+                :title="locationError" 
+                type="warning" 
+                :closable="false" 
+                show-icon 
+                size="small"
+              />
+            </div>
+          </div>
+        </el-form-item>
+
         <el-form-item label="收集日期">
           <el-date-picker
             v-model="form.collectionDate"
@@ -225,9 +288,16 @@ import { useRouter, useRoute } from 'vue-router';
 import { ElMessage, ElImageViewer } from 'element-plus';
 import httpService from '../config/httpService';
 import apiConfig from '../config/api';
-import { ArrowLeft, Plus, Clock } from '@element-plus/icons-vue';
+import { ArrowLeft, Plus, Clock, Location } from '@element-plus/icons-vue';
 import auth from '../store/auth';
 import Compressor from 'compressorjs';
+import { 
+  getCurrentLocation as getLocationInfo, 
+  isLocationSupported, 
+  isSecureContext, 
+  formatCoordinates, 
+  formatAddress 
+} from '../utils/locationUtils';
 
 export default {
   name: 'EditRecordView',
@@ -263,6 +333,26 @@ export default {
     const customLocation = ref('');
     const customProcess = ref('');
     const processOptions = ['作业现场', '清罐清理', '报废清理', '管线刺漏', '历史遗留', '日常维护', '封井退出', '其他'];
+    
+    // 位置信息相关（编辑模式显示用）
+    const locationInfo = ref({
+      coordinates: '',
+      address: '',
+      region: ''
+    });
+    
+    // 新增模式的位置获取相关
+    const locationLoading = ref(false);
+    const currentLocationInfo = ref({
+      success: false,
+      longitude: null,
+      latitude: null,
+      address: '',
+      district: '',
+      city: '',
+      province: ''
+    });
+    const locationError = ref('');
     
     // 添加跟踪被删除照片的变量
     const deletedPhotosBefore = ref([]);
@@ -343,6 +433,11 @@ export default {
     // 检查用户是否为监督人员
     const isSupervisor = computed(() => {
       return auth.state.isLoggedIn && auth.state.user.role_id === 4;
+    });
+
+    // 检查是否有位置信息
+    const hasLocationInfo = computed(() => {
+      return locationInfo.value.coordinates || locationInfo.value.address || locationInfo.value.region;
     });
     
     // 表单数据
@@ -445,6 +540,11 @@ export default {
           // 设置默认的收集日期和时间为当前时间
           form.collectionDate = new Date().toISOString().slice(0, 10);
           form.collectionTime = new Date().toTimeString().slice(0, 5);
+          
+          // 自动获取位置信息（新增模式）
+          if (isLocationSupported() && isSecureContext()) {
+            getCurrentLocation();
+          }
         } else {
           // 只有在编辑现有记录时才获取记录详情
           await fetchRecordDetails();
@@ -507,6 +607,26 @@ export default {
       } catch (error) {
         console.error('获取废物类型失败:', error);
         ElMessage.error('获取废物类型失败');
+      }
+    };
+
+    // 获取当前位置（新增模式用）
+    const getCurrentLocation = async () => {
+      if (locationLoading.value) return; // 防止重复调用
+      
+      locationLoading.value = true;
+      locationError.value = '';
+      
+      try {
+        const location = await getLocationInfo();
+        currentLocationInfo.value = location;
+        console.log('位置获取成功:', location);
+      } catch (error) {
+        locationError.value = error.message;
+        console.error('位置获取失败:', error);
+        // 不显示错误消息，根据需求只有失败时需要提示
+      } finally {
+        locationLoading.value = false;
       }
     };
 
@@ -579,6 +699,24 @@ export default {
         // 添加备注字段赋值
         form.remarks = recordData.remarks || '';
         console.log('设置备注字段:', recordData.remarks);
+        
+        // 处理位置信息
+        if (recordData.longitude && recordData.latitude) {
+          const lat = parseFloat(recordData.latitude);
+          const lng = parseFloat(recordData.longitude);
+          if (!isNaN(lat) && !isNaN(lng)) {
+            locationInfo.value.coordinates = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+          }
+        }
+        if (recordData.address) {
+          locationInfo.value.address = recordData.address;
+        }
+        if (recordData.province || recordData.city || recordData.district) {
+          const regionParts = [recordData.province, recordData.city, recordData.district]
+            .filter(part => part && part.trim());
+          locationInfo.value.region = regionParts.join('');
+        }
+        console.log('设置位置信息:', locationInfo.value);
         
         // 处理照片
         if (recordData.photo_path_before) {
@@ -1218,6 +1356,28 @@ export default {
             
             formData.append('remarks', form.remarks || '');
             
+            // 添加位置信息（新增模式）
+            if (isNew.value && currentLocationInfo.value.success) {
+              if (currentLocationInfo.value.longitude) {
+                formData.append('longitude', currentLocationInfo.value.longitude);
+              }
+              if (currentLocationInfo.value.latitude) {
+                formData.append('latitude', currentLocationInfo.value.latitude);
+              }
+              if (currentLocationInfo.value.address) {
+                formData.append('address', currentLocationInfo.value.address);
+              }
+              if (currentLocationInfo.value.district) {
+                formData.append('district', currentLocationInfo.value.district);
+              }
+              if (currentLocationInfo.value.city) {
+                formData.append('city', currentLocationInfo.value.city);
+              }
+              if (currentLocationInfo.value.province) {
+                formData.append('province', currentLocationInfo.value.province);
+              }
+            }
+            
             // 如果是编辑模式，发送要删除的照片列表
             if (!isNew.value) {
               if (deletedPhotosBefore.value.length > 0) {
@@ -1439,13 +1599,79 @@ export default {
       deletedPhotosBefore,
       deletedPhotosAfter,
       originalPhotosBefore,
-      originalPhotosAfter
+      originalPhotosAfter,
+      // 位置信息相关
+      locationInfo,
+      hasLocationInfo,
+      // 新增模式位置获取相关
+      locationLoading,
+      currentLocationInfo,
+      locationError,
+      getCurrentLocation,
+      isLocationSupported,
+      isSecureContext,
+      formatCoordinates,
+      formatAddress,
+      Location
     };
   }
 };
 </script>
 
 <style scoped>
+/* 位置信息显示样式 */
+.location-display {
+  background-color: #f5f7fa;
+  border: 1px solid #e4e7ed;
+  border-radius: 6px;
+  padding: 12px;
+}
+
+.location-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.location-item:last-child {
+  margin-bottom: 0;
+}
+
+.location-item span {
+  color: #606266;
+  font-size: 14px;
+}
+
+/* 新增模式位置获取样式 */
+.location-section {
+  width: 100%;
+}
+
+.location-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.location-tip {
+  color: #909399;
+  font-size: 12px;
+}
+
+.location-info {
+  background-color: #f5f7fa;
+  border: 1px solid #e4e7ed;
+  border-radius: 6px;
+  padding: 12px;
+  margin-top: 8px;
+}
+
+.location-error {
+  margin-top: 8px;
+}
 .edit-record-container {
   display: flex;
   flex-direction: column;

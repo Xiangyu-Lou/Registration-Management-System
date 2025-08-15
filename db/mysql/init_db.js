@@ -128,7 +128,7 @@ async function initializeDatabase() {
     `);
     console.log('waste_types表已创建');
     
-    // 创建废物记录表（包含company_id）
+    // 创建废物记录表（包含company_id和位置信息）
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS waste_records (
         id INT PRIMARY KEY AUTO_INCREMENT,
@@ -145,6 +145,12 @@ async function initializeDatabase() {
         process VARCHAR(100),
         is_supervised TINYINT(1) DEFAULT NULL COMMENT '是否为监督数据: 1-是',
         company_id INT NOT NULL,
+        longitude DECIMAL(10, 7) NULL COMMENT '经度',
+        latitude DECIMAL(10, 7) NULL COMMENT '纬度',
+        address TEXT NULL COMMENT '详细地址',
+        district VARCHAR(100) NULL COMMENT '区/县',
+        city VARCHAR(100) NULL COMMENT '市',
+        province VARCHAR(100) NULL COMMENT '省/直辖市',
         INDEX idx_company_id (company_id),
         FOREIGN KEY (unit_id) REFERENCES units(id),
         FOREIGN KEY (waste_type_id) REFERENCES waste_types(id),

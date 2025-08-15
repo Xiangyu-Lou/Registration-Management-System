@@ -9,7 +9,22 @@ const path = require('path');
 // 创建废物记录
 const createWasteRecord = async (req, res, next) => {
   try {
-    const { unitId, wasteTypeId, location, collectionDate, collectionTime, quantity, remarks, process } = req.body;
+    const { 
+      unitId, 
+      wasteTypeId, 
+      location, 
+      collectionDate, 
+      collectionTime, 
+      quantity, 
+      remarks, 
+      process,
+      longitude,
+      latitude,
+      address,
+      district,
+      city,
+      province
+    } = req.body;
     
     // 验证必填字段
     if (!unitId || !wasteTypeId || !location || !process) {
@@ -61,6 +76,16 @@ const createWasteRecord = async (req, res, next) => {
     // 获取公司ID（从当前用户）
     const companyId = req.user ? req.user.company_id : null;
     
+    // 处理位置信息 - 确保数值类型正确
+    const locationData = {
+      longitude: longitude ? parseFloat(longitude) : null,
+      latitude: latitude ? parseFloat(latitude) : null,
+      address: address || null,
+      district: district || null,
+      city: city || null,
+      province: province || null
+    };
+    
     // 创建记录
     const recordId = await WasteRecord.create({
       unitId,
@@ -74,7 +99,8 @@ const createWasteRecord = async (req, res, next) => {
       remarks,
       process,
       isSupervised: isSupervisedValue,
-      companyId
+      companyId,
+      ...locationData
     });
     
     // 获取创建后的完整记录信息用于日志
