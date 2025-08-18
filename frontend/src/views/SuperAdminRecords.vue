@@ -1063,10 +1063,32 @@ export default {
       showViewer.value = false;
     };
 
-         // 计算序号
-     const indexMethod = (index) => {
-       return index + 1;
-     };
+             // 计算序号
+    const indexMethod = (index) => {
+      return index + 1;
+    };
+
+    // 检查记录是否有位置信息
+    const hasLocationInfo = (record) => {
+      return record.address || record.district || record.city || record.province;
+    };
+    
+    // 格式化位置信息显示
+    const formatLocationDisplay = (record) => {
+      const parts = [];
+      
+      if (record.address) {
+        parts.push(record.address);
+      }
+      if (record.district) {
+        parts.push(record.district);
+      }
+      if (record.city) {
+        parts.push(record.city);
+      }
+      
+      return parts.join('，');
+    };
  
 
 
@@ -1111,13 +1133,16 @@ export default {
                     indexMethod,
        tableHeight,
        tableRef,
-       canViewLogs,
-       // 分页相关
-       page,
-       pageSize,
-       hasMore,
-       loadingMore,
-       loadMore
+             canViewLogs,
+      // 分页相关
+      page,
+      pageSize,
+      hasMore,
+      loadingMore,
+      loadMore,
+      // 位置信息相关
+      hasLocationInfo,
+      formatLocationDisplay
     };
   }
 };
