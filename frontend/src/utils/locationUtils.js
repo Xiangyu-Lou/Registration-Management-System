@@ -5,8 +5,11 @@
 
 // 高德地图配置
 const AMAP_CONFIG = {
-  key: 'ce824eb86be2c05e696310234e310b20',
-  securityKey: 'ab849a6b9b76caadab4f82a5fbe282e8',
+  // Web服务API密钥（用于HTTP请求）
+  webServiceKey: '5bcc4e72239e7c2fbc5bf264a19abfc7',
+  // JS API密钥（保留备用，如果将来需要使用JS SDK）
+  jsApiKey: 'ce824eb86be2c05e696310234e310b20',
+  jsApiToken: 'ab849a6b9b76caadab4f82a5fbe282e8',
   serviceHost: 'https://restapi.amap.com'
 };
 
@@ -55,7 +58,7 @@ export const getCurrentLocation = () => {
             // 尝试只进行坐标转换，不获取地址
             const convertUrl = `${AMAP_CONFIG.serviceHost}/v3/assistant/coordinate/convert`;
             const convertParams = new URLSearchParams({
-              key: AMAP_CONFIG.key,
+              key: AMAP_CONFIG.webServiceKey,
               locations: `${longitude},${latitude}`,
               coordsys: 'gps' // GPS坐标系
             });
@@ -132,7 +135,7 @@ const convertGpsToAmap = async (lat, lng) => {
     // 坐标转换：GPS -> 高德
     const convertUrl = `${AMAP_CONFIG.serviceHost}/v3/assistant/coordinate/convert`;
     const convertParams = new URLSearchParams({
-      key: AMAP_CONFIG.key,
+      key: AMAP_CONFIG.webServiceKey,
       locations: `${lng},${lat}`,
       coordsys: 'gps' // GPS坐标系
     });
@@ -152,7 +155,7 @@ const convertGpsToAmap = async (lat, lng) => {
     // 逆地理编码获取地址信息
     const geocodeUrl = `${AMAP_CONFIG.serviceHost}/v3/geocode/regeo`;
     const geocodeParams = new URLSearchParams({
-      key: AMAP_CONFIG.key,
+      key: AMAP_CONFIG.webServiceKey,
       location: `${amapLng},${amapLat}`,
       extensions: 'all'
     });
