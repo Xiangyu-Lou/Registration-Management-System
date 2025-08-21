@@ -36,10 +36,12 @@ export const getCurrentLocation = () => {
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { latitude, longitude } = position.coords;
+        console.log('🔍 GPS原始坐标:', { latitude, longitude });
         
         try {
           // 将GPS坐标转换为高德坐标系，并获取地址信息
           const locationInfo = await convertGpsToAmap(latitude, longitude);
+          console.log('✅ 转换后的位置信息:', locationInfo);
           
           resolve({
             success: true,
@@ -52,7 +54,7 @@ export const getCurrentLocation = () => {
           });
         } catch (error) {
           // 如果地址解析失败，至少要进行坐标转换
-          console.warn('地址解析失败，仅保存坐标信息:', error);
+          console.warn('⚠️ 地址解析失败，尝试仅进行坐标转换:', error);
           
           try {
             // 尝试只进行坐标转换，不获取地址
@@ -63,8 +65,10 @@ export const getCurrentLocation = () => {
               coordsys: 'gps' // GPS坐标系
             });
 
+            console.log('🔄 备用坐标转换API URL:', `${convertUrl}?${convertParams}`);
             const convertResponse = await fetch(`${convertUrl}?${convertParams}`);
             const convertData = await convertResponse.json();
+            console.log('🔄 备用坐标转换响应:', convertData);
 
             let amapLng = longitude;
             let amapLat = latitude;
@@ -73,9 +77,12 @@ export const getCurrentLocation = () => {
               const [convertedLng, convertedLat] = convertData.locations.split(',');
               amapLng = parseFloat(convertedLng);
               amapLat = parseFloat(convertedLat);
+              console.log('✅ 备用坐标转换成功:', { amapLng, amapLat });
+            } else {
+              console.warn('⚠️ 备用坐标转换也失败:', convertData);
             }
 
-            resolve({
+            const result = {
               success: true,
               longitude: amapLng,
               latitude: amapLat,
@@ -83,11 +90,13 @@ export const getCurrentLocation = () => {
               district: '',
               city: '',
               province: ''
-            });
+            };
+            console.log('📍 最终返回（仅坐标）:', result);
+            resolve(result);
           } catch (convertError) {
             // 如果坐标转换也失败，使用原始GPS坐标
-            console.warn('坐标转换也失败，使用原始GPS坐标:', convertError);
-            resolve({
+            console.error('❌ 备用坐标转换失败:', convertError);
+            const fallbackResult = {
               success: true,
               longitude: longitude,
               latitude: latitude,
@@ -95,7 +104,9 @@ export const getCurrentLocation = () => {
               district: '',
               city: '',
               province: ''
-            });
+            };
+            console.log('📍 最终返回（原始GPS坐标）:', fallbackResult);
+            resolve(fallbackResult);
           }
         }
       },
@@ -131,6 +142,9 @@ export const getCurrentLocation = () => {
  * @returns {Promise<Object>} 转换后的位置信息
  */
 const convertGpsToAmap = async (lat, lng) => {
+  console.log('📍 开始坐标转换和地址解析...');
+  console.log('输入坐标 (GPS):', { lat, lng });
+  
   try {
     // 坐标转换：GPS -> 高德
     const convertUrl = `${AMAP_CONFIG.serviceHost}/v3/assistant/coordinate/convert`;
@@ -140,8 +154,10 @@ const convertGpsToAmap = async (lat, lng) => {
       coordsys: 'gps' // GPS坐标系
     });
 
+    console.log('🔄 坐标转换API URL:', `${convertUrl}?${convertParams}`);
     const convertResponse = await fetch(`${convertUrl}?${convertParams}`);
     const convertData = await convertResponse.json();
+    console.log('🔄 坐标转换API响应:', convertData);
 
     let amapLng = lng;
     let amapLat = lat;
@@ -150,6 +166,9 @@ const convertGpsToAmap = async (lat, lng) => {
       const [convertedLng, convertedLat] = convertData.locations.split(',');
       amapLng = parseFloat(convertedLng);
       amapLat = parseFloat(convertedLat);
+      console.log('✅ 坐标转换成功:', { amapLng, amapLat });
+    } else {
+      console.warn('⚠️ 坐标转换失败，使用原始坐标:', convertData);
     }
 
     // 逆地理编码获取地址信息
@@ -160,8 +179,10 @@ const convertGpsToAmap = async (lat, lng) => {
       extensions: 'all'
     });
 
+    console.log('🏠 逆地理编码API URL:', `${geocodeUrl}?${geocodeParams}`);
     const geocodeResponse = await fetch(`${geocodeUrl}?${geocodeParams}`);
     const geocodeData = await geocodeResponse.json();
+    console.log('🏠 逆地理编码API响应:', geocodeData);
 
     let addressInfo = {
       longitude: amapLng,
@@ -175,6 +196,7 @@ const convertGpsToAmap = async (lat, lng) => {
     if (geocodeData.status === '1' && geocodeData.regeocode) {
       const regeocode = geocodeData.regeocode;
       const addressComponent = regeocode.addressComponent;
+      console.log('📍 地址组件:', addressComponent);
 
       addressInfo = {
         longitude: amapLng,
@@ -184,12 +206,19 @@ const convertGpsToAmap = async (lat, lng) => {
         city: addressComponent.city || addressComponent.province || '',
         province: addressComponent.province || ''
       };
+      console.log('✅ 地址解析成功:', addressInfo);
+    } else {
+      console.warn('⚠️ 地址解析失败，仅保存坐标:', geocodeData);
     }
 
     return addressInfo;
   } catch (error) {
     // 如果API调用失败，返回原始坐标
-    console.warn('地址解析失败:', error);
+    console.error('❌ API调用失败:', error);
+    console.error('错误详情:', {
+      message: error.message,
+      stack: error.stack
+    });
     return {
       longitude: lng,
       latitude: lat,
