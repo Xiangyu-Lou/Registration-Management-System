@@ -7,7 +7,7 @@ const {
   updateUnit,
   deleteUnit
 } = require('../controllers/unitController');
-const { authenticateToken, requireSuperAdmin } = require('../middleware/auth');
+const { authenticateToken, requireAdmin } = require('../middleware/auth');
 
 // 获取所有单位（需要登录认证，会根据用户权限过滤）
 router.get('/', authenticateToken, getAllUnits);
@@ -16,12 +16,12 @@ router.get('/', authenticateToken, getAllUnits);
 router.get('/:id', authenticateToken, getUnitById);
 
 // 创建单位（需要超级管理员权限）
-router.post('/', authenticateToken, requireSuperAdmin, createUnit);
+router.post('/', authenticateToken, requireAdmin, createUnit);
 
 // 更新单位信息（需要超级管理员权限）
-router.put('/:id', authenticateToken, requireSuperAdmin, updateUnit);
+router.put('/:id', authenticateToken, requireAdmin, updateUnit);
 
 // 删除单位（需要超级管理员权限）
-router.delete('/:id', authenticateToken, requireSuperAdmin, deleteUnit);
+router.delete('/:id', authenticateToken, requireAdmin, deleteUnit);
 
 module.exports = router; 

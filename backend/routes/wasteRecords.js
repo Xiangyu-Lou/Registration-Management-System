@@ -11,11 +11,13 @@ const {
   updateWasteRecord,
   deleteWasteRecord
 } = require('../controllers/wasteRecordController');
-const { authenticateToken, validateSupervisorUnitAccess } = require('../middleware/auth');
+const { authenticateToken, validateSupervisorUnitAccess, requireAdmin } = require('../middleware/auth');
 
-// 创建废物记录（需要认证，支持文件上传，验证监督人员单位权限）
+// 对所有废物记录路由应用认证中间件
+router.use(authenticateToken);
+
+// 创建废物记录（支持文件上传，并验证监督人员的单位权限）
 router.post('/', 
-  authenticateToken, 
   validateSupervisorUnitAccess,
   upload.fields([
     { name: 'photo_before', maxCount: 5 },
@@ -24,24 +26,23 @@ router.post('/',
   createWasteRecord
 );
 
-// 导出用户的废物记录（必须在 /user/:userId 之前）
+// 导出用户的废物记录
 router.get('/export/user/:userId', exportWasteRecordsByUser);
 
-// 获取单个废物记录详情（必须在 /:id 之前）
+// 获取废物记录详情
 router.get('/detail/:id', getWasteRecordDetail);
 
-// 获取用户创建的废物记录（支持分页）
+// 获取指定用户创建的废物记录
 router.get('/user/:userId', getWasteRecordsByUser);
 
-// 获取特定单位的废物记录（验证监督人员单位权限）
-router.get('/:unitId', validateSupervisorUnitAccess, getWasteRecordsByUnit);
+// 获取特定单位的废物记录（验证监督人员的单位权限）
+router.get('/unit/:unitId', validateSupervisorUnitAccess, getWasteRecordsByUnit);
 
-// 获取所有废物记录（用于管理员查看）
-router.get('/', getAllWasteRecords);
+// 获取所有废物记录（仅限管理员）
+router.get('/', requireAdmin, getAllWasteRecords);
 
-// 更新废物记录（需要认证，支持文件上传）
+// 更新废物记录（支持文件上传）
 router.put('/:id', 
-  authenticateToken, 
   upload.fields([
     { name: 'photo_before', maxCount: 5 },
     { name: 'photo_after', maxCount: 5 }
@@ -49,7 +50,7 @@ router.put('/:id',
   updateWasteRecord
 );
 
-// 删除废物记录（需要认证）
-router.delete('/:id', authenticateToken, deleteWasteRecord);
+// 删除废物记录
+router.delete('/:id', deleteWasteRecord);
 
-module.exports = router; 
+module.exports = router;

@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { authenticateToken } = require('../middleware/auth');
+const { authenticateToken, requireCompanyAdmin } = require('../middleware/auth');
 const {
   getOperationLogs,
   getOperationStats,
@@ -8,8 +8,8 @@ const {
   exportOperationLogs
 } = require('../controllers/operationLogController');
 
-// 所有操作日志路由都需要认证
-router.use(authenticateToken);
+// 所有操作日志路由都需要认证和公司管理员权限
+router.use(authenticateToken, requireCompanyAdmin);
 
 // 获取操作日志（带分页和筛选）
 router.get('/', getOperationLogs);
@@ -23,4 +23,4 @@ router.get('/user-stats', getUserOperationStats);
 // 导出操作日志
 router.get('/export', exportOperationLogs);
 
-module.exports = router; 
+module.exports = router;

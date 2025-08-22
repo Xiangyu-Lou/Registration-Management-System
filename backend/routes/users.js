@@ -11,33 +11,41 @@ const {
   updateUserProfile,
   updateUserLogPermission
 } = require('../controllers/userController');
-const { authenticateToken, blockSupervisor, requireLogViewPermission } = require('../middleware/auth');
+const {
+  authenticateToken,
+  blockSupervisor,
+  requireLogViewPermission,
+  requireAdmin
+} = require('../middleware/auth');
 
-// 获取所有用户（阻止监督人员访问）
-router.get('/', blockSupervisor, getAllUsers);
+// 所有用户路由都需要认证
+router.use(authenticateToken);
 
-// 获取指定单位的用户（阻止监督人员访问）
-router.get('/unit/:unitId', blockSupervisor, getUsersByUnit);
+// 获取所有用户（管理员和单位管理员，但阻止监督人员）
+router.get('/', requireAdmin, blockSupervisor, getAllUsers);
 
-// 更新用户个人资料（需要认证）
-router.put('/:id/profile', authenticateToken, updateUserProfile);
+// 获取指定单位的用户（管理员和单位管理员，但阻止监督人员）
+router.get('/unit/:unitId', requireAdmin, blockSupervisor, getUsersByUnit);
 
-// 修改用户状态（阻止监督人员访问）
-router.put('/:id/status', blockSupervisor, updateUserStatus);
+// 更新用户个人资料（任何认证用户都可以更新自己的个人资料）
+router.put('/:id/profile', updateUserProfile);
 
-// 修改用户日志查看权限（只有有日志查看权限的用户才能修改）
+// 修改用户状态（管理员，但阻止监督人员）
+router.put('/:id/status', requireAdmin, blockSupervisor, updateUserStatus);
+
+// 修改用户日志查看权限（需要特定权限）
 router.put('/:id/log-permission', requireLogViewPermission, updateUserLogPermission);
 
-// 获取单个用户信息（阻止监督人员访问）
-router.get('/:id', blockSupervisor, getUserById);
+// 获取单个用户信息（管理员，但阻止监督人员）
+router.get('/:id', requireAdmin, blockSupervisor, getUserById);
 
-// 创建用户（阻止监督人员访问）
-router.post('/', blockSupervisor, createUser);
+// 创建用户（管理员，但阻止监督人员）
+router.post('/', requireAdmin, blockSupervisor, createUser);
 
-// 更新用户信息（阻止监督人员访问）
-router.put('/:id', blockSupervisor, updateUser);
+// 更新用户信息（管理员，但阻止监督人员）
+router.put('/:id', requireAdmin, blockSupervisor, updateUser);
 
-// 删除用户（阻止监督人员访问）
-router.delete('/:id', blockSupervisor, deleteUser);
+// 删除用户（管理员，但阻止监督人员）
+router.delete('/:id', requireAdmin, blockSupervisor, deleteUser);
 
-module.exports = router; 
+module.exports = router;
