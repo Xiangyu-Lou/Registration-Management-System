@@ -3,9 +3,17 @@ const path = require('path');
 // 加载环境变量 - 统一使用backend/.env
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
+// 解析 DB_HOST，支持 "host:port" 和纯 "host" 两种格式
+const parseDbHost = (dbHost) => {
+  const parts = (dbHost || 'localhost').split(':');
+  return { host: parts[0], port: parts[1] ? parseInt(parts[1]) : 3306 };
+};
+const { host: dbHost, port: dbPort } = parseDbHost(process.env.DB_HOST);
+
 // 数据库连接配置
 const dbConfig = {
-  host: process.env.DB_HOST || 'localhost',
+  host: dbHost,
+  port: dbPort,
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
   database: process.env.DB_NAME || 'waste_management',

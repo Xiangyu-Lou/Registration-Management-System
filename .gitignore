@@ -101,6 +101,9 @@ log/
 # Nginx配置文件
 ngnix_config/linux/product/waste-management
 
+# 脚本
+git-commit.sh
+
 # 其他
 .history/
 .vercel/

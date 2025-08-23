@@ -1,0 +1,17 @@
+{
+  "name": "registration-management-tests",
+  "version": "1.0.0",
+  "description": "API integration tests for Registration Management System",
+  "scripts": {
+    "test": "jest --runInBand --forceExit",
+    "test:verbose": "jest --runInBand --forceExit --verbose",
+    "test:watch": "jest --runInBand --watch"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "supertest": "^7.0.0",
+    "bcrypt": "^5.1.1",
+    "mysql2": "^3.6.1",
+    "dotenv": "^16.4.7"
+  }
+}

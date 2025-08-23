@@ -1,164 +1,164 @@
 # Registration Management System
 
-一个基于 Vue 3 + Node.js + MySQL 的固体废物管理系统，采用现代化的MVC架构设计。
+A modern solid waste management system built with Vue 3 + Node.js + MySQL, featuring a clean MVC architecture design.
 
-[English](README_EN.md) | [介绍手册](instruction.md) | [更新日志](Changelog.md)
+[简体中文](README.md) | [Instruction](instruction.md) | [Changelog](Changelog.md)
 
-## 🎯 项目特色
+## 🎯 Project Features
 
-### 💡 核心功能
-- **公司层级管理**
-  - 支持多公司架构，每个公司管理独立的单位和用户
-  - 完整的权限隔离体系，确保各公司数据安全
-  - 灵活的组织结构：公司 → 单位 → 用户
+### 💡 Core Functions
+- **Company Hierarchy Management**
+  - Support for multi-company architecture with independent unit and user management
+  - Complete permission isolation system ensuring data security for each company
+  - Flexible organizational structure: Company → Unit → User
 
-- **问题反馈系统**
-  - 所有用户可提交问题反馈，支持详细描述
-  - 管理员可查看、处理和回复反馈
-  - 完整的状态管理和统计功能
+- **Problem Feedback System**
+  - All users can submit problem feedback with detailed descriptions
+  - Administrators can view, handle, and reply to feedback
+  - Complete status management and statistical functions
 
-### 👥 用户权限系统
-- **五级权限管理**
-  - **系统超级管理员** - 全系统数据查看权限，所有公司和单位管理权限
-  - **公司管理员** - 本公司数据查看权限，本公司单位和用户管理权限
-  - **单位管理员** - 本单位数据查看权限，本单位记录和用户管理权限
-  - **基层员工** - 本单位废物填报权限，基础数据查看权限（48小时限制）
-  - **监督人员** - 独立的监督数据录入和管理权限
+### 👥 User Permission System
+- **Five-level Permission Management**
+  - **System Super Administrator** - Full system data viewing permissions, all company and unit management
+  - **Company Administrator** - Company data viewing permissions, company unit and user management
+  - **Unit Administrator** - Unit data viewing permissions, unit record and user management
+  - **Basic Employee** - Unit waste reporting permissions, basic data viewing (48-hour limit)
+  - **Supervisor** - Independent supervision data entry and management permissions
 
-### 🗂️ 废物管理
-- **废物分类系统**
-  - 油泥砂、含油包装物等多种废物类型
-  - 支持自定义废物类型管理
-- **废物信息填报**
-  - 基础信息：产生地点、产生工序、收集时间、收集数量
-  - 现场照片管理：收集前照片（≤5张）+ 收集后照片（≤5张）
-  - 自动功能：自动记录填报时间、自动关联填报单位
-- **高级功能**
-  - 多种导出格式（含图片/不含图片）
-  - 实时筛选和搜索
-  - 数据统计和分析
+### 🗂️ Waste Management
+- **Waste Classification System**
+  - Oil sludge, oil-containing packaging materials, and other waste types
+  - Support for custom waste type management
+- **Waste Information Reporting**
+  - Basic Information: Generation location, process, collection time, collection quantity
+  - On-site Photo Management: Before collection photos (≤5) + After collection photos (≤5)
+  - Automated Features: Automatic recording time, automatic unit association
+- **Advanced Features**
+  - Multiple export formats (with/without images)
+  - Real-time filtering and search
+  - Data statistics and analysis
 
-### 📊 操作日志系统
-- **全面审计追踪**
-  - 记录所有用户操作：登录、废物记录管理、用户管理等
-  - 详细操作描述，包含数据变更前后对比
-- **安全监控**
-  - 记录操作时间、IP地址、用户代理等安全信息
-  - 支持监督数据和普通数据的区分标识
-- **管理功能**
-  - 授权人员可查看完整的操作日志界面
-  - 支持多维度实时筛选：操作类型、人员搜索、时间范围、关键词
-  - 提供统计分析和便捷的问题排查工具
+### 📊 Operation Log System
+- **Comprehensive Audit Tracking**
+  - Records all user operations: login, waste record management, user management, etc.
+  - Detailed operation descriptions with before/after data comparisons
+- **Security Monitoring**
+  - Records operation time, IP address, user agent and other security information
+  - Supports distinction between supervision data and regular data
+- **Management Features**
+  - Authorized personnel can access complete operation log interface
+  - Multi-dimensional real-time filtering: operation type, personnel search, time range, keywords
+  - Provides statistical analysis and convenient troubleshooting tools
 
-## 🏗️ 项目架构
+## 🏗️ Project Architecture
 
-### 整体架构
-采用现代化的**MVC (Model-View-Controller)** 分层架构，确保代码的可维护性和可扩展性。
+### Overall Architecture
+Adopts modern **MVC (Model-View-Controller)** layered architecture, ensuring code maintainability and scalability.
 
-### 技术栈
-- **前端**: Vue 3 + Composition API + Element Plus
-- **后端**: Node.js + Express + MVC架构
-- **数据库**: MySQL 8.0+
-- **认证**: JWT
-- **文件上传**: Multer
+### Technology Stack
+- **Frontend**: Vue 3 + Composition API + Element Plus
+- **Backend**: Node.js + Express + MVC Architecture
+- **Database**: MySQL 8.0+
+- **Authentication**: JWT
+- **File Upload**: Multer
 
-## 📖 部署指南
+## 📖 Deployment Guide
 
-| 环境 | 指南链接 |
-|------|----------|
-| Linux(推荐) | [Linux部署指南](development_linux_CN.md) |
-| Windows | [Windows部署指南](development_windows_CN.md) |
+| Environment | Guide Link |
+|-------------|------------|
+| Linux(Recommended) | [Linux Deployment Guide](development_linux.md) |
+| Windows | [Windows Deployment Guide](development_windows.md) |
 
-## 📁 项目结构
+## 📁 Project Structure
 
 ```
 Registration-Management-System/
 │
-├── backend/                    # Node.js MVC后端服务
-│   ├── config/                 # 配置文件层
-│   │   ├── database.js         # 数据库连接配置
-│   │   ├── jwt.js             # JWT认证配置
-│   │   └── upload.js          # 文件上传配置
-│   ├── controllers/           # 控制器层 (业务逻辑)
-│   │   ├── authController.js        # 认证控制器
-│   │   ├── userController.js        # 用户管理控制器
-│   │   ├── unitController.js        # 单位管理控制器
-│   │   ├── wasteTypeController.js   # 废物类型控制器
-│   │   ├── wasteRecordController.js # 废物记录控制器
-│   │   ├── companyController.js     # 公司管理控制器
-│   │   └── feedbackController.js    # 问题反馈控制器
-│   ├── models/               # 数据模型层 (数据访问)
-│   │   ├── User.js           # 用户数据模型
-│   │   ├── Unit.js           # 单位数据模型
-│   │   ├── WasteType.js      # 废物类型数据模型
-│   │   ├── WasteRecord.js    # 废物记录数据模型
-│   │   ├── Company.js        # 公司数据模型
-│   │   └── Feedback.js       # 问题反馈数据模型
-│   ├── routes/               # 路由层 (API路由)
-│   │   ├── auth.js           # 认证路由
-│   │   ├── users.js          # 用户路由
-│   │   ├── units.js          # 单位路由
-│   │   ├── wasteTypes.js     # 废物类型路由
-│   │   ├── wasteRecords.js   # 废物记录路由
-│   │   ├── companies.js      # 公司路由
-│   │   └── feedback.js       # 问题反馈路由
-│   ├── middleware/           # 中间件
-│   │   ├── auth.js           # 认证中间件
-│   │   └── errorHandler.js   # 错误处理中间件
-│   ├── utils/               # 工具类
-│   │   ├── auth.js          # 认证工具
-│   │   ├── dateUtils.js     # 日期工具
-│   │   └── fileUtils.js     # 文件工具
-│   ├── package.json         # 后端依赖配置
-│   ├── server.js            # 精简的主服务器文件 (76行)
-│   ├── REFACTOR_SUMMARY.md  # 重构详细说明
-│   └── ISSUE_FIXES.md       # 问题修复记录
+├── backend/                    # Node.js MVC Backend Service
+│   ├── config/                 # Configuration Layer
+│   │   ├── database.js         # Database connection config
+│   │   ├── jwt.js             # JWT authentication config
+│   │   └── upload.js          # File upload config
+│   ├── controllers/           # Controller Layer (Business Logic)
+│   │   ├── authController.js        # Authentication controller
+│   │   ├── userController.js        # User management controller
+│   │   ├── unitController.js        # Unit management controller
+│   │   ├── wasteTypeController.js   # Waste type controller
+│   │   ├── wasteRecordController.js # Waste record controller
+│   │   ├── companyController.js     # Company management controller
+│   │   └── feedbackController.js    # Problem feedback controller
+│   ├── models/               # Model Layer (Data Access)
+│   │   ├── User.js           # User data model
+│   │   ├── Unit.js           # Unit data model
+│   │   ├── WasteType.js      # Waste type data model
+│   │   ├── WasteRecord.js    # Waste record data model
+│   │   ├── Company.js        # Company data model
+│   │   └── Feedback.js       # Problem feedback data model
+│   ├── routes/               # Route Layer (API Routes)
+│   │   ├── auth.js           # Authentication routes
+│   │   ├── users.js          # User routes
+│   │   ├── units.js          # Unit routes
+│   │   ├── wasteTypes.js     # Waste type routes
+│   │   ├── wasteRecords.js   # Waste record routes
+│   │   ├── companies.js      # Company routes
+│   │   └── feedback.js       # Problem feedback routes
+│   ├── middleware/           # Middleware
+│   │   ├── auth.js           # Authentication middleware
+│   │   └── errorHandler.js   # Error handling middleware
+│   ├── utils/               # Utilities
+│   │   ├── auth.js          # Authentication utilities
+│   │   ├── dateUtils.js     # Date utilities
+│   │   └── fileUtils.js     # File utilities
+│   ├── package.json         # Backend dependencies
+│   ├── server.js            # Streamlined main server file (76 lines)
+│   ├── REFACTOR_SUMMARY.md  # Detailed refactoring documentation
+│   └── ISSUE_FIXES.md       # Issue fix records
 │
-├── frontend/                # Vue 3前端应用
-│   ├── public/              # 静态资源
-│   ├── src/                 # 源代码
-│   │   ├── views/           # 页面组件
-│   │   │   ├── Login.vue          # 登录页面
-│   │   │   ├── WasteForm.vue      # 废物填报页面
-│   │   │   ├── EditRecord.vue     # 记录编辑页面
-│   │   │   ├── RecordsList.vue    # 记录列表页面
-│   │   │   ├── AdminRecords.vue   # 管理员记录页面
-│   │   │   ├── UserManagement.vue # 用户管理页面
-│   │   │   ├── CompanyManagement.vue # 公司管理页面
-│   │   │   ├── FeedbackForm.vue   # 问题反馈表单
-│   │   │   ├── FeedbackList.vue   # 反馈列表页面
-│   │   │   └── FeedbackManagement.vue # 反馈管理页面
-│   │   ├── router/          # 路由配置
-│   │   ├── store/           # 状态管理
-│   │   ├── config/          # 配置文件
-│   │   │   ├── api.js       # API配置
-│   │   │   └── httpService.js # HTTP服务封装
-│   │   ├── utils/           # 工具函数
-│   │   ├── App.vue          # 主应用组件
-│   │   └── main.js          # 应用入口文件
-│   ├── package.json         # 前端依赖配置
-│   └── vue.config.js        # Vue配置文件
+├── frontend/                # Vue 3 Frontend Application
+│   ├── public/              # Static resources
+│   ├── src/                 # Source code
+│   │   ├── views/           # Page components
+│   │   │   ├── Login.vue          # Login page
+│   │   │   ├── WasteForm.vue      # Waste reporting page
+│   │   │   ├── EditRecord.vue     # Record editing page
+│   │   │   ├── RecordsList.vue    # Records list page
+│   │   │   ├── AdminRecords.vue   # Admin records page
+│   │   │   ├── UserManagement.vue # User management page
+│   │   │   ├── CompanyManagement.vue # Company management page
+│   │   │   ├── FeedbackForm.vue   # Problem feedback form
+│   │   │   ├── FeedbackList.vue   # Feedback list page
+│   │   │   └── FeedbackManagement.vue # Feedback management page
+│   │   ├── router/          # Route configuration
+│   │   ├── store/           # State management
+│   │   ├── config/          # Configuration files
+│   │   │   ├── api.js       # API configuration
+│   │   │   └── httpService.js # HTTP service wrapper
+│   │   ├── utils/           # Utility functions
+│   │   ├── App.vue          # Main application component
+│   │   └── main.js          # Application entry file
+│   ├── package.json         # Frontend dependencies
+│   └── vue.config.js        # Vue configuration file
 │
-├── db/                      # 数据库文件
-│   └── mysql/               # MySQL数据库脚本
-│       ├── init_db.js             # 完整MySQL初始化脚本
-│       ├── init_db_simple.js     # 简化MySQL初始化脚本
-│       └── README.md              # MySQL配置说明
+├── db/                      # Database files
+│   └── mysql/               # MySQL database scripts
+│       ├── init_db.js             # Complete MySQL initialization script
+│       ├── init_db_simple.js     # Simplified MySQL initialization script
+│       └── README.md              # MySQL configuration instructions
 │
-├── uploads/                 # 上传照片存储目录 (运行后生成)
-├── DEPLOYMENT.md           # 部署指南
-├── CHANGELOG.md            # 更新日志
-└── README.md               # 项目说明 (本文件)
+├── uploads/                 # Uploaded photos storage (generated after running)
+├── DEPLOYMENT.md           # Deployment guide
+├── CHANGELOG.md            # Change log
+└── README.md               # Project documentation (Chinese)
 ```
 
-## 👤 测试账户
+## 👤 Test Accounts
 
-数据库初始化后，系统包含以下测试账户：
+After database initialization, the system contains the following test accounts:
 
-| 角色 | 手机号 | 密码 | 权限说明 |
-|------|--------|------|----------|
-| 系统超级管理员 | 13800000005 | 1 | 全系统管理权限 |
-| 公司管理员 | 13800000003 | 1 | 公司内管理权限 |
-| 单位管理员 | 13800000002 | 1 | 单位内管理权限 |
-| 基层员工 | 13800000001 | 1 | 基础填报权限 |
-| 监督人员 | 13800000004 | 1 | 监督数据权限 |
+| Role | Phone | Password | Permission Description |
+|------|-------|----------|----------------------|
+| System Super Administrator | 13800000005 | 1 | Full system management |
+| Company Administrator | 13800000003 | 1 | Company management |
+| Unit Administrator | 13800000002 | 1 | Unit management |
+| Basic Employee | 13800000001 | 1 | Basic reporting |
+| Supervisor | 13800000004 | 1 | Supervision data |
