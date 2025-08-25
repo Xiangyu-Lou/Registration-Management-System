@@ -8,6 +8,19 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
+// 清理和验证文件名，防止目录遍历攻击
+const sanitizeFilename = (filename) => {
+  // 移除非法字符，只允许字母、数字、下划线、连字符和点
+  const cleaned = filename.replace(/[^a-zA-Z0-9_.-]/g, '');
+  
+  // 防止文件名以.或-开头，或包含../等路径遍历字符
+  if (cleaned.startsWith('.') || cleaned.startsWith('-') || cleaned.includes('..')) {
+    return 'unsafe_' + cleaned;
+  }
+  
+  return cleaned;
+};
+
 // 存储配置
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -16,7 +29,7 @@ const storage = multer.diskStorage({
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     
-    // 根据文件的实际MIME类型确定扩展名
+    // 根据文件的MIME类型安全地确定文件扩展名
     let ext;
     switch (file.mimetype) {
       case 'image/jpeg':
@@ -36,10 +49,13 @@ const storage = multer.diskStorage({
         ext = '.webp';
         break;
       default:
-        ext = path.extname(file.originalname);
+        // 对于未知的MIME类型，清理原始扩展名
+        ext = sanitizeFilename(path.extname(file.originalname));
     }
     
-    cb(null, file.fieldname + '-' + uniqueSuffix + ext);
+    // 清理字段名并与唯一后缀和安全扩展名结合
+    const safeFieldName = sanitizeFilename(file.fieldname);
+    cb(null, safeFieldName + '-' + uniqueSuffix + ext);
   }
 });
 
@@ -72,4 +88,4 @@ const uploadConfig = {
 
 const upload = multer(uploadConfig);
 
-module.exports = { upload, uploadsDir }; 
+module.exports = { upload, uploadsDir };
