@@ -298,6 +298,7 @@ import {
   formatCoordinates, 
   formatAddress 
 } from '../utils/locationUtils';
+import { parsePhotoPath } from '../utils/commonUtils';
 
 export default {
   name: 'EditRecordView',
@@ -376,50 +377,7 @@ export default {
       '其他': ['其他']
     };
     
-    // 添加解析照片路径的函数
-    const parsePhotoPath = (path) => {
-      if (!path) return [];
-      
-      console.log('解析照片路径，原始值:', path, '类型:', typeof path);
-      
-      try {
-        // 如果已经是数组，直接返回
-        if (Array.isArray(path)) {
-          console.log('照片路径已经是数组:', path);
-          return path;
-        }
-        
-        // 尝试解析为JSON
-        if (typeof path === 'string') {
-          // 检查是否是JSON数组格式
-          if (path.startsWith('[') && path.endsWith(']')) {
-            const parsed = JSON.parse(path);
-            console.log('照片路径解析为JSON数组:', parsed);
-            return parsed;
-          }
-          
-          // 检查是否是逗号分隔的字符串
-          if (path.includes(',')) {
-            const paths = path.split(',').map(p => p.trim()).filter(p => p);
-            console.log('照片路径解析为逗号分隔字符串:', paths);
-            return paths;
-          }
-          
-          // 单个路径
-          console.log('照片路径解析为单个字符串:', [path]);
-          return [path];
-        }
-        
-        // 其他情况，尝试转换为字符串后处理
-        console.log('照片路径类型未知，尝试转换为字符串:', String(path));
-        return [String(path)];
-      } catch (error) {
-        console.error('解析照片路径失败:', error);
-        // 如果解析失败，将其作为单个路径返回
-        return typeof path === 'string' ? [path] : [];
-      }
-    };
-    
+
     // 是否为新增记录
     const isNew = computed(() => {
       return !route.params.id || route.params.id === 'new';

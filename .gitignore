@@ -104,6 +104,9 @@ ngnix_config/linux/product/waste-management
 # 脚本
 git-commit.sh
 
+# Claude
+claude.md
+
 # 其他
 .history/
 .vercel/

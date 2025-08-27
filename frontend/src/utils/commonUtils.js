@@ -284,18 +284,48 @@ export const isEmpty = (value) => {
   if (value === null || value === undefined) {
     return true;
   }
-  
+
   if (typeof value === 'string') {
     return value.trim() === '';
   }
-  
+
   if (Array.isArray(value)) {
     return value.length === 0;
   }
-  
+
   if (typeof value === 'object') {
     return Object.keys(value).length === 0;
   }
-  
+
   return false;
+};
+
+/**
+ * 检查记录是否有地理位置信息
+ * @param {Object} record - 记录对象
+ * @returns {Boolean} 是否有位置信息
+ */
+export const hasLocationInfo = (record) => {
+  return record.address || record.district || record.city || record.province;
+};
+
+/**
+ * 格式化地理位置显示文本
+ * @param {Object} record - 记录对象
+ * @returns {String} 格式化后的位置文本
+ */
+export const formatLocationDisplay = (record) => {
+  const parts = [];
+
+  if (record.address) {
+    parts.push(record.address);
+  }
+  if (record.district) {
+    parts.push(record.district);
+  }
+  if (record.city) {
+    parts.push(record.city);
+  }
+
+  return parts.join('，');
 }; 

@@ -1,5 +1,23 @@
 # Registration-Management-System Changelog
 
+## 2025-08-26
+
+### ♻️ 前端重构 (Frontend Refactoring)
+
+*   **组件拆分与代码复用**:
+    *   提取 `PhotoCell.vue` 通用组件，统一三个列表页的照片缩略图展示逻辑
+    *   新增 `usePhotoPreview` composable，封装照片预览的响应式状态和方法
+    *   新增 `useExport` composable，统一三个列表页的导出逻辑（含首张图片/全部图片/不含图片）
+
+*   **消除重复工具函数**:
+    *   将 `hasLocationInfo`、`formatLocationDisplay` 提取到 `commonUtils.js`
+    *   AdminRecords、SuperAdminRecords、RecordsList、EditRecord 四个页面统一从 `commonUtils` 导入 `parsePhotoPath`
+    *   删除各页面中重复定义的照片解析、位置信息、照片预览、导出等函数
+
+*   **代码精简效果**:
+    *   三个列表页各减少约 300 行导出代码 + 50 行照片预览代码 + 30 行照片模板代码
+    *   新增 3 个共享文件：`usePhotoPreview.js`、`useExport.js`、`PhotoCell.vue`
+
 ## 2025-07-19
 
 ### ✨ 新功能 (Features)

@@ -225,24 +225,11 @@
               align="center"
             >
               <template #default="scope">
-                <div v-if="scope.row.photo_path_before" class="photo-preview">
-                  <div 
-                    v-for="(path, index) in parsePhotoPath(scope.row.photo_path_before)" 
-                    :key="index"
-                    class="photo-thumbnail-container"
-                    @click="previewPhoto(parsePhotoPath(scope.row.photo_path_before), index)"
-                  >
-                    <el-image
-                      style="width: 50px; height: 50px; margin: 0 auto;"
-                      :src="`${baseUrl}${path}`"
-                      fit="cover"
-                    ></el-image>
-                  </div>
-                  <div v-if="parsePhotoPath(scope.row.photo_path_before).length > 1" class="photo-count">
-                    {{ parsePhotoPath(scope.row.photo_path_before).length }}张
-                  </div>
-                </div>
-                <span v-else>无</span>
+                <PhotoCell
+                  :photo-path="scope.row.photo_path_before"
+                  :base-url="baseUrl"
+                  @preview="previewPhoto"
+                />
               </template>
             </el-table-column>
             <el-table-column
@@ -251,24 +238,11 @@
               align="center"
             >
               <template #default="scope">
-                <div v-if="scope.row.photo_path_after" class="photo-preview">
-                  <div 
-                    v-for="(path, index) in parsePhotoPath(scope.row.photo_path_after)" 
-                    :key="index"
-                    class="photo-thumbnail-container"
-                    @click="previewPhoto(parsePhotoPath(scope.row.photo_path_after), index)"
-                  >
-                    <el-image
-                      style="width: 50px; height: 50px; margin: 0 auto;"
-                      :src="`${baseUrl}${path}`"
-                      fit="cover"
-                    ></el-image>
-                  </div>
-                  <div v-if="parsePhotoPath(scope.row.photo_path_after).length > 1" class="photo-count">
-                    {{ parsePhotoPath(scope.row.photo_path_after).length }}张
-                  </div>
-                </div>
-                <span v-else>无</span>
+                <PhotoCell
+                  :photo-path="scope.row.photo_path_after"
+                  :base-url="baseUrl"
+                  @preview="previewPhoto"
+                />
               </template>
             </el-table-column>
             <el-table-column label="操作" min-width="130">
@@ -333,27 +307,15 @@
 <script>
 import { ref, onMounted, computed, reactive, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { ElMessage, ElMessageBox, ElImageViewer, ElLoading } from 'element-plus';
+import { ElMessage, ElMessageBox, ElImageViewer } from 'element-plus';
 import httpService from '../config/httpService';
 import { Refresh, User, ArrowDown, ArrowUp, Download, Document, ChatLineRound, Loading } from '@element-plus/icons-vue';
 import auth from '../store/auth';
-import { exportToExcelWithImages, exportToExcel } from '../utils/exportUtils';
 import apiConfig from '../config/api';
-
-// 解析照片路径
-const parsePhotoPath = (path) => {
-  if (!path) return [];
-  
-  try {
-    if (path.startsWith('[') && path.endsWith(']')) {
-      return JSON.parse(path);
-    }
-    return [path];
-  } catch (error) {
-    console.error('解析照片路径失败:', error);
-    return [path];
-  }
-};
+import { formatDateTime as formatDateTimeUtil, hasLocationInfo, formatLocationDisplay } from '../utils/commonUtils';
+import { usePhotoPreview } from '../composables/usePhotoPreview';
+import { useExport } from '../composables/useExport';
+import PhotoCell from '../components/common/PhotoCell.vue';
 
 export default {
   name: 'SuperAdminRecordsView',
@@ -366,7 +328,8 @@ export default {
     ElImageViewer,
     Document,
     ChatLineRound,
-    Loading
+    Loading,
+    PhotoCell
   },
   setup() {
     const router = useRouter();
@@ -396,9 +359,7 @@ export default {
     const loadingMore = ref(false);
 
          // 图片预览相关
-     const showViewer = ref(false);
-     const previewImages = ref([]);
-     const previewIndex = ref(0);
+     const { showViewer, previewImages, previewIndex, previewPhoto, closeViewer } = usePhotoPreview(baseUrl);
 
     // 筛选表单
     const filterForm = reactive({
@@ -568,24 +529,60 @@ export default {
       fetchRecords(true);
     };
 
-    // 格式化日期时间
-    const formatDateTime = (dateString) => {
-      if (!dateString) return '';
-      try {
-        const date = new Date(dateString);
-        return date.toLocaleString('zh-CN', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-          hour12: false
-        });
-      } catch (error) {
-        return dateString;
-      }
+    // 使用从commonUtils导入的formatDateTimeUtil
+    const formatDateTime = formatDateTimeUtil;
+
+    // 导出相关 - 使用 useExport composable
+    const fetchExportData = async (exportType) => {
+      const queryParams = {
+        exportType,
+        companyId: filterForm.companyId ? filterForm.companyId : undefined
+      };
+      const { data } = await httpService.get(
+        `${apiConfig.endpoints.exportWasteRecords}/${auth.state.user.id}`,
+        queryParams
+      );
+      return data;
     };
+
+    const { exportWithImages, exportWithAllImages, exportWithoutImages } = useExport({
+      getRecords: () => filteredRecords.value,
+      fetchExportData,
+      getFileName: (exportType) => {
+        if (exportType === 'all_images') {
+          const companyName = filterForm.companyId
+            ? companies.value.find(c => c.id === filterForm.companyId)?.name || '未知公司'
+            : '全部公司';
+          return `系统管理_固体废物记录_全部照片_${companyName}`;
+        }
+        return '系统管理_固体废物记录';
+      },
+      getBaseHeaders: () => [
+        { text: '公司', field: '公司' },
+        { text: '单位', field: '单位' },
+        { text: '废物类型', field: '废物类型' },
+        { text: '产生地点', field: '产生地点' },
+        { text: '产生工序', field: '产生工序' },
+        { text: '备注', field: '备注' },
+        { text: '收集开始时间', field: '收集开始时间' },
+        { text: '数量(吨)', field: '数量(吨)' },
+        { text: '填报人', field: '填报人' },
+        { text: '记录时间', field: '记录时间' },
+      ],
+      mapRecord: (record) => ({
+        '公司': record.company_name,
+        '单位': record.unit_name,
+        '废物类型': record.waste_type_name,
+        '产生地点': record.location,
+        '产生工序': record.process || '无',
+        '备注': record.remarks || '无',
+        '收集开始时间': formatDateTime(record.collection_start_time),
+        '数量(吨)': record.quantity,
+        '填报人': record.creator_name || '系统',
+        '记录时间': formatDateTime(record.created_at),
+      }),
+      loading
+    });
 
     // 导出数据
     const exportData = (command) => {
@@ -595,398 +592,6 @@ export default {
         exportWithAllImages();
       } else if (command === 'withoutImages') {
         exportWithoutImages();
-      }
-    };
-
-    // 带图片导出（首张）
-    const exportWithImages = async () => {
-      try {
-        const loadingInstance = ElLoading.service({
-          lock: true,
-          text: '正在导出记录，请稍候...',
-          background: 'rgba(0, 0, 0, 0.7)'
-        });
-        
-        loading.value = true;
-        const data = filteredRecords.value;
-        
-        if (data.length === 0) {
-          loadingInstance.close();
-          ElMessage.warning('没有可导出的数据');
-          return;
-        }
-
-        const baseFileName = '系统管理_固体废物记录';
-        const BATCH_SIZE = 50;
-        const totalRecords = data.length;
-        const batchCount = Math.ceil(totalRecords / BATCH_SIZE);
-
-        if(batchCount > 1) {
-          loadingInstance.setText(`数据较多(${totalRecords}条)，将拆分为${batchCount}个文件导出...`);
-          ElMessage.info(`数据较多(${totalRecords}条)，将拆分为${batchCount}个文件导出`);
-        } else {
-          loadingInstance.setText(`准备导出 ${totalRecords} 条记录...`);
-        }
-
-        let successCount = 0;
-        
-        for(let batchIndex = 0; batchIndex < batchCount; batchIndex++) {
-          const startIndex = batchIndex * BATCH_SIZE;
-          const endIndex = Math.min((batchIndex + 1) * BATCH_SIZE, totalRecords);
-          const batchData = data.slice(startIndex, endIndex);
-          
-          const fileName = batchCount > 1 
-            ? `${baseFileName}_第${batchIndex + 1}部分(共${batchCount}部分)`
-            : baseFileName;
-          
-          loadingInstance.setText(`正在处理第${batchIndex + 1}/${batchCount}批次，${startIndex + 1}-${endIndex}条记录...`);
-          
-          const exportData = batchData.map(record => {
-            const beforePhotos = parsePhotoPath(record.photo_path_before);
-            const afterPhotos = parsePhotoPath(record.photo_path_after);
-            
-            return {
-              '公司': record.company_name,
-              '单位': record.unit_name,
-              '废物类型': record.waste_type_name,
-              '产生地点': record.location,
-              '产生工序': record.process || '无',
-              '备注': record.remarks || '无',
-              '收集开始时间': formatDateTime(record.collection_start_time),
-              '数量(吨)': record.quantity,
-              '填报人': record.creator_name || '系统',
-              '记录时间': formatDateTime(record.created_at),
-              '清理前照片': beforePhotos.length > 0 ? beforePhotos[0] : '',
-              '清理后照片': afterPhotos.length > 0 ? afterPhotos[0] : ''
-            };
-          });
-          
-          const exportHeaders = [
-            { text: '公司', field: '公司' },
-            { text: '单位', field: '单位' },
-            { text: '废物类型', field: '废物类型' },
-            { text: '产生地点', field: '产生地点' },
-            { text: '产生工序', field: '产生工序' },          
-            { text: '备注', field: '备注' },
-            { text: '收集开始时间', field: '收集开始时间' },
-            { text: '数量(吨)', field: '数量(吨)' },
-            { text: '填报人', field: '填报人' },
-            { text: '记录时间', field: '记录时间' },
-            { text: '清理前照片', field: '清理前照片', isImage: true },
-            { text: '清理后照片', field: '清理后照片', isImage: true }
-          ];
-          
-          const baseUrl = window.location.origin;
-          
-          const onProgress = (current, total) => {
-            const percent = Math.round((current / total) * 100);
-            loadingInstance.setText(`正在导出第${batchIndex + 1}/${batchCount}部分：${percent}% (${current}/${total})`);
-          };
-          
-          const result = await exportToExcelWithImages(exportData, fileName, exportHeaders, baseUrl, onProgress);
-          
-          if (result) {
-            successCount++;
-          }
-        }
-
-        loadingInstance.close();
-        
-        if (successCount === batchCount) {
-          if (batchCount > 1) {
-            ElMessage.success(`成功导出${batchCount}个文件`);
-          } else {
-            ElMessage.success('导出成功');
-          }
-        } else if (successCount > 0) {
-          ElMessage.warning(`部分导出成功，完成了${successCount}/${batchCount}个文件`);
-        } else {
-          ElMessage.error('导出失败，请重试');
-        }
-      } catch (error) {
-        console.error('导出记录失败:', error);
-        ElMessage.error('导出失败: ' + (error.message || '未知错误'));
-      } finally {
-        loading.value = false;
-        ElLoading.service().close();
-      }
-    };
-
-    // 带所有图片导出
-    const exportWithAllImages = async () => {
-      try {
-        // 先显示提示消息
-        ElMessage({
-          message: '导出大量包含全部图片的记录所需时间较长，请耐心等待',
-          type: 'info',
-          duration: 5000
-        });
-        
-        // 创建全屏加载
-        const loadingInstance = ElLoading.service({
-          lock: true,
-          text: '正在导出记录，请稍候...',
-          background: 'rgba(0, 0, 0, 0.7)'
-        });
-        
-        loading.value = true;
-        
-                 // 准备筛选条件
-         const queryParams = {
-           exportType: 'all_images',
-           companyId: filterForm.companyId ? filterForm.companyId : undefined
-         };
-        
-        console.log('导出记录的筛选条件:', queryParams);
-        
-        // 调用后端API获取完整的记录数据
-        const { data } = await httpService.get(
-          `${apiConfig.endpoints.exportWasteRecords}/${auth.state.user.id}`,
-          queryParams
-        );
-        
-        console.log(`从后端获取到 ${data.length} 条记录用于导出`);
-        
-        if (data.length === 0) {
-          loadingInstance.close();
-          ElMessage.warning('没有符合条件的记录可导出');
-          loading.value = false;
-          return;
-        }
-        
-                 // 设置文件名基础部分
-         const companyName = filterForm.companyId 
-           ? companies.value.find(c => c.id === filterForm.companyId)?.name || '未知公司'
-           : '全部公司';
-        const baseFileName = `系统管理_固体废物记录_全部照片_${companyName}`;
-
-        // 设置导出限制 - 带全部图片导出最多50条每文件
-        const BATCH_SIZE = 50;
-        const totalRecords = data.length;
-        const batchCount = Math.ceil(totalRecords / BATCH_SIZE);
-        
-        // 更新加载文本
-        if(batchCount > 1) {
-          loadingInstance.setText(`数据较多(${totalRecords}条)，将拆分为${batchCount}个文件导出...`);
-          ElMessage.info(`数据较多(${totalRecords}条)，将拆分为${batchCount}个文件导出`);
-        } else {
-          loadingInstance.setText(`准备导出 ${totalRecords} 条记录的全部照片...`);
-        }
-
-        let successCount = 0;
-        
-        // 分批处理数据
-        for(let batchIndex = 0; batchIndex < batchCount; batchIndex++) {
-          // 计算当前批次的起始和结束索引
-          const startIndex = batchIndex * BATCH_SIZE;
-          const endIndex = Math.min((batchIndex + 1) * BATCH_SIZE, totalRecords);
-          const batchData = data.slice(startIndex, endIndex);
-          
-          // 为批次设置文件名
-          const fileName = batchCount > 1 
-            ? `${baseFileName}_第${batchIndex + 1}部分(共${batchCount}部分)`
-            : baseFileName;
-          
-          // 更新加载文本
-          loadingInstance.setText(`正在处理第${batchIndex + 1}/${batchCount}批次，${startIndex + 1}-${endIndex}条记录...`);
-
-          // 准备导出数据
-          const exportData = batchData.map(record => {
-            // 解析所有照片路径
-            const beforePhotos = parsePhotoPath(record.photo_path_before);
-            const afterPhotos = parsePhotoPath(record.photo_path_after);
-            
-            // 准备基本数据
-            const recordData = {
-              '公司': record.company_name,
-              '单位': record.unit_name,
-              '废物类型': record.waste_type_name,
-              '产生工序': record.process || '无',
-              '产生地点': record.location,
-              '备注': record.remarks || '无',
-              '收集开始时间': formatDateTime(record.collection_start_time),
-              '数量(吨)': record.quantity,
-              '填报人': record.creator_name || '系统',
-              '记录时间': formatDateTime(record.created_at),
-            };
-            
-            // 添加最多5张清理前照片
-            for (let i = 0; i < 5; i++) {
-              recordData[`清理前照片${i+1}`] = i < beforePhotos.length ? beforePhotos[i] : '';
-            }
-            
-            // 添加最多5张清理后照片
-            for (let i = 0; i < 5; i++) {
-              recordData[`清理后照片${i+1}`] = i < afterPhotos.length ? afterPhotos[i] : '';
-            }
-            
-            return recordData;
-          });
-          
-          // 设置表头，添加isImage标志
-          const exportHeaders = [
-            { text: '公司', field: '公司' },
-            { text: '单位', field: '单位' },
-            { text: '废物类型', field: '废物类型' },
-            { text: '产生工序', field: '产生工序' },
-            { text: '产生地点', field: '产生地点' },
-            { text: '备注', field: '备注' },
-            { text: '收集开始时间', field: '收集开始时间' },
-            { text: '数量(吨)', field: '数量(吨)' },
-            { text: '填报人', field: '填报人' },
-            { text: '记录时间', field: '记录时间' },
-          ];
-          
-          // 添加清理前照片表头
-          for (let i = 0; i < 5; i++) {
-            exportHeaders.push({ text: `清理前照片${i+1}`, field: `清理前照片${i+1}`, isImage: true });
-          }
-          
-          // 添加清理后照片表头
-          for (let i = 0; i < 5; i++) {
-            exportHeaders.push({ text: `清理后照片${i+1}`, field: `清理后照片${i+1}`, isImage: true });
-          }
-          
-          // 获取服务器的基础URL
-          const baseUrl = window.location.origin;
-          
-          // 设置进度回调函数
-          const onProgress = (current, total) => {
-            const percent = Math.round((current / total) * 100);
-            loadingInstance.setText(`正在导出第${batchIndex + 1}/${batchCount}部分：${percent}% (${current}/${total})`);
-          };
-          
-          // 执行带全部图片的导出
-          const result = await exportToExcelWithImages(exportData, fileName, exportHeaders, baseUrl, onProgress);
-          
-          if (result) {
-            successCount++;
-          }
-        }
-        
-        // 关闭加载提示
-        loadingInstance.close();
-        
-        if (successCount === batchCount) {
-          if (batchCount > 1) {
-            ElMessage.success(`成功导出${batchCount}个文件`);
-          } else {
-            ElMessage.success('导出成功');
-          }
-        } else if (successCount > 0) {
-          ElMessage.warning(`部分导出成功，完成了${successCount}/${batchCount}个文件`);
-        } else {
-          ElMessage.error('导出失败，请重试');
-        }
-      } catch (error) {
-        console.error('导出记录失败:', error);
-        ElMessage.error('导出失败: ' + (error.message || '未知错误'));
-      } finally {
-        loading.value = false;
-        // 确保加载提示被关闭
-        ElLoading.service().close();
-      }
-    };
-
-    // 不带图片导出
-    const exportWithoutImages = async () => {
-      try {
-        const loadingInstance = ElLoading.service({
-          lock: true,
-          text: '正在导出记录，请稍候...',
-          background: 'rgba(0, 0, 0, 0.7)'
-        });
-        
-        loading.value = true;
-        const data = filteredRecords.value;
-        
-        if (data.length === 0) {
-          loadingInstance.close();
-          ElMessage.warning('没有可导出的数据');
-          return;
-        }
-
-        const baseFileName = '系统管理_固体废物记录';
-        const BATCH_SIZE = 1000;
-        const totalRecords = data.length;
-        const batchCount = Math.ceil(totalRecords / BATCH_SIZE);
-
-        if(batchCount > 1) {
-          loadingInstance.setText(`数据较多(${totalRecords}条)，将拆分为${batchCount}个文件导出...`);
-          ElMessage.info(`数据较多(${totalRecords}条)，将拆分为${batchCount}个文件导出`);
-        } else {
-          loadingInstance.setText(`准备导出 ${totalRecords} 条记录...`);
-        }
-
-        let successCount = 0;
-        
-        for(let batchIndex = 0; batchIndex < batchCount; batchIndex++) {
-          const startIndex = batchIndex * BATCH_SIZE;
-          const endIndex = Math.min((batchIndex + 1) * BATCH_SIZE, totalRecords);
-          const batchData = data.slice(startIndex, endIndex);
-          
-          const fileName = batchCount > 1 
-            ? `${baseFileName}_第${batchIndex + 1}部分(共${batchCount}部分)`
-            : baseFileName;
-          
-          loadingInstance.setText(`正在处理第${batchIndex + 1}/${batchCount}批次，${startIndex + 1}-${endIndex}条记录...`);
-        
-          const exportData = batchData.map(record => ({
-            '公司': record.company_name,
-            '单位': record.unit_name,
-            '废物类型': record.waste_type_name,
-            '产生工序': record.process || '无',
-            '产生地点': record.location,
-            '备注': record.remarks || '无',
-            '收集开始时间': formatDateTime(record.collection_start_time),
-            '数量(吨)': record.quantity,
-            '填报人': record.creator_name || '系统',
-            '记录时间': formatDateTime(record.created_at),
-            '清理前照片': record.photo_path_before ? '有' : '无',
-            '清理后照片': record.photo_path_after ? '有' : '无'
-          }));
-          
-          const exportHeaders = [
-            { text: '公司', field: '公司' },
-            { text: '单位', field: '单位' },
-            { text: '废物类型', field: '废物类型' },
-            { text: '产生地点', field: '产生地点' },
-            { text: '产生工序', field: '产生工序' },
-            { text: '备注', field: '备注' },
-            { text: '收集开始时间', field: '收集开始时间' },
-            { text: '数量(吨)', field: '数量(吨)' },
-            { text: '填报人', field: '填报人' },
-            { text: '记录时间', field: '记录时间' },
-            { text: '清理前照片', field: '清理前照片' },
-            { text: '清理后照片', field: '清理后照片' }
-          ];
-          
-          const result = await exportToExcel(exportData, fileName, exportHeaders);
-          
-          if (result) {
-            successCount++;
-          }
-        }
-        
-        loadingInstance.close();
-        
-        if (successCount === batchCount) {
-          if (batchCount > 1) {
-            ElMessage.success(`成功导出${batchCount}个文件`);
-          } else {
-            ElMessage.success('导出成功');
-          }
-        } else if (successCount > 0) {
-          ElMessage.warning(`部分导出成功，完成了${successCount}/${batchCount}个文件`);
-        } else {
-          ElMessage.error('导出失败，请重试');
-        }
-      } catch (error) {
-        console.error('导出记录失败:', error);
-        ElMessage.error('导出失败: ' + (error.message || '未知错误'));
-      } finally {
-        loading.value = false;
-        ElLoading.service().close();
       }
     };
 
@@ -1051,45 +656,15 @@ export default {
       }
     };
 
-    // 图片预览
-    const previewPhoto = (photos, index) => {
-      previewImages.value = photos.map(path => `${baseUrl}${path}`);
-      previewIndex.value = index;
-      showViewer.value = true;
-    };
-
-    // 关闭图片预览
-    const closeViewer = () => {
-      showViewer.value = false;
-    };
 
              // 计算序号
     const indexMethod = (index) => {
       return index + 1;
     };
 
-    // 检查记录是否有位置信息
-    const hasLocationInfo = (record) => {
-      return record.address || record.district || record.city || record.province;
-    };
-    
-    // 格式化位置信息显示
-    const formatLocationDisplay = (record) => {
-      const parts = [];
-      
-      if (record.address) {
-        parts.push(record.address);
-      }
-      if (record.district) {
-        parts.push(record.district);
-      }
-      if (record.city) {
-        parts.push(record.city);
-      }
-      
-      return parts.join('，');
-    };
- 
+
+
+
 
 
     // 初始化
@@ -1116,7 +691,6 @@ export default {
       exportWithImages,
       exportWithAllImages,
       exportWithoutImages,
-             parsePhotoPath,
        refreshRecords,
               goToUserManagement,
        goToOperationLogs,
@@ -1221,32 +795,6 @@ export default {
   margin-top: 4px;
 }
 
-.photo-preview {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  justify-content: center;
-  align-items: center;
-  position: relative;
-}
-
-.photo-thumbnail-container {
-  cursor: pointer;
-  border-radius: 4px;
-  overflow: hidden;
-  border: 1px solid #ddd;
-}
-
-.photo-count {
-  position: absolute;
-  bottom: 2px;
-  right: 2px;
-  background: rgba(0, 0, 0, 0.7);
-  color: white;
-  padding: 1px 4px;
-  border-radius: 2px;
-  font-size: 10px;
-}
 
 .operation-buttons {
   display: flex;
