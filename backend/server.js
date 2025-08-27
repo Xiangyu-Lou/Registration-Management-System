@@ -10,6 +10,7 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 const { testConnection } = require('./config/database');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 const { xssProtection, inputLimits, sqlInjectionProtection } = require('./middleware/security');
+const redisClient = require('./config/redisClient');
 
 // 导入路由
 const authRoutes = require('./routes/auth');
@@ -181,6 +182,9 @@ app.listen(PORT, async () => {
   console.log(`🚀 服务器启动成功: http://localhost:${PORT}`);
   console.log(`🔒 安全中间件已启用: Helmet, Rate Limiting, XSS Protection`);
   console.log(`🌍 环境模式: ${process.env.NODE_ENV || 'development'}`);
+  if (redisClient.status === 'ready') {
+    console.log('💾 Redis 缓存已启用');
+  }
   if (isProduction) {
     console.log('🛡️ 生产环境安全策略已启用');
   }
@@ -193,6 +197,8 @@ app.listen(PORT, async () => {
 const gracefulShutdown = async () => {
   console.log('📦 正在关闭服务器...');
   try {
+    await new Promise(resolve => redisClient.quit(resolve));
+    console.log('✅ Redis 连接已关闭');
     console.log('✅ 服务器已安全关闭');
     process.exit(0);
   } catch (error) {
@@ -214,4 +220,4 @@ process.on('unhandledRejection', (reason, promise) => {
 process.on('uncaughtException', (error) => {
   console.error('未捕获的异常:', error);
   process.exit(1);
-}); 
+});

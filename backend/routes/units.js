@@ -8,20 +8,23 @@ const {
   deleteUnit
 } = require('../controllers/unitController');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
+const { cache, clearCache } = require('../middleware/cache');
 
-// 获取所有单位（需要登录认证，会根据用户权限过滤）
-router.get('/', authenticateToken, getAllUnits);
+const CACHE_PREFIX_UNITS = '/api/units';
 
-// 获取单位详情（需要登录认证，会根据用户权限过滤）
-router.get('/:id', authenticateToken, getUnitById);
+// 获取所有单位（缓存1小时）
+router.get('/', authenticateToken, cache(3600), getAllUnits);
 
-// 创建单位（需要超级管理员权限）
-router.post('/', authenticateToken, requireAdmin, createUnit);
+// 获取单位详情（缓存1小时）
+router.get('/:id', authenticateToken, cache(3600), getUnitById);
 
-// 更新单位信息（需要超级管理员权限）
-router.put('/:id', authenticateToken, requireAdmin, updateUnit);
+// 创建单位（清除缓存）
+router.post('/', authenticateToken, requireAdmin, clearCache(CACHE_PREFIX_UNITS), createUnit);
 
-// 删除单位（需要超级管理员权限）
-router.delete('/:id', authenticateToken, requireAdmin, deleteUnit);
+// 更新单位信息（清除缓存）
+router.put('/:id', authenticateToken, requireAdmin, clearCache(CACHE_PREFIX_UNITS), updateUnit);
+
+// 删除单位（清除缓存）
+router.delete('/:id', authenticateToken, requireAdmin, clearCache(CACHE_PREFIX_UNITS), deleteUnit);
 
 module.exports = router; 

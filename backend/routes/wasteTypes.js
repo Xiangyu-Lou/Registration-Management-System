@@ -8,20 +8,23 @@ const {
   deleteWasteType
 } = require('../controllers/wasteTypeController');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
+const { cache, clearCache } = require('../middleware/cache');
 
-// 获取所有废物类型（无需特殊权限）
-router.get('/', getAllWasteTypes);
+const CACHE_PREFIX_WASTE_TYPES = '/api/waste-types';
 
-// 获取废物类型详情（无需特殊权限）
-router.get('/:id', getWasteTypeById);
+// 获取所有废物类型（缓存1小时）
+router.get('/', cache(3600), getAllWasteTypes);
 
-// 创建废物类型（需要超级管理员权限）
-router.post('/', authenticateToken, requireAdmin, createWasteType);
+// 获取废物类型详情（缓存1小时）
+router.get('/:id', cache(3600), getWasteTypeById);
 
-// 更新废物类型信息（需要超级管理员权限）
-router.put('/:id', authenticateToken, requireAdmin, updateWasteType);
+// 创建废物类型（清除缓存）
+router.post('/', authenticateToken, requireAdmin, clearCache(CACHE_PREFIX_WASTE_TYPES), createWasteType);
 
-// 删除废物类型（需要超级管理员权限）
-router.delete('/:id', authenticateToken, requireAdmin, deleteWasteType);
+// 更新废物类型信息（清除缓存）
+router.put('/:id', authenticateToken, requireAdmin, clearCache(CACHE_PREFIX_WASTE_TYPES), updateWasteType);
+
+// 删除废物类型（清除缓存）
+router.delete('/:id', authenticateToken, requireAdmin, clearCache(CACHE_PREFIX_WASTE_TYPES), deleteWasteType);
 
 module.exports = router;

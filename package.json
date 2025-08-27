@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "dotenv": "^16.5.0",
+    "ioredis": "^5.8.2",
     "mysql2": "^3.14.0"
   }
 }
