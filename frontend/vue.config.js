@@ -24,15 +24,30 @@ module.exports = defineConfig({
     }
   },
   // 生产环境配置
-  configureWebpack: {
+  configureWebpack: config => {
     // 优化生产环境体积
-    optimization: {
+    config.optimization = {
+      ...config.optimization,
       splitChunks: {
         chunks: 'all'
-      }
-    },
+      },
+      // 生产环境自动移除 console.log/warn/info，保留 console.error
+      ...(process.env.NODE_ENV === 'production' ? {
+        minimizer: config.optimization.minimizer?.map(plugin => {
+          if (plugin.constructor.name === 'TerserPlugin') {
+            plugin.options.minimizer.options.compress = {
+              ...plugin.options.minimizer.options.compress,
+              drop_console: false,
+              pure_funcs: ['console.log', 'console.info', 'console.warn']
+            }
+          }
+          return plugin
+        })
+      } : {})
+    }
     // 添加哈希值到文件名，强制浏览器重新加载资源
-    output: {
+    config.output = {
+      ...config.output,
       filename: 'js/[name].[contenthash:8].js',
       chunkFilename: 'js/[name].[contenthash:8].js'
     }

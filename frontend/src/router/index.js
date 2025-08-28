@@ -1,21 +1,23 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import UnitSelection from '../views/UnitSelection.vue'
-import WasteForm from '../views/WasteForm.vue'
-import RecordsList from '../views/RecordsList.vue'
 import Login from '../views/Login.vue'
-import EditRecord from '../views/EditRecord.vue'
-import UserManagement from '../views/UserManagement.vue'
-import AdminRecords from '../views/AdminRecords.vue'
-import UserProfile from '../views/UserProfile.vue'
-import OperationLogs from '../views/OperationLogs.vue'
-import CompanyManagement from '../views/CompanyManagement.vue'
-import SuperAdminRecords from '../views/SuperAdminRecords.vue'
-import FeedbackForm from '../views/FeedbackForm.vue'
-import FeedbackList from '../views/FeedbackList.vue'
-import FeedbackManagement from '../views/FeedbackManagement.vue'
 import auth from '../store/auth'
 import httpService from '../config/httpService'
 import apiConfig from '../config/api'
+
+// 路由懒加载 - 按需加载组件，减小首屏体积
+const UnitSelection = () => import('../views/UnitSelection.vue')
+const WasteForm = () => import('../views/WasteForm.vue')
+const RecordsList = () => import('../views/RecordsList.vue')
+const EditRecord = () => import('../views/EditRecord.vue')
+const UserManagement = () => import('../views/UserManagement.vue')
+const AdminRecords = () => import('../views/AdminRecords.vue')
+const UserProfile = () => import('../views/UserProfile.vue')
+const OperationLogs = () => import('../views/OperationLogs.vue')
+const CompanyManagement = () => import('../views/CompanyManagement.vue')
+const SuperAdminRecords = () => import('../views/SuperAdminRecords.vue')
+const FeedbackForm = () => import('../views/FeedbackForm.vue')
+const FeedbackList = () => import('../views/FeedbackList.vue')
+const FeedbackManagement = () => import('../views/FeedbackManagement.vue')
 
 const routes = [
   {

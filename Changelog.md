@@ -1,5 +1,23 @@
 # Registration-Management-System Changelog
 
+## 2025-08-27
+
+### ⚡ 前端性能优化 (Frontend Performance Optimization)
+
+*   **路由懒加载**:
+    *   将 12 个路由组件从静态 import 改为动态 `() => import()` 按需加载
+    *   仅保留 Login 页面为静态导入（首屏必须）
+    *   主入口 bundle 从 2.2MB 降至 25.65 KiB，其余组件按需加载
+
+*   **生产环境自动移除 console 日志**:
+    *   在 `vue.config.js` 中配置 terser 的 `pure_funcs` 选项
+    *   生产构建自动移除 `console.log`、`console.info`、`console.warn`（共 321 处）
+    *   保留 `console.error` 用于线上错误排查
+    *   开发环境不受影响，保持调试能力
+
+*   **移除无用依赖**:
+    *   从前端 `package.json` 中移除 `bcrypt`（后端专用依赖，前端无任何引用）
+
 ## 2025-08-26
 
 ### ♻️ 前端重构 (Frontend Refactoring)
