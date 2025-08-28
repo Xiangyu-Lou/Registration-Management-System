@@ -81,6 +81,7 @@ import { ArrowLeft } from '@element-plus/icons-vue';
 import auth from '../store/auth';
 import httpService from '../config/httpService';
 import api from '../config/api';
+import { useTimerCleanup } from '../composables/useTimerCleanup';
 
 export default {
   name: 'UserProfile',
@@ -90,6 +91,7 @@ export default {
   
   setup() {
     const router = useRouter();
+    const { safeTimeout } = useTimerCleanup();
     const profileForm = ref(null);
     const loading = ref(false);
     
@@ -218,7 +220,7 @@ export default {
         form.confirmPassword = '';
         
         // 添加延迟跳转
-        setTimeout(() => {
+        safeTimeout(() => {
           goBack(); // 调用已有的返回函数
         }, 1500); // 延迟1.5秒
         

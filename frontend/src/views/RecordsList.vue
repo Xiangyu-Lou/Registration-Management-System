@@ -333,6 +333,7 @@ import axios from 'axios';
 import { hasLocationInfo, formatLocationDisplay } from '../utils/commonUtils';
 import { usePhotoPreview } from '../composables/usePhotoPreview';
 import { useExport } from '../composables/useExport';
+import { useTimerCleanup } from '../composables/useTimerCleanup';
 import PhotoCell from '../components/common/PhotoCell.vue';
 
 
@@ -360,6 +361,7 @@ export default {
   },
   setup(props) {
     const router = useRouter();
+    const { safeTimeout } = useTimerCleanup();
     const records = ref([]);
     const loading = ref(false);
     const unitName = ref('');
@@ -696,7 +698,7 @@ export default {
         console.log('加载完成，当前记录数:', records.value.length);
         
         // 恢复之前的滚动位置，防止页面跳动
-        setTimeout(() => {
+        safeTimeout(() => {
           if (tableBody) {
             tableBody.scrollTop = scrollPos;
           }

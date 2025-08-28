@@ -259,14 +259,10 @@ import httpService from '../config/httpService';
 import apiConfig from '../config/api';
 import { ArrowLeft, Document, Plus, Clock, Location } from '@element-plus/icons-vue';
 import auth from '../store/auth';
-import Compressor from 'compressorjs';
-import { 
-  getCurrentLocation as getLocationInfo, 
-  isLocationSupported, 
-  isSecureContext, 
-  formatCoordinates, 
-  formatAddress 
-} from '../utils/locationUtils';
+import { useTimerCleanup } from '../composables/useTimerCleanup';
+import { useFormData, processOptions } from '../composables/useFormData';
+import { useGeolocation, isLocationSupported, isSecureContext, formatCoordinates, formatAddress } from '../composables/useGeolocation';
+import { usePhotoUpload } from '../composables/usePhotoUpload';
 
 export default {
   name: 'WasteForm',
@@ -284,51 +280,21 @@ export default {
   },
   setup(props) {
     const router = useRouter();
+    const { safeTimeout } = useTimerCleanup();
+    const { wasteTypes, unitName, locationOptions, fetchWasteTypes, fetchUnitNameWithAuth } = useFormData();
+    const { locationLoading, locationInfo, locationError, getCurrentLocation } = useGeolocation();
+    const {
+      photoFilesBefore, photoFilesAfter, fileListBefore, fileListAfter,
+      showUploadProgress, uploadPercentage, uploadStatus, showLargeFileWarning,
+      handleBeforeUpload, handlePhotoBeforeChange, handlePhotoAfterChange,
+      handlePhotoBeforeRemove, handlePhotoAfterRemove,
+      handleUploadProgress, percentageFormat, checkForLargeFiles, cleanup: cleanupPhotos
+    } = usePhotoUpload({ largeFileThreshold: 5 * 1024 * 1024 });
+
     const wasteForm = ref(null);
     const loading = ref(false);
-    const unitName = ref('');
-    const wasteTypes = ref([]);
-    const photoFilesBefore = ref([]);
-    const photoFilesAfter = ref([]);
-    const fileListBefore = ref([]);
-    const fileListAfter = ref([]);
-    const showUploadProgress = ref(false);
-    const uploadPercentage = ref(0);
-    const uploadStatus = ref('准备上传...');
-    const showLargeFileWarning = ref(false);
-    const locationOptions = ref([]);
-    const customLocation = ref(''); // 自定义产生地点
-    const customProcess = ref(''); // 自定义产生工序
-    const processOptions = ['作业现场', '清罐清理', '报废清理', '管线刺漏', '历史遗留', '日常维护', '封井退出', '其他'];
-    
-    // 位置相关状态
-    const locationLoading = ref(false);
-    const locationInfo = ref({
-      success: false,
-      longitude: null,
-      latitude: null,
-      address: '',
-      district: '',
-      city: '',
-      province: ''
-    });
-    const locationError = ref('');
-    
-    // 各管理区对应的四级单位列表
-    const locationMap = {
-      '桓台': ['金家接转站', '金17-1注采站', '金17-2注采站', '金6金9项目组', '金8注采站', '其他'],
-      '潍北': ['潍北联合站', '昌79注采站', '昌3注采站', '疃3注采站', '昌15注采站', '其他'],
-      '高青': ['高青联合站', '樊107注采站', '樊14注采站', '高21注采站', '高54注采站', '其他'],
-      '牛庄': ['牛25集输站', '牛25注采站', '营13注采站', '史112注采站', '其他'],
-      '金角': ['长堤注采站', '桩23注采站', '其他'],
-      '信远': ['河125注采站', '河122注采站', '永551注采站', '其他'],
-      '滨博': ['樊142注采站', '樊142-2-12注采站', '樊162注采站', '樊页1井组', '滨博接转站', '其他'],
-      '无棣': ['车41注采站', '车142注采站', '车40注采站', '车408注采站', '车274注采站', '车1接转站', '东风港联合站', '其他'],
-      '河口': ['沾14东注采站', '沾14西注采站', '渤南注采站', '大北注采站', '沾5注采站', '太平接转站', '沾5接转站', '其他'],
-      '胜兴': ['博兴注采站', '其他'],
-      '胜科管理区': ['采油一站', '其他'],
-      '其他': ['其他']
-    };
+    const customLocation = ref('');
+    const customProcess = ref('');
     
     // 检查用户是否为超级管理员
     const isAdmin = computed(() => {
@@ -402,9 +368,14 @@ export default {
         originalViewport.remove();
       }
 
-      await fetchUnitName(); // 这里会同时更新locationOptions
+      const unit = await fetchUnitNameWithAuth(props.id);
+      if (!unit && auth.isSupervisor()) {
+        ElMessage.error('无权访问该单位，请联系管理员');
+        router.push({ name: 'UnitSelection' });
+        return;
+      }
       await fetchWasteTypes();
-      
+
       // 自动获取位置信息
       if (isLocationSupported() && isSecureContext()) {
         getCurrentLocation();
@@ -412,6 +383,8 @@ export default {
     });
 
     onBeforeUnmount(() => {
+      cleanupPhotos();
+
       // 移除我们添加的viewport meta标签
       const viewportMeta = document.querySelector('meta[name="viewport"]');
       if (viewportMeta) {
@@ -424,519 +397,6 @@ export default {
       originalViewport.setAttribute('content', 'width=device-width,initial-scale=1.0');
       document.head.appendChild(originalViewport);
     });
-
-    const fetchUnitName = async () => {
-      try {
-        const response = await httpService.get(apiConfig.endpoints.units);
-        let allUnits = response.data;
-        
-        // 监督人员只能看到本公司单位
-        if (auth.isSupervisor()) {
-          const currentCompanyId = auth.getCompanyId();
-          allUnits = allUnits.filter(unit => 
-            unit.company_id === currentCompanyId
-          );
-        }
-        
-        const unit = allUnits.find(u => u.id === parseInt(props.id));
-        if (unit) {
-          unitName.value = unit.name;
-          
-          // 获取到单位名称后，更新地点选项
-          if (locationMap[unitName.value]) {
-            locationOptions.value = locationMap[unitName.value];
-          } else {
-            locationOptions.value = [];
-            console.warn(`未找到管理区 "${unitName.value}" 的地点选项`);
-          }
-        } else if (auth.isSupervisor()) {
-          // 监督人员尝试访问其他公司单位时显示错误并重定向
-          ElMessage.error('无权访问该单位，请联系管理员');
-          router.push({ name: 'UnitSelection' });
-        }
-      } catch (error) {
-        console.error('Error fetching unit name:', error);
-        ElMessage.error('获取单位信息失败');
-      }
-    };
-
-    const fetchWasteTypes = async () => {
-      try {
-        const response = await httpService.get(apiConfig.endpoints.wasteTypes);
-        wasteTypes.value = response.data;
-      } catch (error) {
-        console.error('Error fetching waste types:', error);
-        ElMessage.error('获取废物类型失败');
-      }
-    };
-
-    // 获取当前位置
-    const getCurrentLocation = async () => {
-      if (locationLoading.value) return; // 防止重复调用
-      
-      locationLoading.value = true;
-      locationError.value = '';
-      
-      try {
-        const location = await getLocationInfo();
-        locationInfo.value = location;
-        console.log('位置获取成功:', location);
-      } catch (error) {
-        locationError.value = error.message;
-        console.error('位置获取失败:', error);
-        // 不显示错误消息，根据需求只有失败时需要提示
-      } finally {
-        locationLoading.value = false;
-      }
-    };
-
-    // 处理上传前的文件处理
-    const handleBeforeUpload = (file) => {
-      // 检查文件类型是否为图片
-      const acceptedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/bmp', 'image/webp'];
-      const isImage = acceptedTypes.includes(file.type);
-      
-      if (!isImage) {
-        ElMessage.error('只能上传图片文件!');
-        return false;
-      }
-
-      // 检查文件大小（50MB = 50 * 1024 * 1024 bytes）
-      const maxSize = 50 * 1024 * 1024;
-      if (file.size > maxSize) {
-        ElMessage.error('图片大小不能超过50MB!');
-        return false;
-      }
-      
-      // 返回一个Promise
-      return new Promise((resolve) => {
-        // 显示处理进度提示
-        showUploadProgress.value = true;
-        uploadStatus.value = '正在处理图片...';
-        uploadPercentage.value = 0;
-        
-        console.log('开始处理图片:', file.name, '类型:', file.type, '大小:', (file.size / 1024).toFixed(2), 'KB');
-        
-        // 使用Compressor直接处理图片
-        new Compressor(file, {
-          quality: 0.6,           // 中等压缩 (0-1)
-          maxWidth: 1920,         // 最大宽度
-          maxHeight: 1920,        // 最大高度
-          mimeType: 'image/jpeg', // 强制转换为JPEG
-          convertSize: 0,         // 所有图片都转换格式
-          // 报告进度
-          beforeDraw() {
-            uploadPercentage.value = 30;
-            uploadStatus.value = '正在处理图片...';
-            console.log('图片处理中...');
-          },
-          // 报告进度
-          drew() {
-            uploadPercentage.value = 60;
-            uploadStatus.value = '正在压缩图片...';
-            console.log('图片绘制完成');
-          },
-          success(result) {
-            // 创建新的文件名（确保扩展名为.jpg）
-            const fileName = file.name.replace(/\.[^/.]+$/, "") + '.jpg';
-            
-            // 创建新的File对象
-            const processedFile = new File([result], fileName, {
-              type: 'image/jpeg',
-              lastModified: new Date().getTime()
-            });
-            
-            // 输出处理结果日志
-            console.log('图片处理完成:');
-            console.log('- 原始大小:', (file.size / 1024).toFixed(2), 'KB');
-            console.log('- 处理后大小:', (processedFile.size / 1024).toFixed(2), 'KB');
-            console.log('- 压缩率:', Math.round((1 - processedFile.size / file.size) * 100), '%');
-            console.log('- 处理后文件类型:', processedFile.type);
-            console.log('- 处理后文件名:', processedFile.name);
-            
-            // 处理完成
-            uploadStatus.value = '图片处理完成';
-            uploadPercentage.value = 100;
-            
-            // 延迟关闭进度条
-            setTimeout(() => {
-              showUploadProgress.value = false;
-            }, 500);
-            
-            // 解析Promise，返回处理后的文件
-            resolve(processedFile);
-          },
-          error(err) {
-            console.error('图片压缩失败:', err);
-            // 如果处理失败，返回原始文件
-            uploadStatus.value = '处理失败，使用原始图片';
-            uploadPercentage.value = 100;
-            
-            // 延迟关闭进度条
-            setTimeout(() => {
-              showUploadProgress.value = false;
-            }, 500);
-            
-            resolve(file);
-          }
-        });
-      });
-    };
-
-    // 处理收集前照片变更
-    const handlePhotoBeforeChange = async (file, fileList) => {
-      // 更新文件列表（暂时）
-      console.log('收集前照片变更:', file);
-      console.log('当前文件列表:', fileList);
-      
-      // 先更新文件列表，确保UI显示所有文件
-      fileListBefore.value = [...fileList];
-      
-      // 如果文件已经处理过，直接返回
-      if (file.processed) {
-        console.log('文件已处理过，跳过压缩:', file.name);
-        return;
-      }
-      
-      // 如果是新上传的文件，需要先处理
-      if (file.raw && file.status === 'ready') {
-        // 显示处理进度提示
-        showUploadProgress.value = true;
-        uploadStatus.value = '正在处理图片...';
-        uploadPercentage.value = 0;
-        
-        console.log('开始处理收集前照片:', file.name, '类型:', file.raw.type, '大小:', (file.raw.size / 1024).toFixed(2), 'KB');
-        
-        try {
-          // 使用Compressor直接处理图片
-          const processedFile = await new Promise((resolve) => {
-            new Compressor(file.raw, {
-              quality: 0.6,           // 中等压缩 (0-1)
-              maxWidth: 1920,         // 最大宽度
-              maxHeight: 1920,        // 最大高度
-              mimeType: 'image/jpeg', // 强制转换为JPEG
-              convertSize: 0,         // 所有图片都转换格式
-              // 报告进度
-              beforeDraw() {
-                uploadPercentage.value = 30;
-                uploadStatus.value = '正在处理图片...';
-                console.log('图片处理中...');
-              },
-              // 报告进度
-              drew() {
-                uploadPercentage.value = 60;
-                uploadStatus.value = '正在压缩图片...';
-                console.log('图片绘制完成');
-              },
-              success(result) {
-                // 创建新的文件名（确保扩展名为.jpg）
-                const fileName = file.raw.name.replace(/\.[^/.]+$/, "") + '.jpg';
-                
-                // 创建新的File对象
-                const processedFile = new File([result], fileName, {
-                  type: 'image/jpeg',
-                  lastModified: new Date().getTime()
-                });
-                
-                // 输出处理结果日志
-                console.log('图片处理完成:');
-                console.log('- 原始大小:', (file.raw.size / 1024).toFixed(2), 'KB');
-                console.log('- 处理后大小:', (processedFile.size / 1024).toFixed(2), 'KB');
-                console.log('- 压缩率:', Math.round((1 - processedFile.size / file.raw.size) * 100), '%');
-                console.log('- 处理后文件类型:', processedFile.type);
-                console.log('- 处理后文件名:', processedFile.name);
-                
-                // 处理完成
-                uploadStatus.value = '图片处理完成';
-                uploadPercentage.value = 100;
-                
-                resolve(processedFile);
-              },
-              error(err) {
-                console.error('图片压缩失败:', err);
-                // 如果处理失败，返回原始文件
-                uploadStatus.value = '处理失败，使用原始图片';
-                uploadPercentage.value = 100;
-                
-                resolve(file.raw);
-              }
-            });
-          });
-          
-          // 替换原始文件
-          console.log('替换原始文件为处理后的文件:', processedFile.name);
-          
-          // 标记文件为已处理
-          file.processed = true;
-          file.raw = processedFile;
-          
-          // 将处理后的文件添加到photoFilesBefore
-          const existingIndex = photoFilesBefore.value.findIndex(f => f.uid === file.uid || f.name === file.name);
-          if (existingIndex >= 0) {
-            // 替换现有文件
-            photoFilesBefore.value[existingIndex] = processedFile;
-          } else {
-            // 添加新文件
-            photoFilesBefore.value.push(processedFile);
-          }
-          
-          // 更新文件列表中对应的文件
-          const fileIndex = fileListBefore.value.findIndex(f => f.uid === file.uid);
-          if (fileIndex >= 0) {
-            // 标记为已处理，避免重复处理
-            fileListBefore.value[fileIndex].processed = true;
-          }
-          
-          // 延迟关闭进度条
-          setTimeout(() => {
-            showUploadProgress.value = false;
-          }, 500);
-          
-        } catch (error) {
-          console.error('处理图片时出错:', error);
-          ElMessage.warning('图片处理失败，将使用原始图片');
-          
-          // 添加原始文件
-          const existingIndex = photoFilesBefore.value.findIndex(f => f.uid === file.uid || f.name === file.name);
-          if (existingIndex >= 0) {
-            // 替换现有文件
-            photoFilesBefore.value[existingIndex] = file.raw;
-          } else {
-            // 添加新文件
-            photoFilesBefore.value.push(file.raw);
-          }
-          
-          showUploadProgress.value = false;
-        }
-      } else if (!file.raw && file.url) {
-        // 如果是已有的文件（有URL），不需要处理
-        console.log('已有文件，不需要处理:', file.name);
-      }
-      
-      // 检查是否有大文件需要显示警告
-      const allFiles = [...photoFilesBefore.value, ...photoFilesAfter.value];
-      showLargeFileWarning.value = checkForLargeFiles(allFiles);
-      
-      console.log('更新后的photoFilesBefore:', photoFilesBefore.value);
-      console.log('更新后的fileListBefore:', fileListBefore.value);
-    };
-
-    // 处理收集前照片移除
-    const handlePhotoBeforeRemove = (file, fileList) => {
-      console.log('收集前照片移除:', file);
-      fileListBefore.value = fileList;
-      
-      // 从photoFilesBefore中移除被删除的文件
-      if (file.raw) {
-        photoFilesBefore.value = photoFilesBefore.value.filter(f => 
-          f.name !== file.raw.name
-        );
-      } else {
-        // 如果没有raw属性，可能是已经处理过的文件，使用uid或name来匹配
-        photoFilesBefore.value = photoFilesBefore.value.filter(f => 
-          f.uid !== file.uid && f.name !== file.name
-        );
-      }
-      
-      // 如果没有大文件了，隐藏警告
-      if (!checkForLargeFiles([...photoFilesBefore.value, ...photoFilesAfter.value])) {
-        showLargeFileWarning.value = false;
-      }
-      
-      console.log('更新后的photoFilesBefore:', photoFilesBefore.value);
-    };
-
-    // 处理收集后照片变更
-    const handlePhotoAfterChange = async (file, fileList) => {
-      // 更新文件列表（暂时）
-      console.log('收集后照片变更:', file);
-      console.log('当前文件列表:', fileList);
-      
-      // 先更新文件列表，确保UI显示所有文件
-      fileListAfter.value = [...fileList];
-      
-      // 如果文件已经处理过，直接返回
-      if (file.processed) {
-        console.log('文件已处理过，跳过压缩:', file.name);
-        return;
-      }
-      
-      // 如果是新上传的文件，需要先处理
-      if (file.raw && file.status === 'ready') {
-        // 显示处理进度提示
-        showUploadProgress.value = true;
-        uploadStatus.value = '正在处理图片...';
-        uploadPercentage.value = 0;
-        
-        console.log('开始处理收集后照片:', file.name, '类型:', file.raw.type, '大小:', (file.raw.size / 1024).toFixed(2), 'KB');
-        
-        try {
-          // 使用Compressor直接处理图片
-          const processedFile = await new Promise((resolve) => {
-            new Compressor(file.raw, {
-              quality: 0.6,           // 中等压缩 (0-1)
-              maxWidth: 1920,         // 最大宽度
-              maxHeight: 1920,        // 最大高度
-              mimeType: 'image/jpeg', // 强制转换为JPEG
-              convertSize: 0,         // 所有图片都转换格式
-              // 报告进度
-              beforeDraw() {
-                uploadPercentage.value = 30;
-                uploadStatus.value = '正在处理图片...';
-                console.log('图片处理中...');
-              },
-              // 报告进度
-              drew() {
-                uploadPercentage.value = 60;
-                uploadStatus.value = '正在压缩图片...';
-                console.log('图片绘制完成');
-              },
-              success(result) {
-                // 创建新的文件名（确保扩展名为.jpg）
-                const fileName = file.raw.name.replace(/\.[^/.]+$/, "") + '.jpg';
-                
-                // 创建新的File对象
-                const processedFile = new File([result], fileName, {
-                  type: 'image/jpeg',
-                  lastModified: new Date().getTime()
-                });
-                
-                // 输出处理结果日志
-                console.log('图片处理完成:');
-                console.log('- 原始大小:', (file.raw.size / 1024).toFixed(2), 'KB');
-                console.log('- 处理后大小:', (processedFile.size / 1024).toFixed(2), 'KB');
-                console.log('- 压缩率:', Math.round((1 - processedFile.size / file.raw.size) * 100), '%');
-                console.log('- 处理后文件类型:', processedFile.type);
-                console.log('- 处理后文件名:', processedFile.name);
-                
-                // 处理完成
-                uploadStatus.value = '图片处理完成';
-                uploadPercentage.value = 100;
-                
-                resolve(processedFile);
-              },
-              error(err) {
-                console.error('图片压缩失败:', err);
-                // 如果处理失败，返回原始文件
-                uploadStatus.value = '处理失败，使用原始图片';
-                uploadPercentage.value = 100;
-                
-                resolve(file.raw);
-              }
-            });
-          });
-          
-          // 替换原始文件
-          console.log('替换原始文件为处理后的文件:', processedFile.name);
-          
-          // 标记文件为已处理
-          file.processed = true;
-          file.raw = processedFile;
-          
-          // 将处理后的文件添加到photoFilesAfter
-          const existingIndex = photoFilesAfter.value.findIndex(f => f.uid === file.uid || f.name === file.name);
-          if (existingIndex >= 0) {
-            // 替换现有文件
-            photoFilesAfter.value[existingIndex] = processedFile;
-          } else {
-            // 添加新文件
-            photoFilesAfter.value.push(processedFile);
-          }
-          
-          // 更新文件列表中对应的文件
-          const fileIndex = fileListAfter.value.findIndex(f => f.uid === file.uid);
-          if (fileIndex >= 0) {
-            // 标记为已处理，避免重复处理
-            fileListAfter.value[fileIndex].processed = true;
-          }
-          
-          // 延迟关闭进度条
-          setTimeout(() => {
-            showUploadProgress.value = false;
-          }, 500);
-          
-        } catch (error) {
-          console.error('处理图片时出错:', error);
-          ElMessage.warning('图片处理失败，将使用原始图片');
-          
-          // 添加原始文件
-          const existingIndex = photoFilesAfter.value.findIndex(f => f.uid === file.uid || f.name === file.name);
-          if (existingIndex >= 0) {
-            // 替换现有文件
-            photoFilesAfter.value[existingIndex] = file.raw;
-          } else {
-            // 添加新文件
-            photoFilesAfter.value.push(file.raw);
-          }
-          
-          showUploadProgress.value = false;
-        }
-      } else if (!file.raw && file.url) {
-        // 如果是已有的文件（有URL），不需要处理
-        console.log('已有文件，不需要处理:', file.name);
-      }
-      
-      // 检查是否有大文件需要显示警告
-      const allFiles = [...photoFilesBefore.value, ...photoFilesAfter.value];
-      showLargeFileWarning.value = checkForLargeFiles(allFiles);
-      
-      console.log('更新后的photoFilesAfter:', photoFilesAfter.value);
-      console.log('更新后的fileListAfter:', fileListAfter.value);
-    };
-
-    // 处理收集后照片移除
-    const handlePhotoAfterRemove = (file, fileList) => {
-      console.log('收集后照片移除:', file);
-      fileListAfter.value = fileList;
-      
-      // 从photoFilesAfter中移除被删除的文件
-      if (file.raw) {
-        photoFilesAfter.value = photoFilesAfter.value.filter(f => 
-          f.name !== file.raw.name
-        );
-      } else {
-        // 如果没有raw属性，可能是已经处理过的文件，使用uid或name来匹配
-        photoFilesAfter.value = photoFilesAfter.value.filter(f => 
-          f.uid !== file.uid && f.name !== file.name
-        );
-      }
-      
-      // 如果没有大文件了，隐藏警告
-      if (!checkForLargeFiles([...photoFilesBefore.value, ...photoFilesAfter.value])) {
-        showLargeFileWarning.value = false;
-      }
-      
-      console.log('更新后的photoFilesAfter:', photoFilesAfter.value);
-    };
-
-    // 检查是否有大文件
-    const checkForLargeFiles = (files) => {
-      const largeFileThreshold = 5 * 1024 * 1024; // 5MB
-      return files.some(file => file.size > largeFileThreshold);
-    };
-
-    // 处理上传进度
-    const handleUploadProgress = (progressEvent) => {
-      if (progressEvent.total) {
-        const percentage = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-        uploadPercentage.value = percentage;
-        
-        if (percentage < 33) {
-          uploadStatus.value = '正在上传文件...';
-        } else if (percentage < 66) {
-          uploadStatus.value = '正在处理文件...';
-        } else if (percentage < 100) {
-          uploadStatus.value = '即将完成...';
-        } else {
-          uploadStatus.value = '上传完成，正在保存...';
-        }
-      }
-    };
-
-    // 格式化百分比显示
-    const percentageFormat = (percentage) => {
-      return percentage === 100 ? '完成' : `${percentage}%`;
-    };
 
     const submitForm = () => {
       wasteForm.value.validate(async (valid) => {
@@ -1067,11 +527,11 @@ export default {
             resetForm();
             
             // 延迟跳转，让用户看到成功消息
-            setTimeout(() => {
+            safeTimeout(() => {
               // 根据用户角色跳转到相应的记录查看页面
               if (auth.state.isLoggedIn && auth.state.user) {
                 const userRole = auth.state.user.role_id;
-                
+
                 if (userRole === 3 || userRole === 4) {
                   // 超级管理员 - 跳转到管理员记录页面
                   router.push('/admin-records');
@@ -1144,8 +604,8 @@ export default {
     };
 
     const selectAllText = (event) => {
-      // 使用setTimeout确保DOM已完全渲染
-      setTimeout(() => {
+      // 使用safeTimeout确保DOM已完全渲染
+      safeTimeout(() => {
         if (event && event.target) {
           // 找到el-input-number内部的input元素
           const inputEl = event.target.querySelector('input');
