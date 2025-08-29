@@ -1,5 +1,45 @@
 # Registration-Management-System Changelog
 
+## 2025-08-28
+
+### ♻️ 前端重构：超大组件拆分 + 内存泄漏修复 (Component Refactoring & Memory Leak Fixes)
+
+*   **新增 `useTimerCleanup` composable**:
+    *   提供 `safeTimeout(fn, delay)` 替代原生 `setTimeout`
+    *   组件卸载时自动清理所有未执行的定时器，防止内存泄漏
+
+*   **新增 `useFormData` composable**:
+    *   提取 EditRecord 和 WasteForm 中完全相同的 `locationMap`、`processOptions`、`wasteTypes`、`fetchWasteTypes`、`fetchUnitName` 等共享数据和获取逻辑
+    *   消除两个文件中约 50 行重复代码
+
+*   **新增 `useGeolocation` composable**:
+    *   封装地理位置获取的响应式状态和 `getCurrentLocation` 函数
+    *   重新导出 `isLocationSupported`、`isSecureContext`、`formatCoordinates`、`formatAddress`
+    *   消除两个文件中约 36 行重复代码
+
+*   **新增 `usePhotoUpload` composable**:
+    *   提取图片压缩上传的全部逻辑（Compressor.js 压缩、进度追踪、文件校验、大文件检测）
+    *   支持配置参数处理差异（`largeFileThreshold`、`onBeforeRemove`、`onAfterProcess` 回调）
+    *   内部使用 `safeTimeout` 替代所有 `setTimeout`
+    *   消除两个文件中约 500 行重复代码
+
+*   **重构 WasteForm.vue**:
+    *   导入并使用上述四个 composable，减少约 400 行代码
+    *   `submitForm` 和 `selectAllText` 中的 `setTimeout` 替换为 `safeTimeout`
+    *   `onBeforeUnmount` 中添加照片资源清理
+
+*   **重构 EditRecord.vue**:
+    *   导入并使用上述四个 composable，减少约 350 行代码
+    *   新增 `onUnmounted` hook（此前完全缺失），释放所有 blob URL 并清理照片状态
+    *   `submitForm` 中的 `setTimeout` 替换为 `safeTimeout`
+
+*   **修复其余组件内存泄漏**:
+    *   `RecordsList.vue`：`loadMore` 中的 `setTimeout` → `safeTimeout`
+    *   `AdminRecords.vue`：`loadMore` 中的 `setTimeout` → `safeTimeout`
+    *   `UserProfile.vue`：`setTimeout` → `safeTimeout`
+
+> 本次重构净减少 583 行代码（+581 / -1164），无功能变更。
+
 ## 2025-08-27
 
 ### ⚡ 前端性能优化 (Frontend Performance Optimization)
