@@ -3,6 +3,8 @@ const cors = require('cors');
 const path = require('path');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const http = require('http');
+const { initWebSocket } = require('./websocket');
 
 // 加载环境变量 - 统一使用backend/.env
 require('dotenv').config({ path: path.join(__dirname, '.env') });
@@ -24,6 +26,7 @@ const feedbackRoutes = require('./routes/feedback');
 
 // 创建Express应用
 const app = express();
+const server = http.createServer(app);
 const PORT = process.env.PORT || 3000;
 
 // 信任代理设置（用于获取真实IP）
@@ -166,8 +169,11 @@ app.get('*', (req, res) => {
 // 错误处理中间件
 app.use(errorHandler);
 
+// 初始化WebSocket服务器
+initWebSocket(server);
+
 // 启动服务器
-app.listen(PORT, async () => {
+server.listen(PORT, async () => {
   console.log(`🚀 服务器启动成功: http://localhost:${PORT}`);
   console.log(`🔒 安全中间件已启用: Helmet, Rate Limiting, XSS Protection`);
   console.log(`🌍 环境模式: ${process.env.NODE_ENV || 'development'}`);
