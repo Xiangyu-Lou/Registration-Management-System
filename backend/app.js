@@ -23,9 +23,10 @@ const app = express();
 // 信任代理设置（用于获取真实IP）
 app.set('trust proxy', 1);
 
-// 安全中间件配置
+// 环境判断
 const isProduction = process.env.NODE_ENV === 'production';
 const isTest = process.env.NODE_ENV === 'test';
+const isVercel = !!process.env.VERCEL;
 
 // CSP配置 - 根据环境调整
 const cspConfig = {
@@ -114,24 +115,26 @@ app.use(inputLimits);
 app.use(sqlInjectionProtection);
 app.use(xssProtection);
 
-// 静态文件服务
-app.use('/uploads', express.static(path.join(__dirname, '../uploads'), {
-  maxAge: '1d',
-  etag: true,
-  lastModified: true,
-  setHeaders: (res, filePath) => {
-    if (filePath.match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i)) {
-      res.setHeader('X-Content-Type-Options', 'nosniff');
-      res.setHeader('Cache-Control', 'public, max-age=86400');
+// 静态文件服务（Vercel 环境下由平台处理，跳过）
+if (!isVercel) {
+  app.use('/uploads', express.static(path.join(__dirname, '../uploads'), {
+    maxAge: '1d',
+    etag: true,
+    lastModified: true,
+    setHeaders: (res, filePath) => {
+      if (filePath.match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i)) {
+        res.setHeader('X-Content-Type-Options', 'nosniff');
+        res.setHeader('Cache-Control', 'public, max-age=86400');
+      }
     }
-  }
-}));
+  }));
 
-app.use(express.static(path.join(__dirname, '../frontend/dist'), {
-  maxAge: '1h',
-  etag: true,
-  lastModified: true
-}));
+  app.use(express.static(path.join(__dirname, '../frontend/dist'), {
+    maxAge: '1h',
+    etag: true,
+    lastModified: true
+  }));
+}
 
 // API路由
 app.use('/api', authRoutes);
@@ -152,14 +155,16 @@ app.get('/health', (req, res) => {
   });
 });
 
-// 处理所有前端路由请求，返回index.html
-app.get('*', (req, res) => {
-  if (!req.path.startsWith('/api') && !req.path.startsWith('/uploads')) {
-    res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
-  } else {
-    notFoundHandler(req, res);
-  }
-});
+// 处理所有前端路由请求，返回index.html（Vercel 环境下由平台处理）
+if (!isVercel) {
+  app.get('*', (req, res) => {
+    if (!req.path.startsWith('/api') && !req.path.startsWith('/uploads')) {
+      res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
+    } else {
+      notFoundHandler(req, res);
+    }
+  });
+}
 
 // 错误处理中间件（必须放在最后）
 app.use(errorHandler);

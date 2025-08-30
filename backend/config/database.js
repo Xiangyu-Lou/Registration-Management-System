@@ -18,7 +18,7 @@ const dbConfig = {
   password: process.env.DB_PASSWORD || '',
   database: process.env.DB_NAME || 'waste_management',
   waitForConnections: true,
-  connectionLimit: 10,
+  connectionLimit: process.env.VERCEL ? 3 : 10,
   queueLimit: 0,
   multipleStatements: true,
   timezone: '+08:00', // 设置为中国时区，避免时区转换问题

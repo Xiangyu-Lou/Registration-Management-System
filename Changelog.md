@@ -1,5 +1,25 @@
 # Registration-Management-System Changelog
 
+## 2025-08-29
+
+### 🚀 Vercel 部署适配 (Vercel Deployment Adaptation)
+
+*   **新增 Vercel Serverless Function 入口**:
+    *   创建 `api/index.js` 作为 Vercel Serverless Function 入口，导入 Express app
+    *   加载 backend 环境变量，确保 Serverless 环境下配置正常
+
+*   **新增 Vercel 配置文件**:
+    *   创建 `vercel.json`，配置前端静态构建和后端 Serverless Function
+    *   设置路由规则：`/api/*` 和 `/health` 转发到 Serverless Function，其余走前端静态文件
+
+*   **适配 backend/app.js**:
+    *   通过 `VERCEL` 环境变量判断运行环境
+    *   Vercel 环境下跳过 `/uploads` 静态文件服务（无持久化文件系统）
+    *   Vercel 环境下跳过 `frontend/dist` 静态文件服务和 SPA fallback（由平台处理）
+
+*   **优化数据库连接池**:
+    *   Vercel Serverless 环境下将 `connectionLimit` 从 10 降为 3，避免连接数过多
+
 ## 2025-08-28
 
 ### ♻️ 前端重构：超大组件拆分 + 内存泄漏修复 (Component Refactoring & Memory Leak Fixes)
