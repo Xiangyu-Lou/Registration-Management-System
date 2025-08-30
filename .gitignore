@@ -114,3 +114,4 @@ claude.md
 .serverless/
 .fusebox/
 .dynamodb/
+.vercel
