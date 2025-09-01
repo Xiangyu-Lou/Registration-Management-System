@@ -247,93 +247,102 @@ export default {
 
 <style scoped>
 .app-header {
-  background-color: #409EFF;
-  color: white;
-  padding: 0 20px;
-  height: 60px;
+  background-color: var(--color-bg-primary);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  padding: 0 var(--space-5);
+  height: 56px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
 .logo h1 {
   margin: 0;
-  font-size: 20px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-primary);
 }
 
 .user-info {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: var(--space-4);
 }
 
 .welcome-text {
   font-size: 14px;
+  color: var(--color-text-secondary);
 }
 
 .role-tag, .unit-tag, .company-tag {
   font-size: 12px;
   margin-left: 5px;
-  padding: 2px 6px;
-  border-radius: 4px;
-  background-color: rgba(255, 255, 255, 0.3);
+  padding: 2px 8px;
+  border-radius: 999px;
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text-secondary);
 }
 
 .company-tag {
-  background-color: rgba(255, 215, 0, 0.6); /* 金色背景表示公司 */
+  background-color: #fef3c7;
+  color: #92400e;
 }
 
 .feedback-button,
 .profile-button,
 .logout-button {
-  color: white;
-  font-weight: bold;
-  margin-left: 15px;
+  color: var(--color-text-secondary) !important;
+  font-weight: 500;
+  margin-left: var(--space-2);
 }
 
 .feedback-button:hover,
 .profile-button:hover,
 .logout-button:hover {
-  color: #f0f0f0;
-  background-color: rgba(255, 255, 255, 0.1);
+  color: var(--color-accent) !important;
+  background-color: var(--color-accent-light) !important;
 }
 
 .el-dropdown-link {
   cursor: pointer;
   display: flex;
   align-items: center;
-  color: white;
+  color: var(--color-text-secondary);
 }
 
 /* 移动端适配 */
 @media screen and (max-width: 768px) {
   .app-header {
-    padding: 0 10px;
+    padding: 0 var(--space-3);
     height: 50px;
     flex-wrap: wrap;
   }
-  
+
   .logo h1 {
-    font-size: 16px;
+    font-size: 14px;
   }
-  
+
   .user-info {
-    gap: 10px;
+    gap: var(--space-2);
   }
-  
+
   .welcome-text {
     font-size: 12px;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
   }
-  
+
   .role-tag, .unit-tag, .company-tag {
     font-size: 10px;
     margin-left: 3px;
     padding: 1px 4px;
   }
-  
+
   .logout-button {
     margin-left: 5px;
     padding: 4px 8px;
@@ -345,18 +354,18 @@ export default {
   .app-header {
     flex-direction: column;
     height: auto;
-    padding: 10px;
+    padding: var(--space-3);
   }
-  
+
   .logo {
     margin-bottom: 5px;
   }
-  
+
   .user-info {
     width: 100%;
     justify-content: space-between;
   }
-  
+
   .unit-tag {
     display: none;
   }
@@ -366,63 +375,22 @@ export default {
 .dialog-footer {
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
-}
-
-:deep(.el-dialog) {
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-:deep(.el-dialog__header) {
-  background: linear-gradient(to right, #409EFF, #1976d2);
-  color: white;
-  padding: 20px;
-  margin: 0;
-}
-
-:deep(.el-dialog__title) {
-  color: white;
-  font-weight: 600;
-}
-
-:deep(.el-dialog__headerbtn) {
-  top: 20px;
-  right: 20px;
-}
-
-:deep(.el-dialog__close) {
-  color: white;
-  font-size: 18px;
-}
-
-:deep(.el-dialog__close:hover) {
-  color: #f0f0f0;
-}
-
-:deep(.el-dialog__body) {
-  padding: 30px;
-}
-
-:deep(.el-dialog__footer) {
-  border-top: 1px solid #ebeef5;
-  padding: 20px 30px;
-  background-color: #fafafa;
+  gap: var(--space-3);
 }
 
 /* 表单样式优化 */
 :deep(.el-form-item__label) {
-  font-weight: 600;
-  color: #333;
+  font-weight: 500;
+  color: var(--color-text-primary);
 }
 
 :deep(.el-select),
 :deep(.el-input__wrapper) {
-  border-radius: 6px;
+  border-radius: var(--radius-md);
 }
 
 :deep(.el-textarea__inner) {
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   resize: vertical;
 }
 
@@ -432,15 +400,15 @@ export default {
     width: 95% !important;
     margin: 0 auto;
   }
-  
+
   :deep(.el-dialog__body) {
-    padding: 20px;
+    padding: var(--space-5);
   }
-  
+
   :deep(.el-dialog__footer) {
-    padding: 15px 20px;
+    padding: var(--space-4) var(--space-5);
   }
-  
+
   :deep(.el-form-item__label) {
     width: 80px !important;
     font-size: 14px;

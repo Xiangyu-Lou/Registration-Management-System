@@ -256,47 +256,27 @@ export default {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background-color: #f5f7fa;
+  background-color: var(--color-bg-secondary);
 }
 
 .header {
-  /* 修改背景渐变，实现两端深中间浅的效果 */
-  background: linear-gradient(to right, #1976d2, #42a5f5, #1976d2);
-  color: white;
-  padding: 16px 20px;
+  background-color: var(--color-bg-primary);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  padding: 16px var(--space-5);
   display: flex;
   justify-content: space-between;
   align-items: center;
   position: sticky;
   top: 0;
   z-index: 10;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  border-radius: 0 0 20px 20px;
-  margin-bottom: 10px;
-  position: relative;
-  overflow: hidden;
-}
-
-.header::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  /* 调整覆盖层渐变，增强立体感 */
-  background: linear-gradient(45deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 50%, rgba(255, 255, 255, 0) 100%);
-  z-index: 1;
 }
 
 .header h1 {
-  position: relative;
-  z-index: 2;
   margin: 0;
-  font-size: 24px;
+  font-size: 18px;
   font-weight: 600;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  letter-spacing: 1px;
+  color: var(--color-text-primary);
 }
 
 .back-button {
@@ -305,31 +285,24 @@ export default {
   align-items: center;
   gap: 5px;
   font-size: 14px;
-  position: relative;
-  z-index: 2;
-  background-color: rgba(255, 255, 255, 0.25);
-  padding: 8px 14px;
-  border-radius: 8px;
-  transition: all 0.3s ease;
-  border: 1.5px solid rgba(255, 255, 255, 0.6);
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  font-weight: 600;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-  letter-spacing: 0.3px;
+  color: var(--color-text-secondary);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-bg-primary);
+  font-weight: 500;
 }
 
 .back-button:hover {
-  background-color: rgba(255, 255, 255, 0.35);
-  transform: translateY(-2px);
-  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.25);
-  border-color: rgba(255, 255, 255, 0.8);
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+  background-color: var(--color-accent-light);
 }
 
 .content {
   flex: 1;
-  padding: 20px;
+  padding: var(--space-5);
   max-width: 800px;
   margin: 0 auto;
   width: 100%;
@@ -337,15 +310,14 @@ export default {
 }
 
 .profile-card {
-  margin-bottom: 20px;
-  border-radius: 12px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
-  transition: all 0.3s ease;
+  margin-bottom: var(--space-5);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-base);
 }
 
 .profile-card:hover {
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
-  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
 }
 
 .card-header {
@@ -357,31 +329,31 @@ export default {
 .card-header h3 {
   margin: 0;
   font-weight: 600;
-  color: #333;
+  color: var(--color-text-primary);
 }
 
 .profile-form {
-  padding: 10px 0;
+  padding: var(--space-3) 0;
 }
 
 .field-hint {
   font-size: 12px;
-  color: #999;
+  color: var(--color-text-tertiary);
   margin-top: 4px;
   margin-left: 2px;
 }
 
 .el-divider {
-  margin: 30px 0;
+  margin: var(--space-8) 0;
 }
 
 @media screen and (max-width: 768px) {
   .content {
-    padding: 10px;
+    padding: var(--space-3);
   }
-  
+
   .profile-card {
-    border-radius: 8px;
+    border-radius: var(--radius-lg);
   }
 }
 </style> 

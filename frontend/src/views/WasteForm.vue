@@ -669,29 +669,29 @@ export default {
 .location-controls {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
   flex-wrap: wrap;
 }
 
 .location-tip {
-  color: #909399;
+  color: var(--color-text-tertiary);
   font-size: 12px;
 }
 
 .location-info {
-  background-color: #f5f7fa;
-  border: 1px solid #e4e7ed;
-  border-radius: 6px;
-  padding: 12px;
-  margin-top: 8px;
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  margin-top: var(--space-2);
 }
 
 .location-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
 }
 
 .location-item:last-child {
@@ -699,58 +699,39 @@ export default {
 }
 
 .location-item span {
-  color: #606266;
+  color: var(--color-text-secondary);
   font-size: 14px;
 }
 
 .location-error {
-  margin-top: 8px;
+  margin-top: var(--space-2);
 }
+
 .waste-form-container {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background-color: #f5f7fa;
+  background-color: var(--color-bg-secondary);
 }
 
 .header {
-  /* 修改背景渐变，实现两端深中间浅的效果 */
-  background: linear-gradient(to right, #1976d2, #42a5f5, #1976d2);
-  color: white;
-  padding: 16px 20px;
+  background-color: var(--color-bg-primary);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  padding: var(--space-4) var(--space-5);
   display: flex;
   justify-content: space-between;
   align-items: center;
   position: sticky;
   top: 0;
   z-index: 10;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  border-radius: 0 0 20px 20px;
-  margin-bottom: 10px;
-  position: relative;
-  overflow: hidden;
-}
-
-.header::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  /* 调整覆盖层渐变，增强立体感 */
-  background: linear-gradient(45deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 50%, rgba(255, 255, 255, 0) 100%);
-  z-index: 1;
 }
 
 .header h1 {
-  position: relative;
-  z-index: 2;
   margin: 0;
-  font-size: 24px;
+  font-size: 18px;
   font-weight: 600;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  letter-spacing: 1px;
+  color: var(--color-text-primary);
 }
 
 .back-button, .view-records {
@@ -760,31 +741,24 @@ export default {
   gap: 5px;
   font-size: 14px;
   white-space: nowrap;
-  position: relative;
-  z-index: 2;
-  background-color: rgba(255, 255, 255, 0.25);
-  padding: 8px 14px;
-  border-radius: 8px;
-  transition: all 0.3s ease;
-  border: 1.5px solid rgba(255, 255, 255, 0.6);
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  font-weight: 600;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-  letter-spacing: 0.3px;
+  color: var(--color-text-secondary);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-bg-primary);
+  font-weight: 500;
 }
 
 .back-button:hover, .view-records:hover {
-  background-color: rgba(255, 255, 255, 0.35);
-  transform: translateY(-2px);
-  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.25);
-  border-color: rgba(255, 255, 255, 0.8);
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+  background-color: var(--color-accent-light);
 }
 
 .content {
   flex: 1;
-  padding: 16px;
+  padding: var(--space-4);
   max-width: 100%;
   margin: 0 auto;
   width: 100%;
@@ -793,12 +767,12 @@ export default {
 
 .unit-info {
   text-align: center;
-  margin-bottom: 16px;
+  margin-bottom: var(--space-4);
 }
 
 .unit-info h2 {
-  color: #333;
-  border-bottom: 2px solid #409EFF;
+  color: var(--color-text-primary);
+  border-bottom: 2px solid var(--color-accent);
   display: inline-block;
   padding-bottom: 5px;
   font-size: 18px;
@@ -806,34 +780,35 @@ export default {
 }
 
 .waste-form {
-  background-color: #ffffff;
-  padding: 16px;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  background-color: var(--color-bg-primary);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-xs);
 }
 
 .form-row {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--space-4);
 }
 
 @media (min-width: 768px) {
   .form-row {
     flex-direction: row;
   }
-  
+
   .date-item, .time-item {
     flex: 1;
   }
-  
+
   .content {
-    padding: 24px;
+    padding: var(--space-6);
     max-width: 800px;
   }
-  
+
   .header h1 {
-    font-size: 22px;
+    font-size: 18px;
   }
 }
 
@@ -854,52 +829,67 @@ export default {
 
 .photo-tip, .time-tip {
   font-size: 12px;
-  color: #666;
-  margin-bottom: 8px;
+  color: var(--color-text-tertiary);
+  margin-bottom: var(--space-2);
 }
 
 .form-actions {
   display: flex;
   justify-content: center;
-  gap: 12px;
-  margin-top: 24px;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
 }
 
-.submit-btn, .reset-btn {
+.submit-btn {
   width: 45%;
   height: 44px;
   font-size: 16px;
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
+}
+
+.reset-btn {
+  width: 45%;
+  height: 44px;
+  font-size: 16px;
+  border-radius: var(--radius-lg);
+  background-color: var(--color-bg-primary) !important;
+  border: 1px solid var(--color-border) !important;
+  color: var(--color-text-secondary) !important;
+}
+
+.reset-btn:hover {
+  border-color: var(--color-accent) !important;
+  color: var(--color-accent) !important;
 }
 
 @media (min-width: 768px) {
   .form-actions {
     justify-content: flex-start;
   }
-  
+
   .submit-btn, .reset-btn {
     width: auto;
   }
 }
 
 .footer {
-  background-color: #f5f5f5;
-  padding: 12px;
+  background-color: var(--color-bg-secondary);
+  padding: var(--space-3);
   text-align: center;
-  color: #666;
+  color: var(--color-text-tertiary);
   font-size: 12px;
 }
 
 :deep(.el-form-item__label) {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 500;
-  color: #333;
+  color: var(--color-text-primary);
   padding-bottom: 4px;
 }
 
-:deep(.el-input__inner), 
-:deep(.el-select__input), 
-:deep(.el-input-number__decrease), 
+:deep(.el-input__inner),
+:deep(.el-select__input),
+:deep(.el-input-number__decrease),
 :deep(.el-input-number__increase) {
   height: 44px;
   font-size: 15px;
@@ -915,13 +905,13 @@ export default {
   padding: 12px 20px;
 }
 
-:deep(.el-date-editor.el-input), 
+:deep(.el-date-editor.el-input),
 :deep(.el-date-editor.el-input__inner) {
   width: 100%;
 }
 
 :deep(.el-form-item) {
-  margin-bottom: 20px;
+  margin-bottom: var(--space-5);
 }
 
 :deep(.date-picker-popup),
@@ -939,17 +929,17 @@ export default {
 }
 
 .upload-warning {
-  margin-bottom: 10px;
+  margin-bottom: var(--space-3);
 }
 
 .upload-progress {
   text-align: center;
-  padding: 10px;
+  padding: var(--space-3);
 }
 
 .upload-status {
-  margin-top: 10px;
-  color: #606266;
+  margin-top: var(--space-3);
+  color: var(--color-text-secondary);
   font-size: 14px;
 }
 
@@ -965,7 +955,7 @@ export default {
 }
 
 .waste-form :deep(.el-textarea__inner) {
-  height: auto !important; /* 让textarea可以自适应行数设置 */
-  min-height: 32px; /* 最小高度与单行输入框一致 */
+  height: auto !important;
+  min-height: 32px;
 }
 </style>

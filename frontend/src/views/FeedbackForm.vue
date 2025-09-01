@@ -193,26 +193,25 @@ export default {
 
 <style scoped>
 .feedback-container {
-  background-color: #f5f5f5;
+  background-color: var(--color-bg-secondary);
   min-height: 100vh;
 }
 
 .header {
-  background: linear-gradient(to right, #1976d2, #42a5f5, #1976d2);
-  color: white;
-  padding: 20px;
+  background-color: var(--color-bg-primary);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  padding: var(--space-5);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-radius: 0 0 20px 20px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  margin-bottom: 20px;
 }
 
 .header h1 {
   margin: 0;
-  font-size: 24px;
+  font-size: 18px;
   font-weight: 600;
+  color: var(--color-text-primary);
 }
 
 .back-button {
@@ -221,24 +220,29 @@ export default {
   align-items: center;
   gap: 5px;
   font-size: 14px;
-  background-color: rgba(255, 255, 255, 0.25);
-  padding: 8px 14px;
-  border-radius: 8px;
-  transition: all 0.3s ease;
+  color: var(--color-text-secondary);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-bg-primary);
+  font-weight: 500;
 }
 
 .back-button:hover {
-  background-color: rgba(255, 255, 255, 0.35);
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+  background-color: var(--color-accent-light);
 }
 
 .content {
-  padding: 0 20px 20px 20px;
+  padding: 0 var(--space-5) var(--space-5) var(--space-5);
   max-width: 800px;
   margin: 0 auto;
 }
 
 .feedback-card {
-  margin-bottom: 20px;
+  margin-bottom: var(--space-5);
 }
 
 .card-header {
@@ -253,17 +257,17 @@ export default {
 /* 移动端适配 */
 @media screen and (max-width: 768px) {
   .content {
-    padding: 0 10px 20px 10px;
+    padding: 0 var(--space-3) var(--space-5) var(--space-3);
   }
-  
+
   .header {
-    padding: 15px;
+    padding: var(--space-4);
   }
-  
+
   .header h1 {
-    font-size: 20px;
+    font-size: 18px;
   }
-  
+
   :deep(.el-form-item__label) {
     font-size: 14px;
   }

@@ -1,7 +1,11 @@
 <template>
   <div id="app">
     <app-header v-if="showHeader" />
-    <router-view />
+    <router-view v-slot="{ Component }">
+      <Transition name="page-fade" mode="out-in">
+        <component :is="Component" />
+      </Transition>
+    </router-view>
   </div>
 </template>
 
@@ -69,12 +73,28 @@ html, body {
   margin: 0;
   padding: 0;
   height: 100%;
-  font-family: "Helvetica Neue", Helvetica, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif;
 }
 
 #app {
   min-height: 100%;
   display: flex;
   flex-direction: column;
+  background-color: var(--color-bg-secondary);
+}
+
+/* Page transition */
+.page-fade-enter-active {
+  transition: opacity 300ms ease, transform 300ms ease;
+}
+.page-fade-leave-active {
+  transition: opacity 150ms ease;
+}
+.page-fade-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+.page-fade-leave-to {
+  opacity: 0;
 }
 </style>

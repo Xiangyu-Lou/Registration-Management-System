@@ -873,19 +873,30 @@ export default {
 }
 
 .location-info-cell span {
-  color: #606266;
+  color: var(--color-text-secondary);
   font-size: 13px;
   line-height: 1.4;
 }
+
 .admin-records-container {
-  padding: 20px;
+  padding: var(--space-5);
   min-height: 100vh;
-  background-color: #f5f7fa;
+  background-color: var(--color-bg-secondary);
 }
 
 .header {
-  margin-bottom: 20px;
+  background-color: var(--color-bg-primary);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  padding: var(--space-5);
   text-align: center;
+}
+
+.header h1 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0;
 }
 
 .content {
@@ -895,29 +906,29 @@ export default {
 
 .actions {
   display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
   justify-content: flex-end;
 }
 
 .filter-card {
-  margin-bottom: 20px;
+  margin-bottom: var(--space-5);
 }
 
 .filter-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
+  margin-bottom: var(--space-4);
 }
 
 .filter-form-container {
-  transition: all 0.3s ease;
+  transition: all var(--transition-base);
 }
 
 .filter-actions {
   display: flex;
-  gap: 10px;
+  gap: var(--space-3);
   justify-content: flex-end;
   align-items: flex-end;
   height: 100%;
@@ -936,13 +947,13 @@ export default {
 
 :deep(.el-switch__label) {
   font-size: 13px;
-  color: #606266;
+  color: var(--color-text-secondary);
 }
 
 :deep(.el-switch__label--right) {
   margin-left: 6px;
-  }
-  
+}
+
 :deep(.el-switch__label--left) {
   margin-right: 6px;
 }
@@ -969,14 +980,14 @@ export default {
 }
 
 .filter-form-container {
-  margin-bottom: 10px;
-  padding: 0 10px;
+  margin-bottom: var(--space-3);
+  padding: 0 var(--space-3);
 }
 
 /* 调整按钮容器的样式 */
 .filter-actions {
   display: flex;
-  gap: 10px;
+  gap: var(--space-3);
   justify-content: flex-end;
   align-items: flex-end;
   height: 100%;
@@ -986,17 +997,17 @@ export default {
 /* 针对小屏幕调整按钮样式 */
 @media (max-width: 768px) {
   .filter-buttons-col {
-    margin-top: 10px;
+    margin-top: var(--space-3);
   }
-  
+
   .filter-actions {
     justify-content: center;
-}
+  }
 
   /* 在小屏幕上，让按钮占据更多空间 */
   :deep(.el-button) {
-    padding: 10px 20px;
-  font-size: 14px;
+    padding: var(--space-3) var(--space-5);
+    font-size: 14px;
   }
 }
 
@@ -1016,38 +1027,37 @@ export default {
 }
 
 .records-card {
-  margin-bottom: 20px;
-  min-height: 800px; /* 确保卡片有足够的高度 */
+  margin-bottom: var(--space-5);
+  min-height: 800px;
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
+  margin-bottom: var(--space-4);
 }
 
 .card-actions {
   display: flex;
-  gap: 10px;
+  gap: var(--space-3);
 }
 
 .responsive-table {
   width: 100%;
-  min-height: 650px; /* 设置表格最小高度 */
+  min-height: 650px;
   overflow-x: auto;
   margin-bottom: 0;
 }
 
-
 .empty-block {
-  padding: 30px 0;
+  padding: var(--space-8) 0;
 }
 
 .loading-more {
   text-align: center;
-  margin: 20px 0;
-  color: #909399;
+  margin: var(--space-5) 0;
+  color: var(--color-text-tertiary);
 }
 
 .loading {
@@ -1065,7 +1075,7 @@ export default {
 
 .operation-buttons {
   display: flex;
-  gap: 10px;
+  gap: var(--space-3);
 }
 
 /* 表格容器简化样式 */
@@ -1073,7 +1083,7 @@ export default {
   position: relative;
   width: 100%;
   height: auto;
-  min-height: 700px; /* 确保表格容器有足够的高度 */
+  min-height: 700px;
   border-radius: 4px;
   overflow: hidden;
 }
@@ -1082,7 +1092,7 @@ export default {
 .load-more-row {
   height: 55px;
   text-align: center;
-  background-color: #f5f7fa;
+  background-color: var(--color-bg-secondary);
   line-height: 55px;
   cursor: pointer;
   display: flex;
@@ -1094,9 +1104,9 @@ export default {
 .loading-row {
   height: 55px;
   text-align: center;
-  background-color: #f5f7fa;
+  background-color: var(--color-bg-secondary);
   line-height: 55px;
-  color: #409EFF;
+  color: var(--color-accent);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -1106,9 +1116,9 @@ export default {
 .no-more-row {
   height: 55px;
   text-align: center;
-  background-color: #f5f7fa;
+  background-color: var(--color-bg-secondary);
   line-height: 55px;
-  color: #909399;
+  color: var(--color-text-tertiary);
   font-size: 14px;
   display: flex;
   justify-content: center;
@@ -1126,60 +1136,38 @@ export default {
 :deep(.el-table__body-wrapper) {
   overflow-y: auto;
   overflow-x: auto;
-  min-height: 600px; /* 设置表格主体最小高度 */
+  min-height: 600px;
 }
 
 /* Element Plus 表格样式覆盖 */
 :deep(.el-table) {
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-  margin-top: 15px;
+  margin-top: var(--space-4);
 }
 
-:deep(.el-table__header) {
-  background: linear-gradient(to bottom, #409EFF, #1E88E5) !important;
-}
-
-:deep(.el-table__header th.el-table__cell) {
-  background: linear-gradient(to bottom, #409EFF, #1E88E5) !important;
-  color: white !important;
-  font-weight: bold !important;
-  font-size: 15px !important;
-  height: 50px !important;
-  border-right: 1px solid rgba(255, 255, 255, 0.2) !important;
-  border-bottom: none !important;
-}
-
-:deep(.el-table__header th.el-table__cell .cell) {
-  color: white !important;
-  font-weight: bold !important;
-  text-align: center !important;
-  padding: 12px 0 !important;
-}
+/* Removed global unscoped gradient table header styles — now handled by global.css */
 
 :deep(.el-table__row) {
-  transition: all 0.3s;
+  transition: all var(--transition-base);
 }
 
 :deep(.el-table__row:hover) {
-  background-color: #f0f9ff !important;
-  transform: translateY(-2px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background-color: var(--color-accent-light) !important;
 }
 
 :deep(.el-table__row td) {
   padding: 12px 0;
-  border-bottom: 1px solid #ebeef5;
+  border-bottom: 1px solid var(--color-border);
 }
 
 /* 表格行交替颜色 */
 :deep(.el-table__row:nth-child(odd)) {
-  background-color: #fafafa;
+  background-color: var(--color-bg-secondary);
 }
 
 :deep(.el-table__row:nth-child(even)) {
-  background-color: #ffffff;
+  background-color: var(--color-bg-primary);
 }
 
 /* 确保表格内容居中对齐 */
@@ -1197,65 +1185,48 @@ export default {
 /* 表格标题样式 */
 .card-header h3 {
   font-size: 18px;
-  font-weight: bold;
-  color: #409EFF;
+  font-weight: 600;
+  color: var(--color-text-primary);
   margin: 0;
-  padding-bottom: 10px;
-  border-bottom: 2px solid #409EFF;
+  padding-bottom: var(--space-3);
+  border-bottom: 2px solid var(--color-accent);
   display: inline-block;
 }
 
 /* 修复Element Plus图片预览组件的z-index问题 */
 .el-image-viewer__wrapper {
-  z-index: 2147483647 !important; /* 使用最大可能的z-index值 */
+  z-index: 2147483647 !important;
   position: fixed !important;
 }
 
-/* 确保图片预览的遮罩层也在最上层 */
 .el-image-viewer__mask {
   z-index: 2147483646 !important;
   position: fixed !important;
 }
 
-/* 确保图片预览的操作按钮在最上层 */
 .el-image-viewer__btn {
   z-index: 2147483647 !important;
   position: fixed !important;
 }
 
-/* 确保图片预览的关闭按钮在最上层 */
 .el-image-viewer__close {
   z-index: 2147483647 !important;
   position: fixed !important;
 }
 
-/* 确保图片预览的图片在最上层 */
 .el-image-viewer__img {
   z-index: 2147483646 !important;
   position: relative !important;
 }
 
-/* 确保图片预览的操作栏在最上层 */
 .el-image-viewer__actions {
   z-index: 2147483647 !important;
   position: fixed !important;
 }
 
-/* 确保图片预览的缩放按钮在最上层 */
 .el-image-viewer__actions__inner {
   z-index: 2147483647 !important;
   position: relative !important;
-}
-
-/* 全局样式，确保表头样式能够正确显示 */
-.el-table__header th {
-  background: linear-gradient(to bottom, #409EFF, #1E88E5) !important;
-  color: white !important;
-}
-
-.el-table__header th .cell {
-  color: white !important;
-  font-weight: bold !important;
 }
 
 .quantity-range {
@@ -1280,13 +1251,13 @@ export default {
   right: 45px;
   top: 50%;
   transform: translateY(-50%);
-  color: #909399;
+  color: var(--color-text-tertiary);
   font-size: 14px;
   cursor: pointer;
   z-index: 10;
 }
 
 .clear-icon:hover {
-  color: #409EFF;
+  color: var(--color-accent);
 }
 </style>

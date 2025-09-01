@@ -14,7 +14,7 @@
         <el-card>
           <template #header>
             <div class="filter-header">
-              <span>筛选条件 <small style="color: #909399;"></small></span>
+              <span>筛选条件 <small style="color: var(--color-text-tertiary);"></small></span>
               <el-button type="primary" link @click="resetFilters">
                 <el-icon><refresh /></el-icon> 重置筛选
               </el-button>
@@ -528,23 +528,24 @@ export default {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background-color: #f5f5f5;
+  background-color: var(--color-bg-secondary);
 }
 
 .header {
-  background: linear-gradient(135deg, #409EFF 0%, #337ECC 100%);
-  color: white;
-  padding: 20px;
+  background-color: var(--color-bg-primary);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  padding: var(--space-5);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .header h1 {
   margin: 0;
-  font-size: 24px;
+  font-size: 18px;
   font-weight: 600;
+  color: var(--color-text-primary);
 }
 
 .back-button {
@@ -553,20 +554,24 @@ export default {
   align-items: center;
   gap: 5px;
   font-size: 14px;
-  background-color: rgba(255, 255, 255, 0.2);
-  padding: 8px 12px;
-  border-radius: 6px;
-  transition: all 0.3s ease;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: var(--color-text-secondary);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-bg-primary);
+  font-weight: 500;
 }
 
 .back-button:hover {
-  background-color: rgba(255, 255, 255, 0.3);
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+  background-color: var(--color-accent-light);
 }
 
 .content {
   flex: 1;
-  padding: 20px;
+  padding: var(--space-5);
   max-width: 1400px;
   margin: 0 auto;
   width: 100%;
@@ -574,7 +579,7 @@ export default {
 }
 
 .filter-section {
-  margin-bottom: 20px;
+  margin-bottom: var(--space-5);
 }
 
 .filter-header {
@@ -584,7 +589,7 @@ export default {
 }
 
 .stats-section {
-  margin-bottom: 20px;
+  margin-bottom: var(--space-5);
 }
 
 .stat-card {
@@ -592,23 +597,23 @@ export default {
 }
 
 .stat-content {
-  padding: 10px;
+  padding: var(--space-3);
 }
 
 .stat-number {
   font-size: 32px;
   font-weight: bold;
-  color: #409EFF;
+  color: var(--color-accent);
   margin-bottom: 5px;
 }
 
 .stat-label {
   font-size: 14px;
-  color: #666;
+  color: var(--color-text-secondary);
 }
 
 .table-section {
-  margin-bottom: 20px;
+  margin-bottom: var(--space-5);
 }
 
 .table-header {
@@ -618,12 +623,12 @@ export default {
 }
 
 .total-count {
-  color: #666;
+  color: var(--color-text-secondary);
   font-size: 14px;
 }
 
 .phone-text {
-  color: #999;
+  color: var(--color-text-tertiary);
   font-size: 12px;
 }
 
@@ -637,7 +642,7 @@ export default {
 .pagination-section {
   display: flex;
   justify-content: center;
-  margin-top: 20px;
+  margin-top: var(--space-5);
 }
 
 .detail-content {
@@ -657,19 +662,19 @@ export default {
 }
 
 .additional-data {
-  margin-top: 20px;
+  margin-top: var(--space-5);
 }
 
 .additional-data h4 {
-  margin: 0 0 10px 0;
-  color: #333;
+  margin: 0 0 var(--space-3) 0;
+  color: var(--color-text-primary);
 }
 
 .footer {
-  background-color: #f5f5f5;
-  padding: 15px;
+  background-color: var(--color-bg-secondary);
+  padding: var(--space-4);
   text-align: center;
-  color: #666;
-  border-top: 1px solid #e0e0e0;
+  color: var(--color-text-secondary);
+  border-top: 1px solid var(--color-border);
 }
 </style> 

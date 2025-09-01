@@ -839,16 +839,7 @@ export default {
 </script>
 
 <style>
-/* 全局样式，确保表头样式能够正确显示 */
-.el-table__header th {
-  background: linear-gradient(to bottom, #409EFF, #1E88E5) !important;
-  color: white !important;
-}
-
-.el-table__header th .cell {
-  color: white !important;
-  font-weight: bold !important;
-}
+/* Removed global unscoped gradient table header styles — now handled by global.css */
 </style>
 
 <style scoped>
@@ -858,10 +849,11 @@ export default {
 }
 
 .location-info-cell span {
-  color: #606266;
+  color: var(--color-text-secondary);
   font-size: 13px;
   line-height: 1.4;
 }
+
 .records-container {
   display: flex;
   flex-direction: column;
@@ -869,40 +861,20 @@ export default {
 }
 
 .header {
-  /* 修改背景渐变，实现两端深中间浅的效果 */
-  background: linear-gradient(to right, #1976d2, #42a5f5, #1976d2);
-  color: white;
-  padding: 20px;
+  background-color: var(--color-bg-primary);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  padding: var(--space-4) var(--space-5);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-radius: 0 0 20px 20px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  margin-bottom: 20px;
-  position: relative;
-  overflow: hidden;
-}
-
-.header::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  /* 调整覆盖层渐变，增强立体感 */
-  background: linear-gradient(45deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 50%, rgba(255, 255, 255, 0) 100%);
-  z-index: 1;
 }
 
 .header h1 {
-  position: relative;
-  z-index: 2;
   margin: 0;
-  font-size: 24px;
+  font-size: 18px;
   font-weight: 600;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  letter-spacing: 1px;
+  color: var(--color-text-primary);
 }
 
 .back-button, .home-link {
@@ -910,77 +882,71 @@ export default {
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: 16px;
-  position: relative;
-  z-index: 2;
-  background-color: rgba(255, 255, 255, 0.25);
-  padding: 8px 14px;
-  border-radius: 8px;
-  transition: all 0.3s ease;
-  border: 1.5px solid rgba(255, 255, 255, 0.6);
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  font-weight: 600;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-  letter-spacing: 0.3px;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-bg-primary);
+  font-weight: 500;
 }
 
 .back-button:hover, .home-link:hover {
-  background-color: rgba(255, 255, 255, 0.35);
-  transform: translateY(-2px);
-  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.25);
-  border-color: rgba(255, 255, 255, 0.8);
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+  background-color: var(--color-accent-light);
 }
 
 .content {
   flex: 1;
-  padding: 20px 30px; /* 减少上下内边距 */
-  max-width: 90%; /* 从固定的1200px改为相对宽度 */
+  padding: var(--space-5) var(--space-6);
+  max-width: 90%;
   margin: 0 auto;
   width: 100%;
   box-sizing: border-box;
 }
 
 .unit-info {
-  margin-bottom: 15px; /* 减少下边距 */
+  margin-bottom: var(--space-4);
   text-align: center;
 }
 
 .unit-info h2 {
-  color: #333;
+  color: var(--color-text-primary);
   margin: 0;
 }
 
 .actions {
   display: flex;
   justify-content: flex-end;
-  margin-bottom: 15px; /* 减少下边距 */
-  gap: 10px;
+  margin-bottom: var(--space-4);
+  gap: var(--space-3);
 }
 
 .filter-card {
-  margin-bottom: 15px; /* 减少下边距 */
+  margin-bottom: var(--space-4);
 }
 
 .filter-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px; /* 减小下边距 */
+  margin-bottom: var(--space-4);
 }
 
 .filter-header h3 {
   margin: 0;
-  color: #333;
+  color: var(--color-text-primary);
+  font-size: 15px;
 }
 
 .filter-form-container {
-  transition: all 0.3s ease;
+  transition: all var(--transition-slow);
 }
 
 .filter-form {
-  margin-top: 15px;
+  margin-top: var(--space-4);
 }
 
 .quantity-range {
@@ -1005,19 +971,19 @@ export default {
   right: 45px;
   top: 50%;
   transform: translateY(-50%);
-  color: #909399;
+  color: var(--color-text-tertiary);
   font-size: 14px;
   cursor: pointer;
   z-index: 10;
 }
 
 .clear-icon:hover {
-  color: #409EFF;
+  color: var(--color-accent);
 }
 
 .filter-actions {
   display: flex;
-  gap: 10px;
+  gap: var(--space-3);
   justify-content: flex-end;
   align-items: flex-end;
   height: 100%;
@@ -1030,40 +996,32 @@ export default {
 }
 
 .records-card {
-  margin-top: 15px; /* 减少上边距 */
-  border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s;
-}
-
-.records-card:hover {
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  margin-top: var(--space-4);
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px; /* 减小下边距 */
+  margin-bottom: var(--space-4);
 }
 
 .card-header h3 {
   margin: 0;
-  color: #333;
+  color: var(--color-text-primary);
 }
 
 .card-actions {
   display: flex;
-  gap: 10px;
+  gap: var(--space-3);
 }
 
 .record-image {
   width: 80px;
   height: 80px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   object-fit: cover;
 }
-
 
 .image-error {
   display: flex;
@@ -1071,8 +1029,8 @@ export default {
   align-items: center;
   width: 80px;
   height: 80px;
-  background-color: #f5f7fa;
-  color: #909399;
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-tertiary);
   font-size: 20px;
 }
 
@@ -1099,94 +1057,42 @@ export default {
 }
 
 @keyframes rotating {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .empty-block {
-  padding: 30px;
+  padding: var(--space-8);
   text-align: center;
 }
 
 /* 表格标题样式 */
 .table-title {
-  font-size: 18px;
-  font-weight: bold;
-  color: #409EFF;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text-primary);
   margin: 0;
-  padding-bottom: 10px;
-  border-bottom: 2px solid #409EFF;
-  display: inline-block;
-}
-
-/* 表格卡片样式 */
-.records-card {
-  margin-top: 15px; /* 减少上边距 */
-  border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s;
-}
-
-.records-card:hover {
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
 }
 
 /* Element Plus 表格样式覆盖 */
 :deep(.el-table) {
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-  margin-top: 15px;
-}
-
-:deep(.el-table__header) {
-  background: linear-gradient(to bottom, #409EFF, #1E88E5) !important;
-}
-
-:deep(.el-table__header th.el-table__cell) {
-  background: linear-gradient(to bottom, #409EFF, #1E88E5) !important;
-  color: white !important;
-  font-weight: bold !important;
-  font-size: 15px !important;
-  height: 50px !important;
-  border-right: 1px solid rgba(255, 255, 255, 0.2) !important;
-  border-bottom: none !important;
-}
-
-:deep(.el-table__header th.el-table__cell .cell) {
-  color: white !important;
-  font-weight: bold !important;
-  text-align: center !important;
-  padding: 12px 0 !important;
+  margin-top: var(--space-4);
 }
 
 :deep(.el-table__row) {
-  transition: all 0.3s;
-  height: 60px; /* 添加默认表格行高 */
+  transition: background-color var(--transition-fast);
+  height: 60px;
 }
 
 :deep(.el-table__row:hover) {
-  background-color: #f0f9ff !important;
-  transform: translateY(-2px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background-color: var(--color-accent-light) !important;
 }
 
 :deep(.el-table__row td) {
   padding: 14px 0;
-  border-bottom: 1px solid #ebeef5;
-}
-
-/* 表格行交替颜色 */
-:deep(.el-table__row:nth-child(odd)) {
-  background-color: #fafafa;
-}
-
-:deep(.el-table__row:nth-child(even)) {
-  background-color: #ffffff;
+  border-bottom: 1px solid var(--color-border);
 }
 
 /* 确保表格内容居中对齐 */
@@ -1196,8 +1102,8 @@ export default {
 
 /* 记录限制提示样式 */
 .record-limit-tip {
-  margin-top: 15px;
-  border-radius: 4px;
+  margin-top: var(--space-4);
+  border-radius: var(--radius-sm);
   overflow: hidden;
 }
 
@@ -1215,107 +1121,95 @@ export default {
 @media (max-width: 1200px) {
   .content {
     max-width: 100%;
-    padding: 20px;
+    padding: var(--space-5);
   }
 }
 
 @media (max-width: 768px) {
   .header {
     flex-direction: column;
-    gap: 10px;
+    gap: var(--space-3);
     text-align: center;
   }
-  
+
   .content {
-    padding: 15px;
+    padding: var(--space-4);
   }
-  
+
   .card-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 10px;
+    gap: var(--space-3);
   }
-  
+
   .card-actions {
     width: 100%;
     justify-content: space-between;
   }
-  
+
   .mobile-hidden {
     display: none;
   }
-  
+
   .operation-buttons {
     flex-direction: column;
     justify-content: center;
   }
-  
+
   .action-buttons {
     flex-direction: column;
     justify-content: space-between;
   }
-  
+
   .action-buttons .el-button {
     flex: 1;
     justify-content: center;
   }
-  
+
   .filter-header {
     flex-direction: column;
     align-items: stretch;
-    gap: 10px;
+    gap: var(--space-3);
   }
-  
+
   .header-left {
     width: 100%;
   }
-  
-  .action-buttons {
-    width: 100%;
-    justify-content: space-between;
-  }
-  
-  .action-buttons .el-button {
-    flex: 1;
-    justify-content: center;
-  }
-  
+
   /* 表头在移动端的样式调整 */
   :deep(.el-table__header th.el-table__cell) {
-    font-size: 14px !important;
+    font-size: 12px !important;
     padding: 8px 0 !important;
   }
-  
+
   /* 表格标题在移动端的样式 */
   .table-title {
-    font-size: 16px;
-    padding-bottom: 8px;
+    font-size: 14px;
   }
-  
+
   /* 在移动设备上调整表格的高度 */
   .responsive-table {
-    max-height: 80vh !important; /* 增加移动设备上的高度 */
+    max-height: 80vh !important;
   }
-  
+
   /* 表格行在移动设备上高度稍小 */
   :deep(.el-table__row) {
     height: 50px;
   }
-  
+
   :deep(.el-table__row td) {
     padding: 10px 0;
   }
-  
-  /* 让某些列在移动设备上自动调整宽度 */
+
   :deep(.el-table__cell.is-hidden-mobile) {
     display: none !important;
   }
-  
+
   .filter-buttons-col {
-    margin-top: 15px;
+    margin-top: var(--space-4);
     justify-content: flex-start;
   }
-  
+
   .filter-actions {
     justify-content: flex-start;
   }
@@ -1326,10 +1220,9 @@ export default {
   .content {
     max-width: 85%;
   }
-  
-  /* 大屏幕上行高更高 */
+
   :deep(.el-table__row) {
-    height: 70px; /* 增加大屏幕上的行高 */
+    height: 70px;
   }
 }
 
@@ -1348,12 +1241,12 @@ export default {
 
 /* 表格分割线样式 */
 :deep(.el-table--border .el-table__cell) {
-  border-right: 1px solid #EBEEF5;
+  border-right: 1px solid var(--color-border);
 }
 
 :deep(.el-table--border) {
-  border: 1px solid #EBEEF5;
-  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
 }
 
 /* 确保表格图片列内容居中 */
@@ -1368,15 +1261,15 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 10px;
-  color: #909399;
+  padding: var(--space-3);
+  color: var(--color-text-tertiary);
 }
 
 /* 添加加载更多按钮样式 */
 .load-more-row {
   height: 55px;
   text-align: center;
-  background-color: #f5f7fa;
+  background-color: var(--color-bg-secondary);
   line-height: 55px;
   cursor: pointer;
   display: flex;
@@ -1388,9 +1281,9 @@ export default {
 .loading-row {
   height: 55px;
   text-align: center;
-  background-color: #f5f7fa;
+  background-color: var(--color-bg-secondary);
   line-height: 55px;
-  color: #409EFF;
+  color: var(--color-accent);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -1400,9 +1293,9 @@ export default {
 .no-more-row {
   height: 55px;
   text-align: center;
-  background-color: #f5f7fa;
+  background-color: var(--color-bg-secondary);
   line-height: 55px;
-  color: #909399;
+  color: var(--color-text-tertiary);
   font-size: 14px;
   display: flex;
   justify-content: center;

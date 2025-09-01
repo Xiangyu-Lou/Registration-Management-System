@@ -5,7 +5,7 @@
     </div>
     <div class="content">
       <h2>请选择您的单位</h2>
-      <div class="units-grid">
+      <div class="units-grid stagger-in">
         <el-card
           v-for="unit in units"
           :key="unit.id"
@@ -82,15 +82,16 @@ export default {
 }
 
 .header {
-  background-color: #409EFF;
-  color: white;
-  padding: 20px;
+  background-color: var(--color-bg-primary);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  padding: var(--space-5);
   text-align: center;
 }
 
 .content {
   flex: 1;
-  padding: 30px;
+  padding: var(--space-8);
   max-width: 1200px;
   margin: 0 auto;
   width: 100%;
@@ -99,14 +100,14 @@ export default {
 
 h2 {
   text-align: center;
-  margin-bottom: 30px;
-  color: #333;
+  margin-bottom: var(--space-8);
+  color: var(--color-text-primary);
 }
 
 .units-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 20px;
+  gap: var(--space-5);
 }
 
 .unit-card {
@@ -115,24 +116,27 @@ h2 {
   justify-content: center;
   align-items: center;
   cursor: pointer;
-  transition: transform 0.3s;
+  transition: all var(--transition-base);
+  box-shadow: var(--shadow-xs);
 }
 
 .unit-card:hover {
-  transform: translateY(-5px);
+  transform: translateY(-2px);
+  border-color: var(--color-accent);
+  box-shadow: var(--shadow-sm);
 }
 
 .unit-name {
   font-size: 18px;
   font-weight: bold;
-  color: #333;
+  color: var(--color-text-primary);
   text-align: center;
 }
 
 .footer {
-  background-color: #f5f5f5;
-  padding: 15px;
+  background-color: var(--color-bg-secondary);
+  padding: var(--space-4);
   text-align: center;
-  color: #666;
+  color: var(--color-text-secondary);
 }
 </style>

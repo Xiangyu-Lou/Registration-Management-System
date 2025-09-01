@@ -1092,17 +1092,17 @@ export default {
 <style scoped>
 /* 位置信息显示样式 */
 .location-display {
-  background-color: #f5f7fa;
-  border: 1px solid #e4e7ed;
-  border-radius: 6px;
-  padding: 12px;
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
 }
 
 .location-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
 }
 
 .location-item:last-child {
@@ -1110,7 +1110,7 @@ export default {
 }
 
 .location-item span {
-  color: #606266;
+  color: var(--color-text-secondary);
   font-size: 14px;
 }
 
@@ -1122,27 +1122,28 @@ export default {
 .location-controls {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
   flex-wrap: wrap;
 }
 
 .location-tip {
-  color: #909399;
+  color: var(--color-text-tertiary);
   font-size: 12px;
 }
 
 .location-info {
-  background-color: #f5f7fa;
-  border: 1px solid #e4e7ed;
-  border-radius: 6px;
-  padding: 12px;
-  margin-top: 8px;
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  margin-top: var(--space-2);
 }
 
 .location-error {
-  margin-top: 8px;
+  margin-top: var(--space-2);
 }
+
 .edit-record-container {
   display: flex;
   flex-direction: column;
@@ -1150,38 +1151,20 @@ export default {
 }
 
 .header {
-  background: linear-gradient(135deg, #42a5f5, #1976d2);
-  color: white;
-  padding: 20px;
+  background-color: var(--color-bg-primary);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  padding: var(--space-4) var(--space-5);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-radius: 0 0 20px 20px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  margin-bottom: 20px;
-  position: relative;
-  overflow: hidden;
-}
-
-.header::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(45deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 100%);
-  z-index: 1;
 }
 
 .header h1 {
-  position: relative;
-  z-index: 2;
   margin: 0;
-  font-size: 24px;
+  font-size: 18px;
   font-weight: 600;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  letter-spacing: 1px;
+  color: var(--color-text-primary);
 }
 
 .back-button {
@@ -1190,26 +1173,19 @@ export default {
   align-items: center;
   gap: 5px;
   font-size: 14px;
-  position: relative;
-  z-index: 2;
-  background-color: rgba(255, 255, 255, 0.25);
-  padding: 8px 14px;
-  border-radius: 8px;
-  transition: all 0.3s ease;
-  border: 1.5px solid rgba(255, 255, 255, 0.6);
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  font-weight: 600;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-  letter-spacing: 0.3px;
+  color: var(--color-text-secondary);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-bg-primary);
+  font-weight: 500;
 }
 
 .back-button:hover {
-  background-color: rgba(255, 255, 255, 0.35);
-  transform: translateY(-2px);
-  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.25);
-  border-color: rgba(255, 255, 255, 0.8);
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+  background-color: var(--color-accent-light);
 }
 
 .supervisor-back-button {
@@ -1218,7 +1194,7 @@ export default {
 
 .content {
   flex: 1;
-  padding: 30px;
+  padding: var(--space-6);
   max-width: 800px;
   margin: 0 auto;
   width: 100%;
@@ -1227,21 +1203,22 @@ export default {
 
 .form-header {
   text-align: center;
-  margin-bottom: 20px;
+  margin-bottom: var(--space-5);
 }
 
 .form-header h2 {
-  color: #333;
-  border-bottom: 2px solid #409EFF;
+  color: var(--color-text-primary);
+  border-bottom: 2px solid var(--color-accent);
   display: inline-block;
   padding-bottom: 5px;
 }
 
 .record-form {
-  background-color: #f9f9f9;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  background-color: var(--color-bg-primary);
+  padding: var(--space-5);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-xs);
 }
 
 .record-form :deep(.el-input__wrapper) {
@@ -1256,8 +1233,8 @@ export default {
 }
 
 .record-form :deep(.el-textarea__inner) {
-  height: auto !important; /* 让textarea可以自适应行数设置 */
-  min-height: 32px; /* 最小高度与单行输入框一致 */
+  height: auto !important;
+  min-height: 32px;
 }
 
 .waste-photo-uploader {
@@ -1266,35 +1243,35 @@ export default {
 
 .photo-tip, .time-tip {
   font-size: 12px;
-  color: #999;
+  color: var(--color-text-tertiary);
   margin-top: 5px;
 }
 
 .footer {
-  background-color: #f5f5f5;
-  padding: 15px;
+  background-color: var(--color-bg-secondary);
+  padding: var(--space-4);
   text-align: center;
-  color: #666;
+  color: var(--color-text-tertiary);
 }
 
 .upload-warning {
-  margin-bottom: 10px;
+  margin-bottom: var(--space-3);
 }
 
 .upload-progress {
   text-align: center;
-  padding: 10px;
+  padding: var(--space-3);
 }
 
 .upload-status {
-  margin-top: 10px;
-  color: #606266;
+  margin-top: var(--space-3);
+  color: var(--color-text-secondary);
   font-size: 14px;
 }
 
 .form-tip {
   font-size: 12px;
-  color: #909399;
+  color: var(--color-text-tertiary);
   margin-top: 5px;
   line-height: 1.2;
 }

@@ -191,68 +191,78 @@ export default {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background-color: #f0f2f5;
-  padding: 15px;
+  background-color: var(--color-bg-primary);
+  padding: var(--space-4);
 }
 
 .login-card {
   width: 400px;
-  padding: 30px;
-  background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: var(--space-10);
+  background-color: var(--color-bg-primary);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+  animation: fadeInUp var(--transition-slow) both;
 }
 
 .login-header {
   text-align: center;
-  margin-bottom: 30px;
+  margin-bottom: var(--space-8);
 }
 
 .login-header h1 {
   font-size: 24px;
-  color: #409EFF;
-  margin-bottom: 10px;
+  color: var(--color-text-primary);
+  font-weight: 700;
+  margin-bottom: var(--space-2);
 }
 
 .login-header h2 {
-  font-size: 18px;
-  color: #555;
+  font-size: 14px;
+  color: var(--color-text-tertiary);
   font-weight: normal;
 }
 
 .login-form {
-  margin-top: 20px;
+  margin-top: var(--space-5);
+}
+
+.login-form :deep(.el-button--primary) {
+  height: 44px;
+  font-size: 15px;
+  font-weight: 500;
 }
 
 .login-error {
-  color: #f56c6c;
+  color: var(--color-danger);
   text-align: center;
-  margin-top: 15px;
+  margin-top: var(--space-4);
   font-size: 14px;
 }
 
 .login-notice {
-  margin-bottom: 15px;
+  margin-bottom: var(--space-4);
 }
 
 /* 移动端适配 */
 @media screen and (max-width: 480px) {
   .login-card {
     width: 100%;
-    padding: 20px;
+    padding: var(--space-6);
     box-shadow: none;
+    border: none;
   }
-  
+
   .login-header h1 {
     font-size: 20px;
   }
-  
+
   .login-header h2 {
-    font-size: 16px;
+    font-size: 13px;
   }
-  
+
   .el-form-item {
-    margin-bottom: 15px;
+    margin-bottom: var(--space-4);
   }
 }
 </style>

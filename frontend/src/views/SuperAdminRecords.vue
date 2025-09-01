@@ -730,33 +730,30 @@ export default {
 }
 
 .header {
-  background: linear-gradient(to right, #1976d2, #42a5f5, #1976d2);
-  color: white;
-  padding: 20px;
+  background-color: var(--color-bg-primary);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  padding: var(--space-5);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-radius: 0 0 20px 20px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  margin-bottom: 20px;
 }
 
 .header h1 {
   margin: 0;
-  font-size: 24px;
+  font-size: 18px;
   font-weight: 600;
+  color: var(--color-text-primary);
 }
-
-
 
 .header-actions {
   display: flex;
-  gap: 10px;
+  gap: var(--space-3);
 }
 
 .content {
   flex: 1;
-  padding: 0 20px 20px 20px;
+  padding: 0 var(--space-5) var(--space-5) var(--space-5);
   max-width: 1400px;
   margin: 0 auto;
   width: 100%;
@@ -764,7 +761,7 @@ export default {
 }
 
 .filter-card {
-  margin-bottom: 20px;
+  margin-bottom: var(--space-5);
 }
 
 .records-card {
@@ -779,7 +776,7 @@ export default {
 
 .card-actions {
   display: flex;
-  gap: 10px;
+  gap: var(--space-3);
 }
 
 .filter-form {
@@ -788,13 +785,12 @@ export default {
 
 .filter-actions {
   display: flex;
-  gap: 10px;
+  gap: var(--space-3);
   justify-content: flex-end;
   align-items: flex-end;
   height: 100%;
   margin-top: 4px;
 }
-
 
 .operation-buttons {
   display: flex;
@@ -804,16 +800,16 @@ export default {
 
 .empty-state {
   text-align: center;
-  padding: 40px;
+  padding: var(--space-8);
 }
 
 /* 加载更多相关样式 */
 .loading-row {
   height: 55px;
   text-align: center;
-  background-color: #f5f7fa;
+  background-color: var(--color-bg-secondary);
   line-height: 55px;
-  color: #409EFF;
+  color: var(--color-accent);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -822,7 +818,7 @@ export default {
 .load-more-row {
   height: 55px;
   text-align: center;
-  background-color: #f5f7fa;
+  background-color: var(--color-bg-secondary);
   line-height: 55px;
   cursor: pointer;
   display: flex;
@@ -833,9 +829,9 @@ export default {
 .no-more-row {
   height: 55px;
   text-align: center;
-  background-color: #f5f7fa;
+  background-color: var(--color-bg-secondary);
   line-height: 55px;
-  color: #909399;
+  color: var(--color-text-tertiary);
   font-size: 14px;
   display: flex;
   justify-content: center;
@@ -860,18 +856,18 @@ export default {
   .filter-actions {
     justify-content: center;
   }
-  
+
   .card-actions {
     flex-wrap: wrap;
     gap: 5px;
   }
-  
+
   .header {
-    padding: 15px;
+    padding: var(--space-4);
   }
-  
+
   .header h1 {
-    font-size: 18px;
+    font-size: 16px;
   }
 }
 </style> 

@@ -1,5 +1,49 @@
 # Registration-Management-System Changelog
 
+## 2025-09-01
+
+### 🎨 前端 Clean Minimal UI 全面升级 (Clean Minimal UI Overhaul)
+
+*   **设计令牌系统**:
+    *   在 `global.css` 中建立完整的 CSS 自定义属性体系，包括品牌色 `#2563eb`、中性灰色系、语义色、阴影、圆角、间距和过渡时间
+    *   通过 CSS 变量覆盖 Element Plus 主题，所有组件自动继承新配色
+
+*   **全局动画系统**:
+    *   新增 `fadeInUp` 入场动画、`.animate-in` 单元素淡入、`.stagger-in` 子元素交错动画
+    *   `App.vue` 添加 `page-fade` 路由切换过渡动画（进入 300ms / 离开 150ms）
+    *   所有动画支持 `prefers-reduced-motion` 无障碍回退
+
+*   **全局样式重置**:
+    *   表格头部：去掉蓝色渐变，改为浅灰背景 + 大写字母间距
+    *   卡片：细边框 + 极轻阴影，替代重阴影
+    *   对话框：去掉渐变头部，改为白色背景 + 底部边框
+    *   删除 `RecordsList.vue` 中泄漏全局渐变表头样式的 unscoped `<style>` 块
+
+*   **页面头部统一改造（16个页面）**:
+    *   去掉所有蓝色渐变背景（`linear-gradient`）和圆角底部（`border-radius: 0 0 20px 20px`）
+    *   改为白色背景 + 底部细边框，深色标题文字
+    *   操作按钮从毛玻璃风格（`backdrop-filter: blur`）改为 ghost 风格（细边框 + hover 变品牌色）
+
+*   **AppHeader 组件**:
+    *   从纯蓝背景改为白色 + 底部边框，sticky 定位
+    *   标签改为药丸形浅灰 badge，按钮改为灰色文字 ghost 风格
+    *   反馈对话框去掉渐变头部
+
+*   **登录页面**:
+    *   纯白背景，卡片使用极轻阴影 + 细边框 + 12px 圆角
+    *   标题改为深色 700 字重，添加 `fadeInUp` 入场动画
+
+*   **单位选择页面**:
+    *   卡片网格添加 `.stagger-in` 交错入场动画
+    *   卡片 hover 时边框变品牌色 + 轻微上浮
+
+*   **移动端适配优化**:
+    *   `responsive.css` 中硬编码值替换为设计令牌引用
+    *   768px 断点下自动缩小间距令牌
+
+*   **后端调试**:
+    *   `backend/app.js` 添加临时健康检查诊断信息
+
 ## 2025-08-29
 
 ### 🚀 Vercel 部署适配 (Vercel Deployment Adaptation)

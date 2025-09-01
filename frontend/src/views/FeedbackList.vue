@@ -316,26 +316,25 @@ export default {
 
 <style scoped>
 .feedback-list-container {
-  background-color: #f5f5f5;
+  background-color: var(--color-bg-secondary);
   min-height: 100vh;
 }
 
 .header {
-  background: linear-gradient(to right, #1976d2, #42a5f5, #1976d2);
-  color: white;
-  padding: 20px;
+  background-color: var(--color-bg-primary);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  padding: var(--space-5);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-radius: 0 0 20px 20px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  margin-bottom: 20px;
 }
 
 .header h1 {
   margin: 0;
-  font-size: 24px;
+  font-size: 18px;
   font-weight: 600;
+  color: var(--color-text-primary);
 }
 
 .back-button {
@@ -344,29 +343,34 @@ export default {
   align-items: center;
   gap: 5px;
   font-size: 14px;
-  background-color: rgba(255, 255, 255, 0.25);
-  padding: 8px 14px;
-  border-radius: 8px;
-  transition: all 0.3s ease;
+  color: var(--color-text-secondary);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-bg-primary);
+  font-weight: 500;
 }
 
 .back-button:hover {
-  background-color: rgba(255, 255, 255, 0.35);
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+  background-color: var(--color-accent-light);
 }
 
 .header-actions {
   display: flex;
-  gap: 10px;
+  gap: var(--space-3);
 }
 
 .content {
-  padding: 0 20px 20px 20px;
+  padding: 0 var(--space-5) var(--space-5) var(--space-5);
   max-width: 1200px;
   margin: 0 auto;
 }
 
 .feedback-card {
-  margin-bottom: 20px;
+  margin-bottom: var(--space-5);
 }
 
 .card-header {
@@ -383,16 +387,16 @@ export default {
 }
 
 .feedback-item {
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
   padding: 16px;
-  background-color: #fff;
+  background-color: var(--color-bg-primary);
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all var(--transition-base);
 }
 
 .feedback-item:hover {
-  border-color: #409eff;
+  border-color: var(--color-accent);
   box-shadow: 0 2px 8px rgba(64, 158, 255, 0.2);
 }
 
@@ -406,7 +410,7 @@ export default {
 .feedback-title {
   font-size: 16px;
   font-weight: 600;
-  color: #303133;
+  color: var(--color-text-primary);
   flex: 1;
   margin-right: 16px;
 }
@@ -418,7 +422,7 @@ export default {
 }
 
 .feedback-description {
-  color: #606266;
+  color: var(--color-text-secondary);
   line-height: 1.5;
   margin-bottom: 12px;
 }
@@ -430,7 +434,7 @@ export default {
 }
 
 .feedback-time {
-  color: #909399;
+  color: var(--color-text-tertiary);
   font-size: 14px;
 }
 
@@ -453,23 +457,23 @@ export default {
 .images-section h4,
 .reply-section h4 {
   margin: 0 0 12px 0;
-  color: #303133;
+  color: var(--color-text-primary);
 }
 
 .description-content,
 .reply-content {
-  background-color: #f5f7fa;
+  background-color: var(--color-bg-secondary);
   padding: 16px;
   border-radius: 4px;
   line-height: 1.6;
-  color: #606266;
+  color: var(--color-text-secondary);
 }
 
 
 
 .reply-meta {
   margin-top: 8px;
-  color: #909399;
+  color: var(--color-text-tertiary);
   font-size: 14px;
   text-align: right;
 }
@@ -477,30 +481,30 @@ export default {
 /* 移动端适配 */
 @media screen and (max-width: 768px) {
   .content {
-    padding: 0 10px 20px 10px;
+    padding: 0 var(--space-3) var(--space-5) var(--space-3);
   }
-  
+
   .feedback-header {
     flex-direction: column;
     gap: 8px;
     align-items: flex-start;
   }
-  
+
   .feedback-meta {
     flex-wrap: wrap;
   }
-  
+
   .feedback-footer {
     flex-direction: column;
     gap: 8px;
     align-items: flex-start;
   }
-  
+
   .feedback-actions {
     width: 100%;
     justify-content: flex-end;
   }
-  
+
   :deep(.el-dialog) {
     width: 95% !important;
     margin: 5vh auto;

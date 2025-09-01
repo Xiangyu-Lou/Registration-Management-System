@@ -327,7 +327,7 @@ export default {
 }
 
 .table-card {
-  margin-bottom: 20px;
+  margin-bottom: var(--space-5);
 }
 
 .table-header {
@@ -335,30 +335,31 @@ export default {
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: var(--space-3);
 }
 
 .table-title {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-3);
 }
 
 .table-title h3 {
   margin: 0;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
+  color: var(--color-text-primary);
 }
 
 .count-badge {
-  color: #909399;
-  font-size: 14px;
+  color: var(--color-text-tertiary);
+  font-size: 13px;
 }
 
 .table-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-3);
   flex-wrap: wrap;
 }
 
@@ -369,7 +370,7 @@ export default {
 .action-buttons {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   flex-wrap: wrap;
   justify-content: center;
 }
@@ -377,9 +378,9 @@ export default {
 .pagination-wrapper {
   display: flex;
   justify-content: center;
-  margin-top: 20px;
-  padding-top: 20px;
-  border-top: 1px solid #ebeef5;
+  margin-top: var(--space-5);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--color-border);
 }
 
 /* 响应式样式 */
@@ -388,11 +389,11 @@ export default {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .table-actions {
     justify-content: center;
   }
-  
+
   .pagination-wrapper {
     overflow-x: auto;
   }

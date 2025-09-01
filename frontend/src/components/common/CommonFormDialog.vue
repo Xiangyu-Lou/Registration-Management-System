@@ -404,12 +404,12 @@ export default {
 .dialog-footer {
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
+  gap: var(--space-3);
 }
 
 .field-tip {
   font-size: 12px;
-  color: #909399;
+  color: var(--color-text-tertiary);
   margin-top: 4px;
   line-height: 1.4;
 }
@@ -419,7 +419,7 @@ export default {
   .dialog-footer {
     flex-direction: column-reverse;
   }
-  
+
   .dialog-footer .el-button {
     width: 100%;
     margin: 0;

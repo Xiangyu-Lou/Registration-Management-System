@@ -260,7 +260,7 @@ export default {
   justify-content: center;
   gap: 8px;
   height: 100%;
-  color: #909399;
+  color: var(--color-text-tertiary);
   font-size: 12px;
 }
 
