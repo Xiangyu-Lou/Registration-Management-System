@@ -288,8 +288,13 @@ export default {
 }
 
 .company-tag {
-  background-color: #fef3c7;
-  color: #92400e;
+  background-color: var(--color-amber-light);
+  color: var(--color-amber);
+}
+
+.unit-tag {
+  background-color: var(--color-teal-light);
+  color: var(--color-teal);
 }
 
 .feedback-button,

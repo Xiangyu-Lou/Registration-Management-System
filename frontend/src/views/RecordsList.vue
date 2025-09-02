@@ -900,8 +900,8 @@ export default {
 
 .content {
   flex: 1;
-  padding: var(--space-5) var(--space-6);
-  max-width: 90%;
+  padding: var(--space-5);
+  max-width: 1400px;
   margin: 0 auto;
   width: 100%;
   box-sizing: border-box;

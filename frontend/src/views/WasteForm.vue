@@ -758,7 +758,7 @@ export default {
 
 .content {
   flex: 1;
-  padding: var(--space-4);
+  padding: var(--space-5);
   max-width: 100%;
   margin: 0 auto;
   width: 100%;

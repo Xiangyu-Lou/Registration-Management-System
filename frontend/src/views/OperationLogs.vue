@@ -74,7 +74,7 @@
       <div class="stats-section">
         <el-row :gutter="16">
           <el-col :span="6">
-            <el-card class="stat-card">
+            <el-card class="stat-card stat-login">
               <div class="stat-content">
                 <div class="stat-number">{{ totalStats.login || 0 }}</div>
                 <div class="stat-label">登录操作</div>
@@ -82,7 +82,7 @@
             </el-card>
           </el-col>
           <el-col :span="6">
-            <el-card class="stat-card">
+            <el-card class="stat-card stat-create">
               <div class="stat-content">
                 <div class="stat-number">{{ totalStats.create || 0 }}</div>
                 <div class="stat-label">创建操作</div>
@@ -90,7 +90,7 @@
             </el-card>
           </el-col>
           <el-col :span="6">
-            <el-card class="stat-card">
+            <el-card class="stat-card stat-update">
               <div class="stat-content">
                 <div class="stat-number">{{ totalStats.update || 0 }}</div>
                 <div class="stat-label">更新操作</div>
@@ -98,7 +98,7 @@
             </el-card>
           </el-col>
           <el-col :span="6">
-            <el-card class="stat-card">
+            <el-card class="stat-card stat-delete">
               <div class="stat-content">
                 <div class="stat-number">{{ totalStats.delete || 0 }}</div>
                 <div class="stat-label">删除操作</div>
@@ -535,7 +535,7 @@ export default {
   background-color: var(--color-bg-primary);
   border-bottom: 1px solid var(--color-border);
   color: var(--color-text-primary);
-  padding: var(--space-5);
+  padding: var(--space-4) var(--space-5);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -594,7 +594,19 @@ export default {
 
 .stat-card {
   text-align: center;
+  border-left: 3px solid var(--color-border);
+  transition: all var(--transition-base);
 }
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.stat-login { border-left-color: var(--color-accent); }
+.stat-create { border-left-color: var(--color-success); }
+.stat-update { border-left-color: var(--color-amber); }
+.stat-delete { border-left-color: var(--color-danger); }
 
 .stat-content {
   padding: var(--space-3);
@@ -603,9 +615,14 @@ export default {
 .stat-number {
   font-size: 32px;
   font-weight: bold;
-  color: var(--color-accent);
+  color: var(--color-text-primary);
   margin-bottom: 5px;
 }
+
+.stat-login .stat-number { color: var(--color-accent); }
+.stat-create .stat-number { color: var(--color-success); }
+.stat-update .stat-number { color: var(--color-amber); }
+.stat-delete .stat-number { color: var(--color-danger); }
 
 .stat-label {
   font-size: 14px;

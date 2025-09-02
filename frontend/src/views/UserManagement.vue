@@ -623,7 +623,7 @@ export default {
   background-color: var(--color-bg-primary);
   border-bottom: 1px solid var(--color-border);
   color: var(--color-text-primary);
-  padding: var(--space-5);
+  padding: var(--space-4) var(--space-5);
   display: flex;
   justify-content: space-between;
   align-items: center;

@@ -1,5 +1,26 @@
 # Registration-Management-System Changelog
 
+## 2025-09-02
+
+### 🎨 UI 色彩丰富度 + 对齐一致性修复 (Color Enrichment & Alignment Fix)
+
+*   **新增辅助色系设计令牌**:
+    *   在 `global.css` 中新增 teal (`#0d9488`)、purple (`#7c3aed`)、amber (`#d97706`)、rose (`#e11d48`) 四组辅助色及浅色背景变体
+    *   语义色（success/warning/danger/info）补充 `-light` 浅色背景变体
+
+*   **色彩应用**:
+    *   `AppHeader` 公司标签改用 amber 色系，单位标签改用 teal 色系
+    *   `OperationLogs` 四个统计卡片分别使用蓝/绿/amber/红，带彩色左边框
+    *   `FeedbackManagement` 统计卡片按状态分色（purple/amber/蓝/绿）
+    *   `AdminRecords` switch 颜色统一到设计令牌色值，消除硬编码色值
+
+*   **页面对齐一致性修复（16个页面）**:
+    *   所有页面 header 统一为 `padding: var(--space-4) var(--space-5)` + flex 布局
+    *   修复 `AdminRecords`、`UnitSelection` 使用 `text-align: center` 而非 flex 的问题
+    *   修复 `UserProfile` header 使用硬编码 `16px` 的问题
+    *   `RecordsList` content `max-width` 从 `90%` 改为 `1400px`
+    *   `AdminRecords` content `max-width` 从 `1600px` 改为 `1400px`
+
 ## 2025-09-01
 
 ### 🎨 前端 Clean Minimal UI 全面升级 (Clean Minimal UI Overhaul)

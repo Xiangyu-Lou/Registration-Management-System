@@ -91,8 +91,8 @@
                     v-model="filterForm.showSupervised"
                     active-text="显示"
                     inactive-text="隐藏"
-                    active-color="#13ce66"
-                    inactive-color="#ff4949"
+                    active-color="#10b981"
+                    inactive-color="#ef4444"
                     :active-value="true"
                     :inactive-value="false"
                     style="width: 100%"
@@ -888,8 +888,10 @@ export default {
   background-color: var(--color-bg-primary);
   border-bottom: 1px solid var(--color-border);
   color: var(--color-text-primary);
-  padding: var(--space-5);
-  text-align: center;
+  padding: var(--space-4) var(--space-5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .header h1 {
@@ -900,8 +902,11 @@ export default {
 }
 
 .content {
-  max-width: 1600px;
+  padding: var(--space-5);
+  max-width: 1400px;
   margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .actions {

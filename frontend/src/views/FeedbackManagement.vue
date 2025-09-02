@@ -11,25 +11,25 @@
     <div class="content">
       <!-- 统计卡片 -->
       <div class="stats-row">
-        <el-card class="stat-card">
+        <el-card class="stat-card stat-total">
           <div class="stat-content">
             <div class="stat-number">{{ stats.total || 0 }}</div>
             <div class="stat-label">总数</div>
           </div>
         </el-card>
-        <el-card class="stat-card pending">
+        <el-card class="stat-card stat-pending">
           <div class="stat-content">
             <div class="stat-number">{{ stats.pending || 0 }}</div>
             <div class="stat-label">待处理</div>
           </div>
         </el-card>
-        <el-card class="stat-card processing">
+        <el-card class="stat-card stat-processing">
           <div class="stat-content">
             <div class="stat-number">{{ stats.processing || 0 }}</div>
             <div class="stat-label">处理中</div>
           </div>
         </el-card>
-        <el-card class="stat-card resolved">
+        <el-card class="stat-card stat-resolved">
           <div class="stat-content">
             <div class="stat-number">{{ stats.resolved || 0 }}</div>
             <div class="stat-label">已解决</div>
@@ -598,7 +598,7 @@ export default {
   background-color: var(--color-bg-primary);
   border-bottom: 1px solid var(--color-border);
   color: var(--color-text-primary);
-  padding: var(--space-5);
+  padding: var(--space-4) var(--space-5);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -648,20 +648,19 @@ export default {
 .stat-card {
   background: var(--color-bg-primary);
   border-radius: var(--radius-lg);
+  border-left: 3px solid var(--color-border);
   transition: all var(--transition-base);
 }
 
-.stat-card.pending {
-  border-left: 4px solid #e6a23c;
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
-.stat-card.processing {
-  border-left: 4px solid var(--color-accent);
-}
-
-.stat-card.resolved {
-  border-left: 4px solid #67c23a;
-}
+.stat-total { border-left-color: var(--color-purple); }
+.stat-pending { border-left-color: var(--color-amber); }
+.stat-processing { border-left-color: var(--color-accent); }
+.stat-resolved { border-left-color: var(--color-success); }
 
 .stat-content {
   text-align: center;
@@ -671,9 +670,14 @@ export default {
 .stat-number {
   font-size: 32px;
   font-weight: bold;
-  color: var(--color-accent);
+  color: var(--color-text-primary);
   margin-bottom: 8px;
 }
+
+.stat-total .stat-number { color: var(--color-purple); }
+.stat-pending .stat-number { color: var(--color-amber); }
+.stat-processing .stat-number { color: var(--color-accent); }
+.stat-resolved .stat-number { color: var(--color-success); }
 
 .stat-label {
   font-size: 14px;
