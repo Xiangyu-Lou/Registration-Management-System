@@ -4,8 +4,6 @@ const { verifyToken } = require('../utils/auth');
 const { processUploadedFiles, deletePhotoFiles, mergePhotoFiles, removeSpecificPhotoFiles } = require('../utils/fileUtils');
 const { logWasteRecordOperation } = require('../utils/logger');
 const { parseCollectionTime } = require('../utils/dateUtils');
-const path = require('path');
-
 // 创建废物记录
 const createWasteRecord = async (req, res, next) => {
   try {
@@ -58,8 +56,8 @@ const createWasteRecord = async (req, res, next) => {
     const collectionStartTime = parseCollectionTime(collectionDate, collectionTime);
     
     // 处理上传的照片
-    const photoPathBefore = processUploadedFiles(req.files.photo_before);
-    const photoPathAfter = processUploadedFiles(req.files.photo_after);
+    const photoPathBefore = await processUploadedFiles(req.files.photo_before);
+    const photoPathAfter = await processUploadedFiles(req.files.photo_after);
     
     // 获取当前用户信息
     const userId = req.body.creator_id || (req.user ? req.user.id : null);
@@ -344,17 +342,17 @@ const updateWasteRecord = async (req, res, next) => {
       } catch (e) {
         photosToRemove = [photos_to_remove_before];
       }
-      newPhotoPathBefore = removeSpecificPhotoFiles(newPhotoPathBefore, photosToRemove, path.join(__dirname, '../..'));
+      newPhotoPathBefore = removeSpecificPhotoFiles(newPhotoPathBefore, photosToRemove);
     }
-    
+
     // 2. 然后添加新上传的照片
     if (req.files.photo_before && req.files.photo_before.length > 0) {
       // 合并现有照片和新照片
-      newPhotoPathBefore = mergePhotoFiles(newPhotoPathBefore, req.files.photo_before);
+      newPhotoPathBefore = await mergePhotoFiles(newPhotoPathBefore, req.files.photo_before);
     } else if (photo_path_before === 'NULL') {
       // 清空所有照片
       if (newPhotoPathBefore) {
-        deletePhotoFiles(newPhotoPathBefore, path.join(__dirname, '../..'));
+        deletePhotoFiles(newPhotoPathBefore);
       }
       newPhotoPathBefore = null;
     } else if (photo_path_before && photo_path_before !== 'undefined') {
@@ -371,17 +369,17 @@ const updateWasteRecord = async (req, res, next) => {
       } catch (e) {
         photosToRemove = [photos_to_remove_after];
       }
-      newPhotoPathAfter = removeSpecificPhotoFiles(newPhotoPathAfter, photosToRemove, path.join(__dirname, '../..'));
+      newPhotoPathAfter = removeSpecificPhotoFiles(newPhotoPathAfter, photosToRemove);
     }
-    
+
     // 2. 然后添加新上传的照片
     if (req.files.photo_after && req.files.photo_after.length > 0) {
       // 合并现有照片和新照片
-      newPhotoPathAfter = mergePhotoFiles(newPhotoPathAfter, req.files.photo_after);
+      newPhotoPathAfter = await mergePhotoFiles(newPhotoPathAfter, req.files.photo_after);
     } else if (photo_path_after === 'NULL') {
       // 清空所有照片
       if (newPhotoPathAfter) {
-        deletePhotoFiles(newPhotoPathAfter, path.join(__dirname, '../..'));
+        deletePhotoFiles(newPhotoPathAfter);
       }
       newPhotoPathAfter = null;
     } else if (photo_path_after && photo_path_after !== 'undefined') {
@@ -520,14 +518,9 @@ const deleteWasteRecord = async (req, res, next) => {
       creatorName: record.creator_name
     };
     
-    // 删除照片文件
-    if (record.photo_path_before) {
-      deletePhotoFiles(record.photo_path_before, path.join(__dirname, '../..'));
-    }
-    
-    if (record.photo_path_after) {
-      deletePhotoFiles(record.photo_path_after, path.join(__dirname, '../..'));
-    }
+    // 删除照片文件（no-op，OSS 不删除）
+    deletePhotoFiles(record.photo_path_before);
+    deletePhotoFiles(record.photo_path_after);
     
     // 删除记录
     await WasteRecord.delete(id);

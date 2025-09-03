@@ -1,5 +1,34 @@
 # Registration-Management-System Changelog
 
+## 2025-09-03
+
+### ☁️ 图片存储迁移至阿里云 OSS (Image Storage Migration to Alibaba Cloud OSS)
+
+*   **新增阿里云 OSS 集成**:
+    *   新增 `backend/config/oss.js`，创建 ali-oss 客户端实例
+    *   后端 `.env` 添加 OSS 相关环境变量（AccessKey、Bucket、Region、Endpoint）
+    *   安装 `ali-oss` 依赖
+
+*   **上传逻辑改造**:
+    *   `backend/config/upload.js` 从 `multer.diskStorage`（本地磁盘）改为 `multer.memoryStorage()`（内存缓冲）
+    *   `backend/utils/fileUtils.js` 中 `processUploadedFiles` 改为 async，通过 OSS SDK 上传文件
+    *   `mergePhotoFiles` 改为 async，新照片上传到 OSS 后与现有路径合并
+    *   数据库存储格式从相对路径 `uploads/xxx.jpg` 变为完整 OSS URL
+
+*   **删除策略调整**:
+    *   OSS RAM 子账号仅授予读写权限，不允许删除
+    *   `deletePhotoFiles` 改为空操作（no-op），删除记录时只清除数据库数据，OSS 图片保留
+    *   `removeSpecificPhotoFiles` 仅操作路径数组，不删除 OSS 文件
+
+*   **后端静态服务移除**:
+    *   `backend/app.js` 移除 `/uploads` 的 `express.static` 中间件
+    *   图片直接从 OSS CDN 地址访问，不再经过后端
+
+*   **前端兼容适配**:
+    *   `PhotoCell.vue` 添加 URL 判断：`http` 开头的路径直接使用，不拼接 baseUrl
+    *   `ImagePreview.vue` 已有 http 判断逻辑，无需改动
+    *   旧数据（相对路径）和新数据（OSS URL）均可正常显示
+
 ## 2025-09-02
 
 ### 🎨 UI 色彩丰富度 + 对齐一致性修复 (Color Enrichment & Alignment Fix)

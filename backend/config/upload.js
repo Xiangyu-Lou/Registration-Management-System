@@ -1,63 +1,43 @@
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs');
 
-// 创建上传目录（Vercel 环境下跳过，无持久化文件系统）
-const uploadsDir = path.join(__dirname, '../../uploads');
-if (!process.env.VERCEL && !fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-// 存储配置
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, uploadsDir);
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    
-    // 根据文件的实际MIME类型确定扩展名
-    let ext;
-    switch (file.mimetype) {
-      case 'image/jpeg':
-      case 'image/jpg':
-        ext = '.jpg';
-        break;
-      case 'image/png':
-        ext = '.png';
-        break;
-      case 'image/gif':
-        ext = '.gif';
-        break;
-      case 'image/bmp':
-        ext = '.bmp';
-        break;
-      case 'image/webp':
-        ext = '.webp';
-        break;
-      default:
-        ext = path.extname(file.originalname);
-    }
-    
-    cb(null, file.fieldname + '-' + uniqueSuffix + ext);
-  }
-});
+// 使用内存存储，文件暂存在 buffer 中，后续上传到 OSS
+const storage = multer.memoryStorage();
 
 // 文件类型过滤器
 const fileFilter = function(req, file, cb) {
   const acceptedMimeTypes = [
-    'image/jpeg', 
-    'image/jpg', 
-    'image/png', 
-    'image/gif', 
-    'image/bmp', 
+    'image/jpeg',
+    'image/jpg',
+    'image/png',
+    'image/gif',
+    'image/bmp',
     'image/webp'
   ];
-  
+
   if (acceptedMimeTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
     cb(new Error('只接受JPEG、JPG、PNG、GIF、BMP和WEBP格式的图片文件'), false);
+  }
+};
+
+// 根据 MIME 类型获取扩展名
+const getExtByMime = (mimetype) => {
+  switch (mimetype) {
+    case 'image/jpeg':
+    case 'image/jpg':
+      return '.jpg';
+    case 'image/png':
+      return '.png';
+    case 'image/gif':
+      return '.gif';
+    case 'image/bmp':
+      return '.bmp';
+    case 'image/webp':
+      return '.webp';
+    default:
+      return '.jpg';
   }
 };
 
@@ -72,4 +52,4 @@ const uploadConfig = {
 
 const upload = multer(uploadConfig);
 
-module.exports = { upload, uploadsDir }; 
+module.exports = { upload, getExtByMime };

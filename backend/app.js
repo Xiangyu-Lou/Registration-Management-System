@@ -116,19 +116,8 @@ app.use(sqlInjectionProtection);
 app.use(xssProtection);
 
 // 静态文件服务（Vercel 环境下由平台处理，跳过）
+// 注：图片已迁移到阿里云 OSS，不再需要 /uploads 静态服务
 if (!isVercel) {
-  app.use('/uploads', express.static(path.join(__dirname, '../uploads'), {
-    maxAge: '1d',
-    etag: true,
-    lastModified: true,
-    setHeaders: (res, filePath) => {
-      if (filePath.match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i)) {
-        res.setHeader('X-Content-Type-Options', 'nosniff');
-        res.setHeader('Cache-Control', 'public, max-age=86400');
-      }
-    }
-  }));
-
   app.use(express.static(path.join(__dirname, '../frontend/dist'), {
     maxAge: '1h',
     etag: true,

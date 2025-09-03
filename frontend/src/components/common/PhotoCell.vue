@@ -8,7 +8,7 @@
     >
       <el-image
         style="width: 50px; height: 50px; margin: 0 auto;"
-        :src="`${baseUrl}${path}`"
+        :src="path.startsWith('http') ? path : `${baseUrl}${path}`"
         fit="cover"
       ></el-image>
     </div>
