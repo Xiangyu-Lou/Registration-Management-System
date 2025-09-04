@@ -9,7 +9,7 @@ const { initWebSocket } = require('./websocket');
 // 加载环境变量
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 
-const { testConnection } = require('./config/database');
+const { db, testConnection } = require('./config/database');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 const { xssProtection, inputLimits, sqlInjectionProtection } = require('./middleware/security');
 const redisClient = require('./config/redisClient');
@@ -31,8 +31,6 @@ const setupSwagger = require('./swagger');
 const app = express();
 const server = http.createServer(app);
 const PORT = process.env.PORT || 3000;
-
-// ... (中间件和安全设置保持不变) ...
 
 // CORS配置
 app.use(cors({
@@ -83,9 +81,13 @@ app.use(errorHandler);
 // 初始化WebSocket
 initWebSocket(server);
 
-// 启动服务器
-server.listen(PORT, async () => {
-  console.log(`🚀 服务器启动成功: http://localhost:${PORT}`);
-  await testConnection();
-  // 其他日志...
-});
+// 只有在直接运行文件时才启动服务器
+if (require.main === module) {
+  server.listen(PORT, async () => {
+    console.log(`🚀 服务器启动成功: http://localhost:${PORT}`);
+    await testConnection();
+  });
+}
+
+// 导出 app 和 server 供测试使用
+module.exports = { app, server };
