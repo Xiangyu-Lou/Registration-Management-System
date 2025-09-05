@@ -30,7 +30,7 @@ const errorHandler = (err, req, res, next) => {
   }
 
   // 默认服务器错误
-  res.status(500).json({ error: '服务器内部错误' });
+  res.status(500).json({ error: '服务器内部错误', debug: err.message, stack: err.stack });
 };
 
 // 404错误处理
