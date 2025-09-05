@@ -11,6 +11,7 @@ export default {
   // API 路径
   endpoints: {
     login: '/api/login',
+    dashboard: '/api/dashboard',
     users: '/api/users',
     usersByUnit: '/api/users/unit', // 获取指定单位的用户
     userStatus: '/api/users/:id/status',  // 用户状态变更API
