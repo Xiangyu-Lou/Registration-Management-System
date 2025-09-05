@@ -1,4 +1,4 @@
-const { ossClient, getOssUrl } = require('../config/oss');
+const { getOssClient, getOssUrl } = require('../config/oss');
 const { getExtByMime } = require('../config/upload');
 
 // 上传单个文件到 OSS，返回完整 URL
@@ -7,7 +7,7 @@ const uploadToOss = async (file) => {
   const ext = getExtByMime(file.mimetype);
   const objectKey = `uploads/${file.fieldname}-${uniqueSuffix}${ext}`;
 
-  await ossClient.put(objectKey, file.buffer);
+  await getOssClient().put(objectKey, file.buffer);
   return getOssUrl(objectKey);
 };
 
