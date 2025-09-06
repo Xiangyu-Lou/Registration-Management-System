@@ -9,9 +9,7 @@ const getOssClient = () => {
       region: process.env.OSS_REGION,
       accessKeyId: process.env.OSS_ACCESS_KEY_ID,
       accessKeySecret: process.env.OSS_ACCESS_KEY_SECRET,
-      bucket: process.env.OSS_BUCKET,
-      endpoint: process.env.OSS_ENDPOINT,
-      secure: true
+      bucket: process.env.OSS_BUCKET
     });
   }
   return _ossClient;
@@ -20,8 +18,8 @@ const getOssClient = () => {
 // 根据 object key 生成完整的 OSS URL
 const getOssUrl = (objectKey) => {
   const bucket = process.env.OSS_BUCKET;
-  const endpoint = process.env.OSS_ENDPOINT.replace('https://', '');
-  return `https://${bucket}.${endpoint}/${objectKey}`;
+  const region = process.env.OSS_REGION;
+  return `https://${bucket}.${region}.aliyuncs.com/${objectKey}`;
 };
 
 module.exports = { getOssClient, getOssUrl };
