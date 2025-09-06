@@ -4,6 +4,24 @@ const { verifyToken } = require('../utils/auth');
 const { processUploadedFiles, deletePhotoFiles, mergePhotoFiles, removeSpecificPhotoFiles } = require('../utils/fileUtils');
 const { logWasteRecordOperation } = require('../utils/logger');
 const { parseCollectionTime } = require('../utils/dateUtils');
+const { signPhotoUrls } = require('../config/oss');
+
+// 将记录中的 OSS 照片路径转换为签名 URL
+const signRecordPhotos = (record) => {
+  if (!record) return record;
+  if (record.photo_path_before) {
+    record.photo_path_before = signPhotoUrls(record.photo_path_before);
+  }
+  if (record.photo_path_after) {
+    record.photo_path_after = signPhotoUrls(record.photo_path_after);
+  }
+  return record;
+};
+
+const signRecordsPhotos = (records) => {
+  if (!Array.isArray(records)) return records;
+  return records.map(signRecordPhotos);
+};
 // 创建废物记录
 const createWasteRecord = async (req, res, next) => {
   try {
@@ -149,7 +167,7 @@ const getWasteRecordsByUnit = async (req, res, next) => {
     const { unitId } = req.params;
     
     const records = await WasteRecord.findByUnitId(unitId, req.user);
-    res.json(records);
+    res.json(signRecordsPhotos(records));
   } catch (error) {
     next(error);
   }
@@ -159,7 +177,7 @@ const getWasteRecordsByUnit = async (req, res, next) => {
 const getAllWasteRecords = async (req, res, next) => {
   try {
     const records = await WasteRecord.findAll(req.user);
-    res.json(records);
+    res.json(signRecordsPhotos(records));
   } catch (error) {
     next(error);
   }
@@ -177,6 +195,9 @@ const getWasteRecordsByUser = async (req, res, next) => {
     }
     
     const result = await WasteRecord.findByUser(userId, user, filters);
+    if (result.records) {
+      result.records = signRecordsPhotos(result.records);
+    }
     res.json(result);
   } catch (error) {
     next(error);
@@ -262,7 +283,7 @@ const exportWasteRecordsByUser = async (req, res, next) => {
       }
     );
     
-    res.json(records);
+    res.json(signRecordsPhotos(records));
   } catch (error) {
     next(error);
   }
@@ -278,7 +299,7 @@ const getWasteRecordDetail = async (req, res, next) => {
       return res.status(404).json({ error: '记录不存在' });
     }
     
-    res.json(record);
+    res.json(signRecordPhotos(record));
   } catch (error) {
     next(error);
   }
