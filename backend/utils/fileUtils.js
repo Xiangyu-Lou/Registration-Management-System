@@ -7,8 +7,13 @@ const uploadToOss = async (file) => {
   const ext = getExtByMime(file.mimetype);
   const objectKey = `uploads/${file.fieldname}-${uniqueSuffix}${ext}`;
 
-  await getOssClient().put(objectKey, file.buffer);
-  return getOssUrl(objectKey);
+  try {
+    const result = await getOssClient().put(objectKey, Buffer.from(file.buffer));
+    return getOssUrl(objectKey);
+  } catch (err) {
+    console.error('OSS upload failed:', err.message, 'objectKey:', objectKey);
+    throw err;
+  }
 };
 
 // 处理上传的文件，返回 JSON 字符串的 URL 数组
