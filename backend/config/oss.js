@@ -48,23 +48,33 @@ const toSignedUrl = (storedUrl, expires = 3600) => {
   return getSignedUrl(objectKey, expires);
 };
 
-// 批量转换 JSON 格式的照片路径为签名 URL
+// 批量转换照片路径为签名 URL
+// 支持：OSS 完整 URL、旧 ECS 本地路径（已手动迁移到 OSS 同名 key）、逗号分隔历史格式
 const signPhotoUrls = (photoPathJson, expires = 3600) => {
   if (!photoPathJson) return photoPathJson;
 
+  const signOne = (p) => {
+    if (!p) return p;
+    if (p.startsWith('http')) return toSignedUrl(p, expires);
+    // 旧 ECS 路径（如 uploads/xxx.jpg），文件已迁移到 OSS 同名 key，直接签名
+    return getSignedUrl(p.replace(/^\/+/, ''), expires);
+  };
+
+  let paths;
   try {
-    let paths = JSON.parse(photoPathJson);
-    const signedPaths = paths.map(p => {
-      // 只处理 OSS URL，跳过旧的本地路径
-      if (p.startsWith('http')) {
-        return toSignedUrl(p, expires);
-      }
-      return p;
-    });
-    return JSON.stringify(signedPaths);
+    paths = JSON.parse(photoPathJson);
+    if (!Array.isArray(paths)) paths = [paths];
   } catch (e) {
-    return photoPathJson;
+    // 兼容旧的逗号分隔格式
+    paths = photoPathJson.split(',');
   }
+
+  const signedPaths = paths
+    .map(p => (typeof p === 'string' ? p.trim() : p))
+    .filter(Boolean)
+    .map(signOne);
+
+  return JSON.stringify(signedPaths);
 };
 
 module.exports = { getOssClient, getOssUrl, getSignedUrl, toSignedUrl, signPhotoUrls };

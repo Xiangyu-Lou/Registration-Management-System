@@ -1,5 +1,18 @@
 # Registration-Management-System Changelog
 
+## 2025-09-08
+
+### 🔧 图片地址解析优化 (Image Path Routing Fix)
+
+*   **修复旧 ECS 图片路径无法访问问题**:
+    *   `backend/config/oss.js` 中 `signPhotoUrls` 函数新增对旧 ECS 本地路径的处理
+    *   旧格式路径（如 `uploads/photo_before-xxx.jpg`）不再原样返回，而是作为 OSS object key 直接签名生成访问 URL
+    *   前提：ECS 上的图片文件已手动迁移至 OSS 同名路径（`uploads/<filename>`）
+
+*   **兼容逗号分隔历史格式**:
+    *   `JSON.parse` 失败时自动回退为逗号分隔解析，确保历史数据不丢失
+    *   输出统一为 JSON 字符串数组，与前端 `parsePhotoPath` 保持兼容
+
 ## 2025-09-03
 
 ### ☁️ 图片存储迁移至阿里云 OSS (Image Storage Migration to Alibaba Cloud OSS)
