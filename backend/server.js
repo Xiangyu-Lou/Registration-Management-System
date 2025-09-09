@@ -24,6 +24,7 @@ const operationLogRoutes = require('./routes/operationLogs');
 const companyRoutes = require('./routes/companies');
 const feedbackRoutes = require('./routes/feedback');
 const dashboardRoutes = require('./routes/dashboard');
+const exportRoutes = require('./routes/export');
 
 // 导入Swagger配置
 const setupSwagger = require('./swagger');
@@ -57,8 +58,9 @@ app.use('/api/waste-types', wasteTypeRoutes);
 app.use('/api/waste-records', wasteRecordRoutes);
 app.use('/api/operation-logs', operationLogRoutes);
 app.use('/api/companies', companyRoutes);
-app.pise('/api/feedback', feedbackRoutes);
+app.use('/api/feedback', feedbackRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/export', exportRoutes);
 
 // 设置Swagger API文档路径
 setupSwagger(app);
