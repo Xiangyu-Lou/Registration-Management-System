@@ -6,6 +6,19 @@ const { logWasteRecordOperation } = require('../utils/logger');
 const { parseCollectionTime } = require('../utils/dateUtils');
 const { signPhotoUrls } = require('../config/oss');
 
+// 清洗照片路径 JSON：去掉签名参数，只保留干净的 OSS URL 或 object key
+// 防止前端把签名 URL 当作 originalPath 回传后被写入数据库
+const stripSignaturesFromPhotoJson = (photoPathJson) => {
+  if (!photoPathJson) return photoPathJson;
+  try {
+    const paths = JSON.parse(photoPathJson);
+    const cleaned = paths.map(p => (typeof p === 'string' && p.startsWith('http') ? p.split('?')[0] : p));
+    return JSON.stringify(cleaned);
+  } catch (e) {
+    return photoPathJson;
+  }
+};
+
 // 将记录中的 OSS 照片路径转换为签名 URL
 const signRecordPhotos = (record) => {
   if (!record) return record;
@@ -377,8 +390,8 @@ const updateWasteRecord = async (req, res, next) => {
       }
       newPhotoPathBefore = null;
     } else if (photo_path_before && photo_path_before !== 'undefined') {
-      // 直接设置照片路径（兼容旧的接口）
-      newPhotoPathBefore = photo_path_before;
+      // 直接设置照片路径（兼容旧的接口），清洗签名参数防止污染数据库
+      newPhotoPathBefore = stripSignaturesFromPhotoJson(photo_path_before);
     }
     
     // 处理收集后照片
@@ -404,8 +417,8 @@ const updateWasteRecord = async (req, res, next) => {
       }
       newPhotoPathAfter = null;
     } else if (photo_path_after && photo_path_after !== 'undefined') {
-      // 直接设置照片路径（兼容旧的接口）
-      newPhotoPathAfter = photo_path_after;
+      // 直接设置照片路径（兼容旧的接口），清洗签名参数防止污染数据库
+      newPhotoPathAfter = stripSignaturesFromPhotoJson(photo_path_after);
     }
     
     // 使用工具函数格式化收集时间，确保时区一致性

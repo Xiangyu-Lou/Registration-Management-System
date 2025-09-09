@@ -1,5 +1,20 @@
 # Registration-Management-System Changelog
 
+## 2025-09-09
+
+### 🐛 Bug修复：图片编辑删除与写回污染 (Photo Edit Bug Fixes)
+
+*   **修复删除照片无效问题**:
+    *   `backend/utils/fileUtils.js` 中 `removeSpecificPhotoFiles` 新增 `extractObjectKey` 辅助函数
+    *   比较时去掉域名和查询参数（`?Signature=...`），统一用 object key 做匹配
+    *   修复前：签名 URL 与未签名 URL 永远不相等，导致删除操作完全失效
+    *   修复后：无论传入签名或未签名 URL，均可正确从数组中移除
+
+*   **修复签名 URL 写回数据库问题**:
+    *   `backend/controllers/wasteRecordController.js` 新增 `stripSignaturesFromPhotoJson` 函数
+    *   编辑记录时，前端回传的保留照片路径在写入数据库前自动去除 `?Signature=...` 查询参数
+    *   修复前：签名 URL 写入 DB 后，下次读取时正则提取 object key 包含查询参数，导致重复签名生成无效 URL（403）
+
 ## 2025-09-08
 
 ### 🔧 图片地址解析优化 (Image Path Routing Fix)

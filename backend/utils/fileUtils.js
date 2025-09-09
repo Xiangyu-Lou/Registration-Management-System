@@ -59,7 +59,18 @@ const mergePhotoFiles = async (existingPhotoPath, newFiles) => {
   return allPaths.length > 0 ? JSON.stringify(allPaths) : null;
 };
 
+// 提取 URL 中的 object key（去掉域名和查询参数），用于跨签名比较
+const extractObjectKey = (url) => {
+  if (!url) return url;
+  if (url.startsWith('http')) {
+    const match = url.match(/https?:\/\/[^/]+\/([^?]+)/);
+    return match ? match[1] : url;
+  }
+  return url.replace(/^\/+/, '');
+};
+
 // 从路径数组中移除指定照片（只操作数组，不删除 OSS 文件）
+// 比较时忽略签名参数，避免 signed URL vs unsigned URL 不匹配
 const removeSpecificPhotoFiles = (existingPhotoPath, photosToRemove) => {
   if (!existingPhotoPath || !photosToRemove || photosToRemove.length === 0) {
     return existingPhotoPath;
@@ -72,7 +83,8 @@ const removeSpecificPhotoFiles = (existingPhotoPath, photosToRemove) => {
     existingPaths = [existingPhotoPath];
   }
 
-  const remainingPaths = existingPaths.filter(p => !photosToRemove.includes(p));
+  const removeKeys = photosToRemove.map(extractObjectKey);
+  const remainingPaths = existingPaths.filter(p => !removeKeys.includes(extractObjectKey(p)));
   return remainingPaths.length > 0 ? JSON.stringify(remainingPaths) : null;
 };
 
