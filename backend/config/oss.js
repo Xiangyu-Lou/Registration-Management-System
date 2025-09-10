@@ -9,7 +9,8 @@ const getOssClient = () => {
       region: process.env.OSS_REGION,
       accessKeyId: process.env.OSS_ACCESS_KEY_ID,
       accessKeySecret: process.env.OSS_ACCESS_KEY_SECRET,
-      bucket: process.env.OSS_BUCKET
+      bucket: process.env.OSS_BUCKET,
+      secure: true  // 强制签名 URL 使用 HTTPS，避免 Mixed Content 问题
     });
   }
   return _ossClient;

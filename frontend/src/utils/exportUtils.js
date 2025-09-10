@@ -144,7 +144,7 @@ export const exportToExcelWithImages = async (data, fileName, headers, baseUrl =
                 // 添加图片到工作表
                 const imageId = workbook.addImage({
                   buffer: imageBuffer,
-                  extension: imagePath.split('.').pop().toLowerCase()
+                  extension: imagePath.split('?')[0].split('.').pop().toLowerCase()
                 });
                 
                 // 将图片添加到单元格

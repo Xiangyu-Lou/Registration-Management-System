@@ -252,7 +252,8 @@ class WasteRecord {
       dateRange,
       unitId,
       process,
-      showSupervised
+      showSupervised,
+      companyId
     } = filters;
 
     let sql = `
@@ -306,7 +307,12 @@ class WasteRecord {
     }
 
     // 添加筛选条件
-    if (unitId && (user.role_id === 3 || user.role_id === 4)) {
+    if (companyId && user.role_id === 5) {
+      sql += ' AND wr.company_id = ?';
+      params.push(companyId);
+    }
+
+    if (unitId && (user.role_id === 3 || user.role_id === 4 || user.role_id === 5)) {
       sql += ' AND wr.unit_id = ?';
       params.push(unitId);
     }

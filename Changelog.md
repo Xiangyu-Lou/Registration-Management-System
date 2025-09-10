@@ -1,5 +1,30 @@
 # Registration-Management-System Changelog
 
+## 2025-09-10
+
+### 🐛 Bug修复：导出功能图片与筛选问题 (Export Feature Fixes)
+
+*   **修复导出图片因 Mixed Content 被浏览器拦截**:
+    *   `backend/config/oss.js` OSS 客户端新增 `secure: true` 配置
+    *   修复前：`signatureUrl` 生成 `http://` 协议的签名 URL，在 HTTPS 页面被浏览器强制拦截
+    *   修复后：签名 URL 统一使用 `https://`，导出 Excel 时图片可正常下载
+
+*   **修复导出图片扩展名解析错误**:
+    *   `frontend/src/utils/exportUtils.js` 提取扩展名时先去除查询参数（`?Signature=...`）
+    *   修复前：`imagePath.split('.').pop()` 拿到 `jpg?Signature=...`，ExcelJS 无法识别
+    *   修复后：`imagePath.split('?')[0].split('.').pop()` 正确提取扩展名
+
+*   **修复导出筛选条件未生效问题**:
+    *   `frontend/src/views/SuperAdminRecords.vue` `fetchExportData` 补充传递所有筛选参数（unitId、wasteTypeId、dateRange、minQuantity、maxQuantity、location、process）
+    *   `backend/models/WasteRecord.js` 导出 SQL 新增 companyId 过滤（超级管理员），unitId 过滤扩展支持超级管理员（role_id=5）
+    *   修复前：超级管理员导出时忽略大部分筛选条件，全量导出所有记录
+    *   修复后：筛选条件正确传递并在后端 SQL 中生效
+
+*   **修复导出时出现双重加载转圈**:
+    *   `frontend/src/composables/useExport.js` `finally` 块中将 `ElLoading.service().close()` 改为 `loadingInstance.close()`
+    *   修复前：`ElLoading.service()` 无参调用会新建第二个 loading 实例，导致同时显示两个转圈
+    *   修复后：统一使用已有的 `loadingInstance` 关闭，只显示一个加载动画
+
 ## 2025-09-09
 
 ### 🐛 Bug修复：图片编辑删除与写回污染 (Photo Edit Bug Fixes)

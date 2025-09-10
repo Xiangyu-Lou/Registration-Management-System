@@ -536,7 +536,14 @@ export default {
     const fetchExportData = async (exportType) => {
       const queryParams = {
         exportType,
-        companyId: filterForm.companyId ? filterForm.companyId : undefined
+        companyId: filterForm.companyId ? filterForm.companyId : undefined,
+        unitId: filterForm.unitId ? filterForm.unitId : undefined,
+        wasteTypeId: filterForm.wasteTypeId ? filterForm.wasteTypeId : undefined,
+        minQuantity: filterForm.minQuantity ? filterForm.minQuantity : undefined,
+        maxQuantity: filterForm.maxQuantity ? filterForm.maxQuantity : undefined,
+        location: filterForm.location || undefined,
+        process: filterForm.process || undefined,
+        dateRange: filterForm.dateRange && filterForm.dateRange.length ? JSON.stringify(filterForm.dateRange) : undefined,
       };
       const { data } = await httpService.get(
         `${apiConfig.endpoints.exportWasteRecords}/${auth.state.user.id}`,

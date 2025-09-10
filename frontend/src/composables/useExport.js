@@ -138,7 +138,7 @@ export function useExport(config) {
       ElMessage.error('导出失败: ' + (error.message || '未知错误'));
     } finally {
       loading.value = false;
-      ElLoading.service().close();
+      loadingInstance.close();
     }
   };
 
@@ -212,7 +212,7 @@ export function useExport(config) {
       ElMessage.error('导出失败: ' + (error.message || '未知错误'));
     } finally {
       loading.value = false;
-      ElLoading.service().close();
+      loadingInstance.close();
     }
   };
 
@@ -272,7 +272,7 @@ export function useExport(config) {
       ElMessage.error('导出失败: ' + (error.message || '未知错误'));
     } finally {
       loading.value = false;
-      ElLoading.service().close();
+      loadingInstance.close();
     }
   };
 
