@@ -1,3 +1,4 @@
+
 import { createRouter, createWebHistory } from 'vue-router'
 import UnitSelection from '../views/UnitSelection.vue'
 import WasteForm from '../views/WasteForm.vue'
@@ -14,6 +15,7 @@ import FeedbackForm from '../views/FeedbackForm.vue'
 import FeedbackList from '../views/FeedbackList.vue'
 import FeedbackManagement from '../views/FeedbackManagement.vue'
 import Dashboard from '../views/Dashboard.vue'
+import DataAnalysis from '../views/DataAnalysis.vue' // Import the new component
 import auth from '../store/auth'
 import httpService from '../config/httpService'
 import apiConfig from '../config/api'
@@ -30,6 +32,12 @@ const routes = [
     name: 'Dashboard',
     component: Dashboard,
     meta: { requiresAuth: true, requiresManager: true }
+  },
+  {
+    path: '/data-analysis',
+    name: 'DataAnalysis',
+    component: DataAnalysis,
+    meta: { requiresAuth: true, requiresManager: true } // Add the new route
   },
   {
     path: '/user-management',
@@ -132,6 +140,6 @@ const router = createRouter({
   routes
 })
 
-// ... (路由守卫保持不变) ...
+// ... (the navigation guard remains unchanged) ...
 
 export default router

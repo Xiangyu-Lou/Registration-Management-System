@@ -1,3 +1,4 @@
+
 <template>
   <div class="app-header">
     <div class="logo">
@@ -14,6 +15,12 @@
           {{ auth.state.user.unit_name }}
         </span>
       </span>
+       <el-button v-if="isManager" type="text" class="nav-button" @click="goToDashboard">
+        <el-icon><home-filled /></el-icon> 主页
+      </el-button>
+       <el-button v-if="isManager" type="text" class="nav-button" @click="goToDataAnalysis">
+        <el-icon><data-analysis /></el-icon> 数据分析
+      </el-button>
       <el-button type="text" class="feedback-button" @click="showFeedbackDialog">
         <el-icon><chat-line-round /></el-icon> 问题反馈
       </el-button>
@@ -92,7 +99,7 @@
 import { computed, ref, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { ChatLineRound } from '@element-plus/icons-vue';
+import { ChatLineRound, DataAnalysis, HomeFilled } from '@element-plus/icons-vue';
 import auth from '../store/auth';
 import httpService from '../config/httpService';
 import apiConfig from '../config/api';
@@ -100,7 +107,9 @@ import apiConfig from '../config/api';
 export default {
   name: 'AppHeader',
   components: {
-    ChatLineRound
+    ChatLineRound,
+    DataAnalysis,
+    HomeFilled
   },
   setup() {
     const router = useRouter();
@@ -108,13 +117,16 @@ export default {
     const loading = ref(false);
     const feedbackVisible = ref(false);
     
-    // 获取用户名，优先显示用户名，如果没有则显示手机号
     const userName = computed(() => {
       if (!auth.state.isLoggedIn) return '';
       return auth.state.user.username || auth.state.user.phone;
     });
 
-    // 反馈表单数据
+    const isManager = computed(() => {
+      const user = auth.state.user;
+      return user && (user.role_id === 3 || user.role_id === 4);
+    });
+
     const form = reactive({
       type: 'bug',
       priority: 'medium',
@@ -122,7 +134,6 @@ export default {
       description: ''
     });
 
-    // 表单验证规则
     const rules = {
       type: [
         { required: true, message: '请选择问题类型', trigger: 'change' }
@@ -138,24 +149,28 @@ export default {
       ]
     };
     
-    // 处理退出登录
     const handleLogout = () => {
       auth.logout();
       ElMessage.success('已退出登录');
       router.push('/login');
     };
     
-    // 跳转到个人资料页面
     const goToProfile = () => {
       router.push('/profile');
     };
+    
+    const goToDashboard = () => {
+      router.push('/dashboard');
+    };
+    
+    const goToDataAnalysis = () => {
+        router.push('/data-analysis');
+    };
 
-    // 显示反馈弹窗
     const showFeedbackDialog = () => {
       feedbackVisible.value = true;
     };
 
-    // 关闭反馈弹窗
     const closeFeedbackDialog = () => {
       if (form.title || form.description) {
         ElMessageBox.confirm(
@@ -176,10 +191,8 @@ export default {
       }
     };
 
-    // 提交表单
     const submitForm = async () => {
       try {
-        // 验证表单
         const valid = await formRef.value.validate();
         if (!valid) {
           return;
@@ -187,7 +200,6 @@ export default {
 
         loading.value = true;
 
-        // 准备表单数据
         const formData = {
           type: form.type,
           priority: form.priority,
@@ -195,7 +207,6 @@ export default {
           description: form.description
         };
 
-        // 提交数据
         const response = await httpService.post(apiConfig.endpoints.feedback, formData);
 
         if (response.data.success) {
@@ -214,7 +225,6 @@ export default {
       }
     };
 
-    // 重置表单
     const resetForm = () => {
       if (formRef.value) {
         formRef.value.resetFields();
@@ -228,9 +238,11 @@ export default {
     return {
       auth,
       userName,
+      isManager,
       handleLogout,
       goToProfile,
-      // 反馈表单相关
+      goToDashboard,
+      goToDataAnalysis,
       feedbackVisible,
       formRef,
       loading,
@@ -244,7 +256,6 @@ export default {
   }
 };
 </script>
-
 <style scoped>
 .app-header {
   background-color: #409EFF;
@@ -283,6 +294,7 @@ export default {
   background-color: rgba(255, 215, 0, 0.6); /* 金色背景表示公司 */
 }
 
+.nav-button,
 .feedback-button,
 .profile-button,
 .logout-button {
@@ -291,6 +303,7 @@ export default {
   margin-left: 15px;
 }
 
+.nav-button:hover,
 .feedback-button:hover,
 .profile-button:hover,
 .logout-button:hover {

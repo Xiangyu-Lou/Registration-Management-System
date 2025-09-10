@@ -25,6 +25,7 @@ const companyRoutes = require('./routes/companies');
 const feedbackRoutes = require('./routes/feedback');
 const dashboardRoutes = require('./routes/dashboard');
 const exportRoutes = require('./routes/export');
+const analysisRoutes = require('./routes/analysis');
 
 // 导入Swagger配置
 const setupSwagger = require('./swagger');
@@ -61,6 +62,7 @@ app.use('/api/companies', companyRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/export', exportRoutes);
+app.use('/api/analysis', analysisRoutes);
 
 // 设置Swagger API文档路径
 setupSwagger(app);
