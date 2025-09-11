@@ -89,6 +89,36 @@ const loadData = async (AMap) => {
 
     totalRecords.value = records.length;
 
+    // --- 新增逻辑：计算每个地点的年度总量 ---
+    const locationStats = {};
+    const currentYear = new Date().getFullYear();
+
+    records.forEach(record => {
+      if (record.latitude && record.longitude) {
+        // 创建一个基于坐标的唯一键，例如 "116.12345,39.12345"
+        // 为了避免浮点数精度问题，可以先保留几位小数
+        const lat = parseFloat(record.latitude).toFixed(6);
+        const lng = parseFloat(record.longitude).toFixed(6);
+        const key = `${lng},${lat}`;
+        
+        const recordDate = new Date(record.collection_start_time);
+        
+        // 初始化统计对象
+        if (!locationStats[key]) {
+          locationStats[key] = {
+            yearTotal: 0,
+            count: 0
+          };
+        }
+        
+        // 如果是今年的记录，累加重量
+        if (recordDate.getFullYear() === currentYear) {
+           locationStats[key].yearTotal += (parseFloat(record.quantity) || 0);
+           locationStats[key].count += 1;
+        }
+      }
+    });
+
     const markers = [];
     const points = []; // 用于自适应显示范围
 
@@ -116,12 +146,21 @@ const loadData = async (AMap) => {
           // 绑定点击事件，显示信息窗体
           marker.on('click', (e) => {
              const data = e.target.getExtData();
+             
+             // 获取统计数据
+             const key = `${parseFloat(data.longitude).toFixed(6)},${parseFloat(data.latitude).toFixed(6)}`;
+             const stat = locationStats[key] || { yearTotal: 0 };
+             const yearTotalStr = stat.yearTotal.toFixed(3); 
+             
              const infoWindowContent = `
                 <div class="info-window-content">
                    <h4>${data.unit_name}</h4>
                    <p><strong>废物类型:</strong> ${data.waste_type_name}</p>
-                   <p><strong>数量:</strong> ${data.quantity} 吨</p>
+                   <p><strong>本次数量:</strong> ${data.quantity} 吨</p>
                    <p><strong>时间:</strong> ${new Date(data.collection_start_time).toLocaleString()}</p>
+                   <p style="color: #E65100; font-weight: bold; border-top: 1px dashed #eee; margin-top: 5px; padding-top: 5px;">
+                     本地点${currentYear}年累计: ${yearTotalStr} 吨
+                   </p>
                    <p><strong>位置:</strong> ${data.location || '无详细描述'}</p>
                    ${data.photo_path_after ? `<img src="${store.state.apiBaseUrl || ''}${data.photo_path_after}" style="width:100%;max-height:100px;object-fit:cover;margin-top:5px;border-radius:4px;">` : ''}
                 </div>
@@ -152,10 +191,6 @@ const loadData = async (AMap) => {
       });
 
       // 调整地图视野以包含所有点
-      // 需要构建 Bounds 对象
-      // 简单方法：如果是少量点，可以直接用 setFitView
-      // 由于用了聚合插件，map.setFitView() 可能对聚合后的 marker 不生效，
-      // 但我们可以对原始 markers 做 setFitView
       const overlayGroup = new AMap.OverlayGroup(markers);
       map.value.setFitView(markers);
     } else {
