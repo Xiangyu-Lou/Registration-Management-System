@@ -18,6 +18,9 @@
        <el-button v-if="isManager" type="text" class="nav-button" @click="goToDashboard">
         <el-icon><home-filled /></el-icon> 主页
       </el-button>
+      <el-button v-if="isManager" type="text" class="nav-button" @click="goToMapDashboard">
+        <el-icon><location /></el-icon> 地图可视化
+      </el-button>
        <el-button v-if="isManager" type="text" class="nav-button" @click="goToDataAnalysis">
         <el-icon><data-analysis /></el-icon> 数据分析
       </el-button>
@@ -99,7 +102,7 @@
 import { computed, ref, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { ChatLineRound, DataAnalysis, HomeFilled } from '@element-plus/icons-vue';
+import { ChatLineRound, DataAnalysis, HomeFilled, Location } from '@element-plus/icons-vue';
 import auth from '../store/auth';
 import httpService from '../config/httpService';
 import apiConfig from '../config/api';
@@ -109,7 +112,8 @@ export default {
   components: {
     ChatLineRound,
     DataAnalysis,
-    HomeFilled
+    HomeFilled,
+    Location
   },
   setup() {
     const router = useRouter();
@@ -124,7 +128,7 @@ export default {
 
     const isManager = computed(() => {
       const user = auth.state.user;
-      return user && (user.role_id === 3 || user.role_id === 4);
+      return user && (user.role_id === 3 || user.role_id === 4 || user.role_id === 5);
     });
 
     const form = reactive({
@@ -161,6 +165,10 @@ export default {
     
     const goToDashboard = () => {
       router.push('/dashboard');
+    };
+    
+    const goToMapDashboard = () => {
+      router.push('/map-dashboard');
     };
     
     const goToDataAnalysis = () => {
@@ -242,6 +250,7 @@ export default {
       handleLogout,
       goToProfile,
       goToDashboard,
+      goToMapDashboard,
       goToDataAnalysis,
       feedbackVisible,
       formRef,

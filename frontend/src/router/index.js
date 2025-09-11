@@ -34,6 +34,12 @@ const routes = [
     meta: { requiresAuth: true, requiresManager: true }
   },
   {
+    path: '/map-dashboard',
+    name: 'MapDashboard',
+    component: () => import('../views/MapDashboard.vue'),
+    meta: { requiresAuth: true, requiresManager: true, title: '地图可视化' } 
+  },
+  {
     path: '/data-analysis',
     name: 'DataAnalysis',
     component: DataAnalysis,
@@ -141,5 +147,46 @@ const router = createRouter({
 })
 
 // ... (the navigation guard remains unchanged) ...
+router.beforeEach((to, from, next) => {
+  const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
+  const isAuthenticated = auth.state.token;
+  const userRole = auth.state.user ? auth.state.user.role_id : null;
+
+  if (requiresAuth && !isAuthenticated) {
+    next('/login');
+  } else {
+    // 权限检查
+    if (to.matched.some(record => record.meta.requiresSystemAdmin)) {
+      if (userRole === 5) { // 超级管理员角色ID
+        next();
+      } else {
+        next('/dashboard'); // 或者其他无权限提示页面
+      }
+    } else if (to.matched.some(record => record.meta.requiresCompanyAdmin)) {
+       if (userRole === 3 || userRole === 5) { // 公司管理员或超级管理员
+         next();
+       } else {
+         next('/dashboard');
+       }
+    } else if (to.matched.some(record => record.meta.requiresManager)) {
+        // 假设角色ID 2(单位管理员), 3(公司管理员), 5(超级管理员) 是管理角色
+        if (userRole === 2 || userRole === 3 || userRole === 5) {
+            next();
+        } else {
+            next('/');
+        }
+    } else if (to.matched.some(record => record.meta.requiresLogPermission)) {
+        // 只有超级管理员(5)和公司管理员(3)可以查看日志
+        if (userRole === 3 || userRole === 5) {
+            next();
+        } else {
+            next('/dashboard');
+        }
+    }
+    else {
+      next();
+    }
+  }
+});
 
 export default router
