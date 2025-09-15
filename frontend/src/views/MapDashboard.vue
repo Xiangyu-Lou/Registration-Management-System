@@ -7,9 +7,22 @@
         <p>已加载记录: {{ totalRecords }}</p>
         <p>有效坐标点: {{ validPoints }}</p>
       </div>
-      <div class="legend">
+      
+      <!-- 新增：显示模式切换 -->
+      <div class="mode-switch" style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px;">
+         <div style="display: flex; align-items: center; justify-content: space-between;">
+             <span style="font-size: 14px; color: #333;">热力图模式</span>
+             <el-switch v-model="isHeatmapMode" @change="toggleHeatmap" />
+         </div>
+      </div>
+
+      <div class="legend" v-if="!isHeatmapMode">
          <div class="legend-item"><span class="dot normal"></span> 普通记录</div>
-         <!-- 可以根据需要添加更多图例，比如按废物类型区分颜色 -->
+      </div>
+       <div class="legend" v-else>
+         <div class="legend-item">
+             <span style="font-size: 12px; color: #666;">颜色越红表示产生量越大</span>
+         </div>
       </div>
     </div>
   </div>
@@ -26,7 +39,10 @@ const store = useStore();
 const map = shallowRef(null);
 const totalRecords = ref(0);
 const validPoints = ref(0);
+const isHeatmapMode = ref(false); // 热力图模式开关
 let cluster; // 点聚合实例
+let heatmap; // 热力图实例
+let heatmapData = []; // 热力图数据
 
 // 请务必替换为您申请的 Key 和 安全密钥
 const AMAP_SECURITY_CODE = '请替换为您的安全密钥';
@@ -41,7 +57,7 @@ const initMap = () => {
   AMapLoader.load({
     key: AMAP_KEY,
     version: "2.0",
-    plugins: ['AMap.MarkerCluster', 'AMap.ToolBar', 'AMap.Scale', 'AMap.ControlBar'], 
+    plugins: ['AMap.MarkerCluster', 'AMap.ToolBar', 'AMap.Scale', 'AMap.ControlBar', 'AMap.HeatMap'], 
   })
     .then((AMap) => {
       map.value = new AMap.Map("container", {
@@ -67,17 +83,12 @@ const initMap = () => {
 // 加载数据并渲染
 const loadData = async (AMap) => {
   try {
-    // 复用现有的获取记录接口，根据用户角色获取数据
-    // 注意：如果数据量非常大，建议后端提供专门的轻量级 GeoJSON 接口
     const userRole = store.state.user.role_id;
     let url = '/waste-records/list';
     if (userRole === 3 || userRole === 5) { // 超级管理员
        url = '/waste-records/list'; 
     }
     
-    // 这里简单处理，直接获取第一页的大量数据或者修改后端支持获取全部
-    // 为了演示，我们假设后端支持不传分页参数返回全部，或者我们可以循环获取
-    // 暂时先获取第一页，实际项目中建议增加 'all=true' 参数
     const response = await http.get(url, { params: { page: 1, pageSize: 1000 } });
     
     let records = [];
@@ -89,65 +100,65 @@ const loadData = async (AMap) => {
 
     totalRecords.value = records.length;
 
-    // --- 新增逻辑：计算每个地点的年度总量 ---
+    // --- 统计逻辑 ---
     const locationStats = {};
     const currentYear = new Date().getFullYear();
+    let maxQuantity = 0; // 用于热力图的max值
 
     records.forEach(record => {
       if (record.latitude && record.longitude) {
-        // 创建一个基于坐标的唯一键，例如 "116.12345,39.12345"
-        // 为了避免浮点数精度问题，可以先保留几位小数
         const lat = parseFloat(record.latitude).toFixed(6);
         const lng = parseFloat(record.longitude).toFixed(6);
+        const quantity = parseFloat(record.quantity) || 0;
         const key = `${lng},${lat}`;
-        
         const recordDate = new Date(record.collection_start_time);
         
-        // 初始化统计对象
+        // 统计逻辑
         if (!locationStats[key]) {
           locationStats[key] = {
             yearTotal: 0,
             count: 0
           };
         }
-        
-        // 如果是今年的记录，累加重量
         if (recordDate.getFullYear() === currentYear) {
-           locationStats[key].yearTotal += (parseFloat(record.quantity) || 0);
+           locationStats[key].yearTotal += quantity;
            locationStats[key].count += 1;
+        }
+
+        // 查找最大值用于热力图归一化
+        if (quantity > maxQuantity) {
+            maxQuantity = quantity;
         }
       }
     });
 
     const markers = [];
-    const points = []; // 用于自适应显示范围
+    heatmapData = []; // 重置热力图数据
 
     records.forEach(record => {
-      // 检查是否有有效的经纬度
       if (record.latitude && record.longitude) {
         const lng = parseFloat(record.longitude);
         const lat = parseFloat(record.latitude);
+        const quantity = parseFloat(record.quantity) || 0;
         
-        // 简单的有效性检查
         if (!isNaN(lng) && !isNaN(lat) && lng > 0 && lat > 0) {
-            
-          const markerContent = `<div class="custom-marker"></div>`;
           
-          // 创建 Marker (这里为了聚合，我们构建数据结构，或者直接创建 Marker 对象)
-          // 使用 AMap.MarkerCluster 插件通常需要 Marker 对象数组
-          
+          // 构建热力图数据点
+          heatmapData.push({
+              lng: lng,
+              lat: lat,
+              count: quantity
+          });
+
+          // 构建 Marker
           const marker = new AMap.Marker({
             position: [lng, lat],
             title: record.unit_name,
-            // content: markerContent, // 如果想自定义样式可以启用
-            extData: record // 存储记录数据以便点击时使用
+            extData: record
           });
 
-          // 绑定点击事件，显示信息窗体
           marker.on('click', (e) => {
              const data = e.target.getExtData();
-             
-             // 获取统计数据
              const key = `${parseFloat(data.longitude).toFixed(6)},${parseFloat(data.latitude).toFixed(6)}`;
              const stat = locationStats[key] || { yearTotal: 0 };
              const yearTotalStr = stat.yearTotal.toFixed(3); 
@@ -174,33 +185,80 @@ const loadData = async (AMap) => {
           });
 
           markers.push(marker);
-          points.push([lng, lat]);
         }
       }
     });
 
     validPoints.value = markers.length;
 
+    // 初始化点聚合
     if (markers.length > 0) {
-      // 使用点聚合插件
       if (cluster) {
         cluster.setMap(null);
       }
       cluster = new AMap.MarkerCluster(map.value, markers, {
-          gridSize: 80, // 聚合计算网格像素大小
+          gridSize: 80,
       });
-
-      // 调整地图视野以包含所有点
-      const overlayGroup = new AMap.OverlayGroup(markers);
-      map.value.setFitView(markers);
+      
+      // 默认显示点聚合，调整视野
+      if (!isHeatmapMode.value) {
+          map.value.setFitView(markers);
+      }
     } else {
       ElMessage.info('当前没有包含地理位置信息的记录');
+    }
+
+    // 初始化热力图
+    if (!heatmap) {
+        heatmap = new AMap.HeatMap(map.value, {
+            radius: 25,
+            opacity: [0, 0.8],
+            gradient: {
+                0.5: 'blue',
+                0.65: 'rgb(117,211,248)',
+                0.7: 'rgb(0, 255, 0)',
+                0.9: '#ffea00',
+                1.0: 'red'
+            }
+        });
+    }
+    
+    // 设置热力图数据
+    // max值可以根据实际情况调整，这里取记录中的最大值，避免所有点都很红或者都不红
+    // 为了显示效果，如果最大值过大，可以适当调整，或者取平均值的几倍
+    const safeMax = maxQuantity > 0 ? maxQuantity : 10;
+    
+    heatmap.setDataSet({
+        data: heatmapData,
+        max: safeMax
+    });
+    
+    // 初始根据开关状态决定显隐
+    if (isHeatmapMode.value) {
+        heatmap.show();
+        if (cluster) cluster.setMap(null);
+    } else {
+        heatmap.hide();
+        if (cluster) cluster.setMap(map.value);
     }
 
   } catch (error) {
     console.error('加载数据失败:', error);
     ElMessage.error('加载数据失败');
   }
+};
+
+// 切换热力图模式
+const toggleHeatmap = (val) => {
+    if (val) {
+        // 开启热力图：隐藏聚合点，显示热力图
+        if (cluster) cluster.setMap(null); 
+        if (heatmap) heatmap.show();
+    } else {
+        // 关闭热力图：显示聚合点，隐藏热力图
+        if (heatmap) heatmap.hide();
+        if (cluster) cluster.setMap(map.value); 
+    }
 };
 
 onMounted(() => {
@@ -218,7 +276,7 @@ onUnmounted(() => {
 .map-dashboard-container {
   position: relative;
   width: 100%;
-  height: calc(100vh - 84px); /* 减去顶部导航栏高度，具体根据您的布局调整 */
+  height: calc(100vh - 84px);
   overflow: hidden;
 }
 
@@ -272,10 +330,9 @@ onUnmounted(() => {
 }
 
 .dot.normal {
-    background-color: #1976D2; /* 高德默认Marker颜色近似 */
+    background-color: #1976D2; 
 }
 
-/* InfoWindow 样式在全局或通过 deep selector 调整，因为它是插入到 body 的 */
 :deep(.info-window-content) {
     font-size: 13px;
     width: 200px;
